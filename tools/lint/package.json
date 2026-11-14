@@ -1,0 +1,17 @@
+{
+  "name": "afterbattle-lint",
+  "private": true,
+  "type": "module",
+  "description": "Lint gate (spec 20 D9). Separate package so typescript-eslint runs on the TypeScript 6 API while the app builds with TypeScript 7.",
+  "scripts": {
+    "lint": "eslint --config eslint.config.js ../../src"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}

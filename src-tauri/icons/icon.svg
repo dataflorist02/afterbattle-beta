@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Afterbattle logo">
+  <defs>
+    <linearGradient id="bg" x1="72" y1="56" x2="440" y2="456" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17231f"/>
+      <stop offset="1" stop-color="#080d0b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="156" y1="132" x2="360" y2="384" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c7ff66"/>
+      <stop offset="1" stop-color="#69d39b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M256 72 408 132v111c0 95-58 163-152 201-94-38-152-106-152-201V132L256 72Z" fill="#101a16" stroke="#31483e" stroke-width="12"/>
+  <path d="m151 335 71-154c14-31 54-31 68 0l71 154h-52l-15-36h-77l-15 36h-51Zm84-79h41l-20-51-21 51Z" fill="url(#accent)"/>
+  <path d="M154 374h204" stroke="#c7ff66" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="256" cy="374" r="20" fill="#0c1310" stroke="#69d39b" stroke-width="10"/>
+</svg>
+

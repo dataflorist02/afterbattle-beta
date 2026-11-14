@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Kierunek C z mapami: Sesja</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.num{font-family:'Big Shoulders',Inter,sans-serif;font-weight:300}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#9AA6B8}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#9AA6B8;text-decoration:none}
+.fig{display:flex;flex-direction:column;gap:2px}
+.tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:250px;padding:14px;border-radius:16px;overflow:hidden;text-decoration:none;color:#EEF1F6;box-sizing:border-box;border:1px solid rgba(255,255,255,0.08)}
+.tile:hover{border-color:rgba(255,255,255,0.3)}
+</style>
+</helmet>
+<div style="min-height: 1100px; display: flex; background: #0A101C;">
+  <nav aria-label="Główna nawigacja" style="flex: 0 0 96px; padding: 26px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: #F08A3C; color: #0A101C; display: flex; align-items: center; justify-content: center; font-family: 'Big Shoulders', sans-serif; font-weight: 600; font-size: 22px; margin-bottom: 12px;">A</div>
+    <a class="rail" href="#" style="color: #EEF1F6;"><span class="ico" style="background: rgba(240,138,60,0.16); border-color: rgba(240,138,60,0.5); color: #F7B27A;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail" href="Mapy-Czolg.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle></svg></span>Cele</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <section aria-label="Podsumowanie sesji" style="position: relative; min-height: 340px; padding: 44px 56px 34px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 24px; background: linear-gradient(90deg, rgba(10,16,28,0.97) 0%, rgba(10,16,28,0.75) 45%, rgba(10,16,28,0.2) 100%), linear-gradient(0deg, #0A101C 0%, transparent 40%), radial-gradient(500px 260px at 78% 40%, rgba(120,170,200,0.35), transparent 70%), linear-gradient(125deg, #1F3550 0%, #2F5A6A 45%, #6A7A55 100%);">
+      <span role="img" aria-label="Tło: grafika mapy najlepszej bitwy (Rzeka Perłowa) z plików gry" style="position: absolute; right: 32px; top: 24px; font-size: 12px; color: #C9D1DC;">tło: mapa najlepszej bitwy</span>
+      <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px;">
+        <p style="margin: 0; font-size: 15px; color: #C9D1DC;">Dzisiaj od 20:40, 9 bitew losowych</p>
+        <h1 style="margin: 0; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 60px; line-height: 1.02;">Mocna sesja: obrażenia <span style="color: #F7B27A;">o 20% wyżej</span> niż zwykle</h1>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 44px; align-items: flex-end;">
+        <div class="fig"><span class="num" style="font-size: 68px; line-height: 1; color: #FFF4EA; text-shadow: 0 0 34px rgba(240,138,60,0.4);">3&nbsp;240</span><span style="font-size: 14px; color: #C9D1DC;">średnie obrażenia</span></div>
+        <div class="fig"><span class="num" style="font-size: 46px; line-height: 1;">6 z 9</span><span style="font-size: 14px; color: #C9D1DC;">wygranych</span></div>
+        <div class="fig"><span class="num" style="font-size: 46px; line-height: 1;">612</span><span style="font-size: 14px; color: #C9D1DC;">średnia asysta</span></div>
+        <div class="fig"><span class="num" style="font-size: 46px; line-height: 1;">2&nbsp;150</span><span style="font-size: 14px; color: #C9D1DC;">WN8 sesji</span></div>
+        <button type="button" style="margin-left: auto; font: inherit; font-size: 14px; font-weight: 500; color: #EEF1F6; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 12px 22px; min-height: 44px;">Zakończ sesję</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="strip-h" style="padding: 28px 56px 8px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
+        <h2 id="strip-h" style="margin: 0; font-size: 18px; font-weight: 600;">Sesja bitwa po bitwie</h2>
+        <p style="margin: 0; font-size: 13px; color: #9AA6B8;">Kafelki: grafiki map z plików gry (tu zamienniki). Porażki przygaszone i podpisane</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 10px;">
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="9">
+          <a class="tile" href="#" style="{{t.style}}">
+            <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">{{t.res}}</span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 30px; line-height: 1;">{{t.dmg}}</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{t.map}}</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{t.tank}}</span>
+            </span>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-labelledby="mom-h" style="padding: 22px 56px 48px; display: flex; flex-direction: column; gap: 14px;">
+      <h2 id="mom-h" style="margin: 0; font-size: 18px; font-weight: 600;">Momenty sesji</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+        <div class="card" style="padding: 22px 24px; display: flex; gap: 20px; align-items: center;">
+          <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+            <span style="font-size: 14px; color: #9AA6B8;">Rozkręcałeś się</span>
+            <span class="num" style="font-size: 38px; line-height: 1;">2&nbsp;000 → 4&nbsp;480</span>
+            <span style="font-size: 14px; color: #C9D1DC;">Każda kolejna bitwa z większymi obrażeniami niż poprzednia</span>
+          </div>
+          <svg role="img" aria-label="Obrażenia rosną w każdej z 9 bitew" viewBox="0 0 220 80" style="width: 220px; height: 80px; flex: none;">
+            <polyline fill="none" stroke="#F3A36B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="4,72 30,66 56,60 82,54 108,47 134,41 160,34 186,28 214,10"></polyline>
+            <circle cx="214" cy="10" r="4" fill="#F3A36B"></circle>
+          </svg>
+        </div>
+        <a href="Mapy-Czolg.dc.html" class="card" style="position: relative; overflow: hidden; padding: 22px 24px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; background: linear-gradient(90deg, rgba(14,20,32,0.96) 40%, rgba(14,20,32,0.55)), linear-gradient(125deg, #3C3A44, #6A5E4A);">
+          <span role="img" aria-label="Tło: grafika mapy Nordskar z plików gry" style="position: absolute; right: 18px; top: 14px; font-size: 11px; color: #C9D1DC;">tło: Nordskar</span>
+          <span style="font-size: 14px; color: #9AA6B8;">Do poprawy</span>
+          <span class="num" style="font-size: 38px; line-height: 1;">0 z 3 przeżytych</span>
+          <span style="font-size: 14px; color: #C9D1DC;">Concept No. 5: zwykle przeżywasz co trzecią bitwę. Najkrócej na Nordskarze.</span>
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pal = {
+      'Dębina': ['#2E4A2E', '#6E7F45'], 'Lakeville': ['#2D4A5E', '#7A8F6A'], 'Paryż': ['#3D4655', '#8A8A84'],
+      'Fiordy': ['#2E4660', '#A9B9C8'], 'El Halluf': ['#6A5233', '#C2A26A'], 'Lotnisko': ['#5C5A3E', '#B6A06A'],
+      'Redshire': ['#3E5236', '#9A9A62'], 'Nordskar': ['#3C3A44', '#8E8676'], 'Rzeka Perłowa': ['#1F3550', '#6A7A55']
+    };
+    const data = [['Wygrana','Dębina',2000,'LHMTV'],['Porażka','Lakeville',2310,'UDES 14 Alt 5'],['Wygrana','Paryż',2620,'M53/M55'],['Wygrana','Fiordy',2930,'Vz. 60S Dravec'],['Porażka','El Halluf',3240,'LHMTV'],['Wygrana','Lotnisko',3550,'Vz. 60S Dravec'],['Wygrana','Redshire',3860,'UDES 14 Alt 5'],['Porażka','Nordskar',4170,'Concept No. 5'],['Wygrana','Rzeka Perłowa',4480,'Vz. 60S Dravec']];
+    const tiles = data.map(([res, map, d, tank], i) => {
+      const [a, b] = pal[map];
+      const best = i === data.length - 1;
+      const loss = res === 'Porażka';
+      let style = 'background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, ' + a + ', ' + b + ');';
+      if (loss) style += ' filter: saturate(0.35) brightness(0.72);';
+      if (best) style += ' border: 2px solid #F08A3C; box-shadow: 0 0 28px rgba(240,138,60,0.45);';
+      return { res: best ? 'Najlepsza, wygrana' : res, map, tank, dmg: d.toLocaleString('pl-PL'), style };
+    });
+    return { tiles };
+  }
+}
+</script>
+</body>
+</html>

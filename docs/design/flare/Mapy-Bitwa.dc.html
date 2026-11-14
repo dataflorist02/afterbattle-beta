@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Kierunek C z mapami: Bitwa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.num{font-family:'Big Shoulders',Inter,sans-serif;font-weight:300}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#9AA6B8}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#9AA6B8;text-decoration:none}
+.stat{display:flex;flex-direction:column;gap:2px}
+.tb{display:grid;grid-template-columns:110px minmax(0,1fr) 120px;gap:14px;align-items:center;font-size:14px}
+</style>
+</helmet>
+<div style="min-height: 1100px; display: flex; background: #0A101C;">
+  <nav aria-label="Główna nawigacja" style="flex: 0 0 96px; padding: 26px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: #F08A3C; color: #0A101C; display: flex; align-items: center; justify-content: center; font-family: 'Big Shoulders', sans-serif; font-weight: 600; font-size: 24px; margin-bottom: 12px;">A</div>
+    <a class="rail" href="Mapy-Sesja.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail" href="Mapy-Czolg.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle></svg></span>Cele</a>
+    <a class="rail" href="Mapy-Historia.dc.html" style="color: #EEF1F6;"><span class="ico" style="background: rgba(240,138,60,0.16); border-color: rgba(240,138,60,0.5); color: #F7B27A;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <section aria-label="Wynik bitwy" style="position: relative; min-height: 440px; padding: 28px 56px 36px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(90deg, rgba(10,16,28,0.96) 0%, rgba(10,16,28,0.6) 45%, rgba(10,16,28,0.1) 100%), linear-gradient(0deg, #0A101C 0%, transparent 45%), radial-gradient(520px 300px at 75% 35%, rgba(130,180,210,0.35), transparent 70%), linear-gradient(125deg, #1F3550 0%, #2F5A6A 45%, #6A7A55 100%);">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <a href="Mapy-Historia.dc.html" style="font-size: 14px; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center;">← Historia</a>
+        <span role="img" aria-label="Tło: grafika mapy Rzeka Perłowa z plików gry" style="font-size: 12px; color: #C9D1DC;">tło: Rzeka Perłowa</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 48px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <p style="margin: 0; font-size: 15px; color: #C9D1DC;">Dziś 22:00, bitwa trwała 9:48</p>
+          <h1 style="margin: 0; font-family: 'Big Shoulders', sans-serif; font-weight: 600; font-size: 76px; line-height: 0.95;">Wygrana na Rzece Perłowej</h1>
+          <p style="margin: 0; display: flex; align-items: center; gap: 12px; font-size: 16px; color: #DCE2EA;"><span role="img" aria-label="Ikona czołgu Vz. 60S Dravec z plików gry" style="width: 64px; height: 34px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.3); background: rgba(10,16,28,0.4);"></span>Vz. 60S Dravec, czołg ciężki, X poziom</p>
+        </div>
+        <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end;">
+          <span class="num" style="font-size: 132px; line-height: 0.85; color: #FFF4EA; text-shadow: 0 0 40px rgba(240,138,60,0.45);">4&nbsp;480</span>
+          <span style="font-size: 15px; color: #DCE2EA;">obrażeń, najwięcej w drużynie, 24% jej obrażeń</span>
+        </div>
+      </div>
+    </section>
+
+    <div style="padding: 24px 56px 48px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 20px; max-width: 1344px; box-sizing: border-box;">
+      <section aria-labelledby="you-h" class="card" style="padding: 24px 28px;">
+        <h2 id="you-h" style="margin: 0 0 18px; font-size: 18px; font-weight: 600;">Twoja bitwa</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 18px;">
+          <div class="stat"><span class="num" style="font-size: 42px; line-height: 1;">15 z 18</span><span style="font-size: 13px; color: #9AA6B8;">trafień</span></div>
+          <div class="stat"><span class="num" style="font-size: 42px; line-height: 1;">13</span><span style="font-size: 13px; color: #9AA6B8;">przebić</span></div>
+          <div class="stat"><span class="num" style="font-size: 42px; line-height: 1;">3</span><span style="font-size: 13px; color: #9AA6B8;">zniszczone</span></div>
+          <div class="stat"><span class="num" style="font-size: 42px; line-height: 1;">640</span><span style="font-size: 13px; color: #9AA6B8;">asysta</span></div>
+          <div class="stat"><span class="num" style="font-size: 42px; line-height: 1;">1&nbsp;870</span><span style="font-size: 13px; color: #9AA6B8;">zablokowane</span></div>
+          <div class="stat"><span class="num" style="font-size: 42px; line-height: 1;">312 HP</span><span style="font-size: 13px; color: #9AA6B8;">przeżyłeś, z 1&nbsp;950</span></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="teams-h" class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
+          <h2 id="teams-h" style="margin: 0; font-size: 18px; font-weight: 600;">Drużyny</h2>
+          <span style="font-size: 13px; color: #9AA6B8;">Obie X poziom, po jednym plutonie</span>
+        </div>
+        <div class="tb" style="color: #9AA6B8; font-size: 13px;"><span></span><span style="display: flex; justify-content: space-between;"><span>Twoja drużyna</span><span>Przeciwnicy</span></span><span></span></div>
+        <div class="tb"><span style="color: #C9D1DC;">Obrażenia</span><span style="display: flex; height: 12px; border-radius: 6px; overflow: hidden;"><span style="width: 60%; background: #F08A3C;"></span><span style="width: 40%; background: #6F87B8;"></span></span><span class="num" style="font-size: 22px; text-align: right;">21,7 / 14,4 tys.</span></div>
+        <div class="tb"><span style="color: #C9D1DC;">Wykrycia</span><span style="display: flex; height: 12px; border-radius: 6px; overflow: hidden;"><span style="width: 62%; background: #F08A3C;"></span><span style="width: 38%; background: #6F87B8;"></span></span><span class="num" style="font-size: 22px; text-align: right;">18 / 11</span></div>
+        <div class="tb"><span style="color: #C9D1DC;">Asysta</span><span style="display: flex; height: 12px; border-radius: 6px; overflow: hidden;"><span style="width: 55%; background: #F08A3C;"></span><span style="width: 45%; background: #6F87B8;"></span></span><span class="num" style="font-size: 22px; text-align: right;">8,9 / 7,3 tys.</span></div>
+        <div class="tb"><span style="color: #C9D1DC;">Przetrwali</span><span style="display: flex; height: 12px; border-radius: 6px; overflow: hidden;"><span style="width: 100%; background: #F08A3C;"></span></span><span class="num" style="font-size: 22px; text-align: right;">9 / 0</span></div>
+      </section>
+
+      <section aria-labelledby="map-h" style="grid-column: 1 / -1; position: relative; overflow: hidden; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); padding: 24px 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 36px; background: linear-gradient(90deg, rgba(14,20,32,0.97) 35%, rgba(14,20,32,0.6)), linear-gradient(125deg, #1F3550, #6A7A55);">
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 240px;">
+          <h2 id="map-h" style="margin: 0; font-size: 18px; font-weight: 600;">Ty na Rzece Perłowej</h2>
+          <span style="font-size: 14px; color: #C9D1DC;">Wszystkie Twoje bitwy na tej mapie, każdym czołgiem</span>
+        </div>
+        <div class="stat"><span class="num" style="font-size: 40px; line-height: 1;">31</span><span style="font-size: 13px; color: #C9D1DC;">bitew</span></div>
+        <div class="stat"><span class="num" style="font-size: 40px; line-height: 1;">61%</span><span style="font-size: 13px; color: #C9D1DC;">wygranych</span></div>
+        <div class="stat"><span class="num" style="font-size: 40px; line-height: 1;">3&nbsp;010</span><span style="font-size: 13px; color: #C9D1DC;">śr. obrażeń</span></div>
+        <a href="#" style="margin-left: auto; font-size: 14px;">Wszystkie bitwy na tej mapie</a>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

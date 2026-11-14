@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Afterbattle: dzisiejsza sesja</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.rail-link{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:#9AA6B8;font-size:12px;font-weight:500;min-width:64px}
+.rail-link:hover{color:#EEF1F6}
+.ico{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
+.on{color:#EEF1F6}
+.on .ico{background:rgba(240,138,60,0.14);border-color:rgba(240,138,60,0.45);color:#F7B27A}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.num{font-family:'Barlow Semi Condensed',Inter,sans-serif;font-weight:300}
+.row-link{display:grid;grid-template-columns:100px minmax(0,1.5fr) minmax(0,1.5fr) 96px 86px 60px;gap:12px;align-items:center;padding:14px 20px;text-decoration:none;color:#EEF1F6;border-radius:14px}
+.row-link:hover{background:rgba(255,255,255,0.04);color:#EEF1F6}
+.btn{font:inherit;font-size:14px;font-weight:500;color:#EEF1F6;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);border-radius:999px;padding:12px 22px;min-height:44px;cursor:pointer}
+.btn:hover{background:rgba(255,255,255,0.09)}
+.veh{flex:none;width:52px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.16);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.mapimg{flex:none;width:44px;height:30px;border-radius:8px;background:linear-gradient(135deg,rgba(111,135,184,0.22),rgba(255,255,255,0.04));border:1px dashed rgba(255,255,255,0.16);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.cell{display:flex;align-items:center;gap:12px;min-width:0}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; background: radial-gradient(900px 520px at 12% -12%, rgba(70, 104, 210, 0.20), transparent 62%), radial-gradient(700px 420px at 105% -5%, rgba(240, 138, 60, 0.09), transparent 60%), #0A101C;">
+  <nav aria-label="Główna nawigacja" style="flex: 1 1 104px; max-width: 104px; min-width: 104px; padding: 28px 0; display: flex; flex-direction: column; align-items: center; gap: 22px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: #F08A3C; display: flex; align-items: center; justify-content: center; color: #0A101C; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 22px; margin-bottom: 14px;">A</div>
+    <a class="rail-link on" href="Main.dc.html" aria-current="page"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail-link" href="Czolgi.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail-link" href="Cele.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle><circle cx="12" cy="12" r="0.8"></circle></svg></span>Cele</a>
+    <a class="rail-link" href="Bitwa.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <span class="rail-link" title="Pojawi się po rozbudowie analizy powtórek" style="opacity: 0.45;"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon><line x1="9" y1="4" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="20"></line></svg></span>Mapy</span>
+    <div style="flex-grow: 1;"></div>
+    <a class="rail-link" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="17" x2="20" y2="17"></line><circle cx="9" cy="7" r="2.2"></circle><circle cx="15" cy="17" r="2.2"></circle></svg></span>Ustawienia</a>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 36px 44px 44px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px; max-width: 1180px;">
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <h1 style="margin: 0; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 500; font-size: 36px; line-height: 1.1;">Dzisiejsza sesja</h1>
+        <p class="muted" style="margin: 0; color: #9AA6B8; font-size: 15px;">Od 19:40, 9 bitew losowych, aktywna</p>
+      </div>
+      <button class="btn" type="button">Zakończ sesję</button>
+    </header>
+
+    <section aria-labelledby="hero-label" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div class="card" style="grid-column: span 2; padding: 28px 32px; position: relative; overflow: hidden; background: linear-gradient(160deg, rgba(240,138,60,0.10), rgba(255,255,255,0.03) 55%); border-color: rgba(240,138,60,0.30); box-shadow: 0 0 60px rgba(240,138,60,0.12);">
+        <p id="hero-label" style="margin: 0; font-size: 15px; color: #C9D1DC;">Średnie obrażenia</p>
+        <p class="num" style="margin: 6px 0 0; font-size: 104px; line-height: 1; color: #FFF4EA;">3&nbsp;184</p>
+        <p style="margin: 14px 0 0; font-size: 15px; color: #C9D1DC;">O 18% więcej niż Twoja średnia na tych samych czołgach (2&nbsp;702)</p>
+      </div>
+      <div style="display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 16px;">
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 14px; color: #9AA6B8;">Wygrane</span>
+          <span><span class="num" style="font-size: 34px;">6</span><span style="font-size: 14px; color: #9AA6B8;"> z 9</span></span>
+        </div>
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 14px; color: #9AA6B8;">Przetrwanie</span>
+          <span><span class="num" style="font-size: 34px;">4</span><span style="font-size: 14px; color: #9AA6B8;"> z 9</span></span>
+        </div>
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 14px; color: #9AA6B8;">Asysta</span>
+          <span><span class="num" style="font-size: 34px;">612</span><span style="font-size: 14px; color: #9AA6B8;"> śr.</span></span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="signals-h" style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 id="signals-h" style="margin: 0; font-size: 18px; font-weight: 600;">Co wyróżnia tę sesję</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+        <div class="card" style="padding: 20px 24px; display: flex; gap: 16px; align-items: flex-start;">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA6B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;"><polyline points="4 16 10 10 14 14 20 8"></polyline><polyline points="15 8 20 8 20 13"></polyline></svg>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #DCE2EA;">Na Obj. 140 zadajesz o 31% więcej obrażeń niż zwykle, ale przeżyłeś tylko 1 z 4 bitew. Zwykle przeżywasz co trzecią.</p>
+        </div>
+        <div class="card" style="padding: 20px 24px; display: flex; gap: 16px; align-items: flex-start;">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA6B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;"><circle cx="12" cy="12" r="3"></circle><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"></path></svg>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #DCE2EA;">T-100 LT dał 3&nbsp;150 asysty w jednej bitwie, najwięcej z Twoich ostatnich 100 bitew na tym czołgu.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="battles-h" class="card" style="padding: 12px 8px 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 10px 20px 8px;">
+        <h2 id="battles-h" style="margin: 0; font-size: 18px; font-weight: 600;">Bitwy w tej sesji</h2>
+        <a href="Bitwa.dc.html" style="font-size: 14px;">Wszystkie 9</a>
+      </div>
+      <div style="overflow-x: auto;">
+        <div style="min-width: 760px;">
+          <div style="display: grid; grid-template-columns: 100px minmax(0,1.5fr) minmax(0,1.5fr) 96px 86px 60px; gap: 12px; padding: 6px 20px; font-size: 13px; color: #8693A6;">
+            <span>Wynik</span><span>Czołg</span><span>Mapa</span><span style="text-align: right;">Obrażenia</span><span style="text-align: right;">Asysta</span><span style="text-align: right;">Godz.</span>
+          </div>
+          <a class="row-link" href="Bitwa.dc.html"><span style="font-weight: 500;">Wygrana</span><span class="cell"><span class="veh" role="img" aria-label="Ikona czołgu Obj. 140 z plików gry"><svg aria-hidden="true" width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="#8693A6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="24" height="5" rx="2.5"></rect><rect x="7" y="4.5" width="11" height="4.5" rx="1.5"></rect><line x1="18" y1="6.5" x2="28" y2="6.5"></line></svg></span><span>Obj. 140</span></span><span class="cell" style="color: #C9D1DC;"><span class="mapimg" role="img" aria-label="Miniatura mapy Prochorowka z plików gry"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8693A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon></svg></span><span>Prochorowka</span></span><span class="num" style="text-align: right; font-size: 20px;">5&nbsp;210</span><span class="num" style="text-align: right; font-size: 20px; color: #C9D1DC;">640</span><span style="text-align: right; color: #9AA6B8; font-size: 14px;">21:12</span></a>
+          <a class="row-link" href="Bitwa.dc.html"><span style="color: #9AA6B8;">Porażka</span><span class="cell"><span class="veh" role="img" aria-label="Ikona czołgu Obj. 140 z plików gry"><svg aria-hidden="true" width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="#8693A6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="24" height="5" rx="2.5"></rect><rect x="7" y="4.5" width="11" height="4.5" rx="1.5"></rect><line x1="18" y1="6.5" x2="28" y2="6.5"></line></svg></span><span>Obj. 140</span></span><span class="cell" style="color: #C9D1DC;"><span class="mapimg" role="img" aria-label="Miniatura mapy Malinowka z plików gry"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8693A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon></svg></span><span>Malinowka</span></span><span class="num" style="text-align: right; font-size: 20px;">1&nbsp;980</span><span class="num" style="text-align: right; font-size: 20px; color: #C9D1DC;">310</span><span style="text-align: right; color: #9AA6B8; font-size: 14px;">21:03</span></a>
+          <a class="row-link" href="Bitwa.dc.html"><span style="font-weight: 500;">Wygrana</span><span class="cell"><span class="veh" role="img" aria-label="Ikona czołgu Kranvagn z plików gry"><svg aria-hidden="true" width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="#8693A6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="24" height="5" rx="2.5"></rect><rect x="7" y="4.5" width="11" height="4.5" rx="1.5"></rect><line x1="18" y1="6.5" x2="28" y2="6.5"></line></svg></span><span>Kranvagn</span></span><span class="cell" style="color: #C9D1DC;"><span class="mapimg" role="img" aria-label="Miniatura mapy Himmelsdorf z plików gry"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8693A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon></svg></span><span>Himmelsdorf</span></span><span class="num" style="text-align: right; font-size: 20px;">3&nbsp;870</span><span class="num" style="text-align: right; font-size: 20px; color: #C9D1DC;">220</span><span style="text-align: right; color: #9AA6B8; font-size: 14px;">20:52</span></a>
+          <a class="row-link" href="Bitwa.dc.html"><span style="font-weight: 500;">Wygrana</span><span class="cell"><span class="veh" role="img" aria-label="Ikona czołgu T-100 LT z plików gry"><svg aria-hidden="true" width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="#8693A6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="24" height="5" rx="2.5"></rect><rect x="7" y="4.5" width="11" height="4.5" rx="1.5"></rect><line x1="18" y1="6.5" x2="28" y2="6.5"></line></svg></span><span>T-100 LT</span></span><span class="cell" style="color: #C9D1DC;"><span class="mapimg" role="img" aria-label="Miniatura mapy Step z plików gry"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8693A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon></svg></span><span>Step</span></span><span class="num" style="text-align: right; font-size: 20px;">1&nbsp;420</span><span class="num" style="text-align: right; font-size: 20px; color: #C9D1DC;">3&nbsp;150</span><span style="text-align: right; color: #9AA6B8; font-size: 14px;">20:41</span></a>
+          <a class="row-link" href="Bitwa.dc.html"><span style="color: #9AA6B8;">Porażka</span><span class="cell"><span class="veh" role="img" aria-label="Ikona czołgu Kranvagn z plików gry"><svg aria-hidden="true" width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="#8693A6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="24" height="5" rx="2.5"></rect><rect x="7" y="4.5" width="11" height="4.5" rx="1.5"></rect><line x1="18" y1="6.5" x2="28" y2="6.5"></line></svg></span><span>Kranvagn</span></span><span class="cell" style="color: #C9D1DC;"><span class="mapimg" role="img" aria-label="Miniatura mapy Klasztor z plików gry"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8693A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon></svg></span><span>Klasztor</span></span><span class="num" style="text-align: right; font-size: 20px;">2&nbsp;310</span><span class="num" style="text-align: right; font-size: 20px; color: #C9D1DC;">180</span><span style="text-align: right; color: #9AA6B8; font-size: 14px;">20:30</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

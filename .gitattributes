@@ -1,0 +1,2 @@
+# Tauri regenerates these on every build with LF endings; keep the checkout identical so builds do not dirty the tree.
+src-tauri/gen/schemas/*.json text eol=lf

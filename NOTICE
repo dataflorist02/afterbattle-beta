@@ -1,0 +1,21 @@
+Afterbattle
+Copyright 2026 Szymon Kwiatkowski
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Afterbattle is not affiliated with, endorsed by, or sponsored by Wargaming.net,
+World of Tanks, or XVM. This repository contains no game files or game graphics.
+
+Third-party components bundled with the application
+----------------------------------------------------
+
+Big Shoulders (fonts: src/assets/fonts/big-shoulders-*.woff2)
+  Copyright the Big Shoulders Project Authors (https://github.com/xotypeco/big_shoulders)
+  License: SIL Open Font License, Version 1.1 - src/assets/fonts/OFL-BigShoulders.txt
+
+Inter (fonts: src/assets/fonts/inter-*.woff2)
+  Copyright the Inter Project Authors (https://github.com/rsms/inter)
+  License: SIL Open Font License, Version 1.1 - src/assets/fonts/OFL-Inter.txt
+
+Rust and npm dependencies are declared in src-tauri/Cargo.toml and Cargo.lock, and in
+package.json and pnpm-lock.yaml, each under its own license.

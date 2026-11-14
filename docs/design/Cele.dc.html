@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Afterbattle: cele tygodnia</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.rail-link{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:#9AA6B8;font-size:12px;font-weight:500;min-width:64px}
+.rail-link:hover{color:#EEF1F6}
+.ico{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
+.on{color:#EEF1F6}
+.on .ico{background:rgba(240,138,60,0.14);border-color:rgba(240,138,60,0.45);color:#F7B27A}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.num{font-family:'Barlow Semi Condensed',Inter,sans-serif;font-weight:300}
+.track{height:8px;border-radius:6px;background:rgba(255,255,255,0.07);overflow:hidden}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; background: radial-gradient(900px 520px at 12% -12%, rgba(70, 104, 210, 0.20), transparent 62%), radial-gradient(700px 420px at 105% -5%, rgba(240, 138, 60, 0.09), transparent 60%), #0A101C;">
+  <nav aria-label="Główna nawigacja" style="flex: 1 1 104px; max-width: 104px; min-width: 104px; padding: 28px 0; display: flex; flex-direction: column; align-items: center; gap: 22px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: #F08A3C; display: flex; align-items: center; justify-content: center; color: #0A101C; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 22px; margin-bottom: 14px;">A</div>
+    <a class="rail-link" href="Main.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail-link" href="Czolgi.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail-link on" href="Cele.dc.html" aria-current="page"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle><circle cx="12" cy="12" r="0.8"></circle></svg></span>Cele</a>
+    <a class="rail-link" href="Bitwa.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <span class="rail-link" title="Pojawi się po rozbudowie analizy powtórek" style="opacity: 0.45;"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon><line x1="9" y1="4" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="20"></line></svg></span>Mapy</span>
+    <div style="flex-grow: 1;"></div>
+    <a class="rail-link" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="17" x2="20" y2="17"></line><circle cx="9" cy="7" r="2.2"></circle><circle cx="15" cy="17" r="2.2"></circle></svg></span>Ustawienia</a>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 36px 44px 44px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px; max-width: 1180px;">
+    <header style="display: flex; flex-direction: column; gap: 6px;">
+      <h1 style="margin: 0; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 500; font-size: 36px; line-height: 1.1;">Cele na ten tydzień</h1>
+      <p style="margin: 0; color: #9AA6B8; font-size: 15px;">9–15 listopada, 39 bitew do tej pory</p>
+    </header>
+
+    <section aria-label="Cele" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      <div class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; border-color: rgba(240,138,60,0.30); background: linear-gradient(160deg, rgba(240,138,60,0.10), rgba(255,255,255,0.03) 60%); box-shadow: 0 0 48px rgba(240,138,60,0.10);">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600; line-height: 1.4;">Przeżyj co najmniej 35% bitew</h2>
+        <p style="margin: 0;"><span class="num" style="font-size: 56px; line-height: 1; color: #FFF4EA;">31%</span><span style="font-size: 14px; color: #C9D1DC;"> teraz, 12 z 39</span></p>
+        <div class="track" role="img" aria-label="31 z 35 procent celu"><div style="width: 89%; height: 100%; background: #F3A36B;"></div></div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #C9D1DC;">Do celu brakuje 2 przetrwanych bitew na każde 10 kolejnych. Cel to Twoja mediana z 4 tygodni (30%) plus 5 punktów.</p>
+      </div>
+      <div class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600; line-height: 1.4;">Na Obj. 140 średnio co najmniej 3&nbsp;300 obrażeń z asystą</h2>
+        <p style="margin: 0;"><span class="num" style="font-size: 56px; line-height: 1;">3&nbsp;460</span><span style="font-size: 14px; color: #9AA6B8;"> osiągnięty, 14 bitew</span></p>
+        <div class="track" role="img" aria-label="cel osiągnięty"><div style="width: 100%; height: 100%; background: #DCE2EA;"></div></div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #9AA6B8;">Twoja średnia z 4 tygodni (3&nbsp;000) plus 10%.</p>
+      </div>
+      <div class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600; line-height: 1.4;">Średnio co najmniej 1&nbsp;450 XP</h2>
+        <p style="margin: 0;"><span class="num" style="font-size: 56px; line-height: 1;">1&nbsp;390</span><span style="font-size: 14px; color: #9AA6B8;"> blisko, 96%</span></p>
+        <div class="track" role="img" aria-label="96 procent celu"><div style="width: 96%; height: 100%; background: #DCE2EA;"></div></div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #9AA6B8;">Twoja średnia z 4 tygodni (1&nbsp;320) plus 10%.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="week-h" class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px;">
+        <h2 id="week-h" style="margin: 0; font-size: 18px; font-weight: 600;">Ten tydzień wobec poprzednich czterech</h2>
+        <p style="margin: 0; font-size: 14px; color: #9AA6B8;">Wynik względem Twojej średniej na tych samych czołgach</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 14px; color: #9AA6B8;">Obrażenia z asystą</span><span class="num" style="font-size: 40px;">104%</span><span style="font-size: 13px; color: #9AA6B8;">poprzednio 97–101%</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 14px; color: #9AA6B8;">Przetrwanie</span><span class="num" style="font-size: 40px;">92%</span><span style="font-size: 13px; color: #9AA6B8;">poprzednio 95–108%</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 14px; color: #9AA6B8;">XP</span><span class="num" style="font-size: 40px;">101%</span><span style="font-size: 13px; color: #9AA6B8;">poprzednio 96–103%</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 14px; color: #9AA6B8;">Wygrane</span><span class="num" style="font-size: 40px;">55%</span><span style="font-size: 13px; color: #9AA6B8;">tylko kontekst, nie cel</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="last-h" style="display: flex; flex-direction: column; gap: 10px;">
+      <h2 id="last-h" style="margin: 0; font-size: 18px; font-weight: 600;">Poprzedni tydzień</h2>
+      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #C9D1DC;">2 z 3 celów osiągnięte w 46 bitwach: przetrwanie i obrażenia na Kranvagnie. XP zabrakło 40 punktów.</p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

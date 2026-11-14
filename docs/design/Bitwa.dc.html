@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Afterbattle: szczegóły bitwy</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.rail-link{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:#9AA6B8;font-size:12px;font-weight:500;min-width:64px}
+.rail-link:hover{color:#EEF1F6}
+.ico{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
+.on{color:#EEF1F6}
+.on .ico{background:rgba(240,138,60,0.14);border-color:rgba(240,138,60,0.45);color:#F7B27A}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.num{font-family:'Barlow Semi Condensed',Inter,sans-serif;font-weight:300}
+.stat{display:flex;flex-direction:column;gap:4px}
+.ref{font-size:12px;color:#9AA6B8;vertical-align:super;margin-left:2px}
+.veh{flex:none;width:52px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.16);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.mapimg{flex:none;width:44px;height:30px;border-radius:8px;background:linear-gradient(135deg,rgba(111,135,184,0.22),rgba(255,255,255,0.04));border:1px dashed rgba(255,255,255,0.16);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.cell{display:flex;align-items:center;gap:12px;min-width:0}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; background: radial-gradient(900px 520px at 12% -12%, rgba(70, 104, 210, 0.20), transparent 62%), radial-gradient(700px 420px at 105% -5%, rgba(240, 138, 60, 0.09), transparent 60%), #0A101C;">
+  <nav aria-label="Główna nawigacja" style="flex: 1 1 104px; max-width: 104px; min-width: 104px; padding: 28px 0; display: flex; flex-direction: column; align-items: center; gap: 22px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: #F08A3C; display: flex; align-items: center; justify-content: center; color: #0A101C; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 22px; margin-bottom: 14px;">A</div>
+    <a class="rail-link" href="Main.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail-link" href="Czolgi.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail-link" href="Cele.dc.html"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle><circle cx="12" cy="12" r="0.8"></circle></svg></span>Cele</a>
+    <a class="rail-link on" href="Bitwa.dc.html" aria-current="page"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <span class="rail-link" title="Pojawi się po rozbudowie analizy powtórek" style="opacity: 0.45;"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon><line x1="9" y1="4" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="20"></line></svg></span>Mapy</span>
+    <div style="flex-grow: 1;"></div>
+    <a class="rail-link" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="17" x2="20" y2="17"></line><circle cx="9" cy="7" r="2.2"></circle><circle cx="15" cy="17" r="2.2"></circle></svg></span>Ustawienia</a>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 32px 44px 44px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; max-width: 1180px;">
+    <a href="Main.dc.html" style="font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; align-self: flex-start;"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>Wróć do sesji</a>
+
+    <header style="margin-top: -12px; position: relative; border-radius: 20px; overflow: hidden; min-height: 180px; border: 1px dashed rgba(255,255,255,0.16); background: linear-gradient(90deg, rgba(10,16,28,0.96) 0%, rgba(10,16,28,0.70) 45%, rgba(10,16,28,0.15) 100%), linear-gradient(135deg, #2A3A55, #3B4A3A 55%, #5A5236); display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 28px 32px; box-sizing: border-box;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <h1 style="margin: 0; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 500; font-size: 40px; line-height: 1.1;">Wygrana na Prochorowce</h1>
+        <p style="margin: 0; display: flex; align-items: center; gap: 10px; color: #C9D1DC; font-size: 15px;"><span class="veh" role="img" aria-label="Ikona czołgu Obj. 140 z plików gry"><svg aria-hidden="true" width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="#8693A6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="24" height="5" rx="2.5"></rect><rect x="7" y="4.5" width="11" height="4.5" rx="1.5"></rect><line x1="18" y1="6.5" x2="28" y2="6.5"></line></svg></span>Obj. 140, dziś 21:12, bitwa trwała 9:48</p>
+      </div>
+      <span role="img" aria-label="Tło: grafika mapy Prochorowka z plików gry" style="font-size: 12px; color: #C9D1DC; display: inline-flex; align-items: center; gap: 6px;"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8693A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 4 15 6 21 4 21 18 15 20 9 18 3 20"></polygon></svg>grafika mapy z plików gry</span>
+    </header>
+
+    <section aria-label="Twój wynik" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      <div class="card" style="padding: 28px 32px; border-color: rgba(240,138,60,0.30); background: linear-gradient(160deg, rgba(240,138,60,0.10), rgba(255,255,255,0.03) 55%); box-shadow: 0 0 60px rgba(240,138,60,0.12);">
+        <p style="margin: 0; font-size: 15px; color: #C9D1DC;">Obrażenia</p>
+        <p class="num" style="margin: 6px 0 0; font-size: 96px; line-height: 1; color: #FFF4EA;">5&nbsp;210</p>
+        <p style="margin: 14px 0 0; font-size: 15px; color: #C9D1DC;">Najwięcej w drużynie, 24% jej obrażeń</p>
+      </div>
+      <div class="card" style="padding: 24px 28px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 16px; align-content: center;">
+        <div class="stat"><span style="font-size: 13px; color: #9AA6B8;">Trafienia</span><span><span class="num" style="font-size: 32px;">15</span><span style="font-size: 14px; color: #9AA6B8;"> z 18</span></span></div>
+        <div class="stat"><span style="font-size: 13px; color: #9AA6B8;">Przebicia</span><span class="num" style="font-size: 32px;">13</span></div>
+        <div class="stat"><span style="font-size: 13px; color: #9AA6B8;">Zniszczone</span><span class="num" style="font-size: 32px;">3</span></div>
+        <div class="stat"><span style="font-size: 13px; color: #9AA6B8;">Asysta</span><span class="num" style="font-size: 32px;">640</span></div>
+        <div class="stat"><span style="font-size: 13px; color: #9AA6B8;">Wykrycia</span><span class="num" style="font-size: 32px;">3</span></div>
+        <div class="stat"><span style="font-size: 13px; color: #9AA6B8;">Zablokowane</span><span class="num" style="font-size: 32px;">1&nbsp;870</span></div>
+        <div class="stat" style="grid-column: span 3;"><span style="font-size: 13px; color: #9AA6B8;">Przetrwanie</span><span style="font-size: 15px; color: #DCE2EA;">Przeżyłeś, 312 z 1&nbsp;950 HP</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="teams-h" class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px;">
+        <h2 id="teams-h" style="margin: 0; font-size: 18px; font-weight: 600;">Drużyny</h2>
+        <p style="margin: 0; font-size: 14px; color: #9AA6B8;">Obie drużyny X poziom, po jednym plutonie</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 140px minmax(0, 1fr) 90px; gap: 14px 16px; align-items: center; font-size: 14px;">
+        <span style="color: #9AA6B8;"></span><span style="display: flex; justify-content: space-between; color: #9AA6B8; font-size: 13px;"><span>Twoja drużyna</span><span>Przeciwnicy</span></span><span></span>
+
+        <span style="color: #C9D1DC;">Obrażenia</span>
+        <span style="display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.06);"><span style="width: 60%; background: #F3A36B;"></span><span style="width: 40%; background: #6F87B8;"></span></span>
+        <span style="text-align: right; color: #DCE2EA;">21,7 / 14,4 tys.</span>
+
+        <span style="color: #C9D1DC;">Wykrycia</span>
+        <span style="display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.06);"><span style="width: 62%; background: #F3A36B;"></span><span style="width: 38%; background: #6F87B8;"></span></span>
+        <span style="text-align: right; color: #DCE2EA;">18 / 11</span>
+
+        <span style="color: #C9D1DC;">Asysta</span>
+        <span style="display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.06);"><span style="width: 55%; background: #F3A36B;"></span><span style="width: 45%; background: #6F87B8;"></span></span>
+        <span style="text-align: right; color: #DCE2EA;">8,9 / 7,3 tys.</span>
+
+        <span style="color: #C9D1DC;">Przetrwali</span>
+        <span style="display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.06);"><span style="width: 100%; background: #F3A36B;"></span></span>
+        <span style="text-align: right; color: #DCE2EA;">9 / 0</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="sum-h" class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 12px;">
+      <h2 id="sum-h" style="margin: 0; font-size: 18px; font-weight: 600;">Podsumowanie</h2>
+      <p style="margin: 0; font-size: 16px; line-height: 1.65; color: #DCE2EA; max-width: 760px;">Zadałeś najwięcej obrażeń w drużynie, prawie co czwarty punkt jej obrażeń<a class="ref" href="#teams-h">1</a>. Trafiłeś 15 z 18 strzałów, a 13 z nich przebiło pancerz<a class="ref" href="#teams-h">2</a>. Twoja drużyna wykryła wrogów częściej, 18 razy wobec 11<a class="ref" href="#teams-h">3</a>.</p>
+      <p style="margin: 0; font-size: 13px; color: #8693A6;">Każde zdanie ma odnośnik do liczby z tej bitwy. Zdania bez odnośnika nie trafiają do podsumowania.</p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
