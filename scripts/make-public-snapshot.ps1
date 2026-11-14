@@ -71,6 +71,7 @@ $Exclusions = @(
   'CLAUDE.md',                    # instructions for the coding agent
   'docs/IMPLEMENTATION_PLAN.md',  # outdated alpha plan (Tomato.gg, python.log)
   'src-tauri/tools/',             # archived alpha tool that could modify a real database
+  '.github/dependabot.yml',       # dependency updates only in the private repository
   '.claude/'                      # local agent settings (not tracked; listed for safety)
 )
 

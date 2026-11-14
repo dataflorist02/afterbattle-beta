@@ -1,0 +1,7 @@
+# ts-rs (spec 20 D9), the same settings as src-tauri/.cargo/config.toml for cargo commands run
+# from the repository root (`cargo test --manifest-path src-tauri/Cargo.toml`): cargo reads
+# config files from the current directory up, so without this ts-rs would write its default
+# `src-tauri/bindings/` with big integers instead of `src/api/generated/`.
+[env]
+TS_RS_EXPORT_DIR = { value = "src/api/generated", relative = true }
+TS_RS_LARGE_INT = "number"

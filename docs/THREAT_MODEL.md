@@ -46,7 +46,7 @@ Controls: recovery mode with one fixed recovery database next to the real one (n
 
 ### Supply chain and updates
 
-Controls: lockfiles, minimal dependencies (each new one justified: license, size, maintenance; `cargo tree` checked before and after), CI with actions pinned to commit SHAs running tests, Clippy, format, `cargo audit` and `pnpm audit --prod`, Dependabot for npm, cargo and actions, and SHA-256 checksums of the installer from `scripts/release.ps1`. Required for the stable 1.0.0: SBOM, Authenticode and Tauri updater signatures. The public beta 1.0.0-beta.1 (author decision) has no updater and remains unsigned; users verify `SHA256SUMS.txt`.
+Controls: lockfiles, minimal dependencies (each new one justified: license, size, maintenance; `cargo tree` checked before and after), CI with actions pinned to commit SHAs running tests, Clippy, format, `cargo audit` and `pnpm audit --prod`, Dependabot for npm, cargo and actions in the private repository only (the public repository gets security alerts, no update pull requests), and SHA-256 checksums of the installer from `scripts/release.ps1`. Required for the stable 1.0.0: SBOM, Authenticode and Tauri updater signatures. The public beta 1.0.0-beta.1 (author decision) has no updater and remains unsigned; users verify `SHA256SUMS.txt`.
 
 ## Out of scope
 

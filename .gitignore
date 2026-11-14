@@ -2,6 +2,8 @@ node_modules/
 dist/
 target/
 src-tauri/target/
+# ts-rs default output when its export folder is not configured (see .cargo/config.toml).
+src-tauri/bindings/
 .env
 .env.*
 !.env.example

@@ -8,7 +8,8 @@ on:
 permissions:
   contents: read
 
-# Actions are pinned to full commit SHAs (spec 20 E8); Dependabot updates them (github-actions).
+# Actions are pinned to full commit SHAs (spec 20 E8); Dependabot updates them in the private
+# repository only.
 # actions/checkout v4.4.0, pnpm/action-setup v4.4.0, actions/setup-node v4.4.0,
 # actions/upload-artifact v4.6.2,
 # dtolnay/rust-toolchain branch `stable` (the toolchain itself is pinned below).

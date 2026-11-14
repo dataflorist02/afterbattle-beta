@@ -43,7 +43,6 @@ describe("E5 checkpoint checks (spec 20 E5 step 4, spec 25 §8)", () => {
 
 describe("CI (spec 20 E8)", () => {
   const ci = readFileSync(".github/workflows/ci.yml", "utf8");
-  const dependabot = readFileSync(".github/dependabot.yml", "utf8");
 
   it("pins every action to a full commit SHA", () => {
     const uses = [...ci.matchAll(/^\s*-?\s*uses:\s*(\S+)/gm)].map((match) => match[1]);
@@ -61,11 +60,6 @@ describe("CI (spec 20 E8)", () => {
     expect(ci).toContain("actions/upload-artifact@");
     expect(ci).toContain("SHA256SUMS.txt");
     expect(ci).not.toMatch(/secrets\./);
-  });
-
-  it("lets Dependabot update the actions too", () => {
-    for (const ecosystem of ["npm", "cargo", "github-actions"])
-      expect(dependabot).toContain(`package-ecosystem: ${ecosystem}`);
   });
 });
 

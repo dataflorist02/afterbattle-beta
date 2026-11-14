@@ -16,8 +16,9 @@ The exact list is data in `scripts/make-public-snapshot.ps1` (`$Exclusions`); th
 | Outdated alpha plan | 1 | Describes removed integrations and contradicts the code. |
 | Archived alpha tool folder | 1 | A tool that could modify a real database in `%APPDATA%` (audit N9). |
 | Local agent settings | 0 | Not tracked; listed for safety. |
+| Dependabot configuration | 1 | Dependency updates happen only in the private repository; the public repository gets security alerts only (no update pull requests). |
 
-18 files excluded. No public file refers to an excluded file by name or path: the script stops when one does (section 3).
+19 files excluded. No public file refers to an excluded file by name or path: the script stops when one does (section 3).
 
 ## 2. Difference from the previous snapshot
 
@@ -83,7 +84,7 @@ screens.html
 tsconfig.json
 tsconfig.node.json
 vite.config.ts
-.github/  (1 files)
+.cargo/  (1 files)
 .github/workflows/  (1 files)
 docs/  (6 files)
 docs/design/  (12 files)

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -21,6 +21,7 @@ describe("public snapshot script", () => {
       "docs/status/*.md",
       "STATUS.md",
       "CLAUDE.md",
+      ".github/dependabot.yml",
     ])
       expect(exclusions).toContain(path);
   });
@@ -43,6 +44,18 @@ describe("public snapshot script", () => {
   it("sets the author only in the public repository", () => {
     expect(script).toMatch(/'config', 'user\.email'/);
     expect(script).toMatch(/'config', 'user\.name'/);
+  });
+});
+
+/**
+ * Dependency updates run only in the private repository (Dependabot there also updates the
+ * pinned actions); the public copy has no Dependabot configuration, only security alerts.
+ */
+describe.skipIf(!existsSync(".github/dependabot.yml"))("Dependabot (private repository)", () => {
+  it("updates npm, cargo and the actions", () => {
+    const dependabot = readFileSync(".github/dependabot.yml", "utf8");
+    for (const ecosystem of ["npm", "cargo", "github-actions"])
+      expect(dependabot).toContain(`package-ecosystem: ${ecosystem}`);
   });
 });
 

@@ -44,7 +44,7 @@ Pierwsze publiczne wydanie — beta, instalator bez podpisu. Wewnętrznie ta wer
 
 - The version has one source, `src-tauri/Cargo.toml`: Tauri reads it there, the window gets it at build time, and a test keeps `package.json` equal. The first public release is `1.0.0-beta.1`; the title bar and window title read "Afterbattle beta 1.0"; the channel is "Public beta".
 - `scripts/release.ps1` builds the installer from a clean tree and writes `SHA256SUMS.txt`; README explains the SmartScreen warning and checking the file with `Get-FileHash`.
-- CI: actions pinned to commit SHAs, separate test, audit (`cargo audit`, `pnpm audit --prod`) and installer build jobs; Dependabot also updates the actions.
+- CI: actions pinned to commit SHAs, separate test, audit (`cargo audit`, `pnpm audit --prod`) and installer build jobs; Dependabot also updates the actions (in the private repository only).
 - The alpha's manual data cleanup left the test suite (archived outside the public repository, not built).
 - Documents match 2.0: README, privacy notice (EN/PL), SECURITY, THREAT_MODEL, KNOWN_ISSUES and `docs/RELEASE_CHECKLIST.md` (replaces the alpha checklist).
 
