@@ -1,0 +1,11 @@
+{
+  "name": "afterbattle-mutants",
+  "private": true,
+  "type": "module",
+  "description": "Mutation testing of the frontend logic (spec 29 \u00a79, threshold 85%). Separate package like tools/lint, so Stryker runs on the TypeScript 6 API while the app builds with TypeScript 7. Run from the repository root (see stryker.config.mjs).",
+  "devDependencies": {
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
+    "typescript": "6.0.3"
+  }
+}

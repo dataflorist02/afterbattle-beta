@@ -23,6 +23,10 @@ Podstawa: wewnętrzne badanie podwalin autora (poza repozytorium publicznym; dal
 - **Ścieżka B (decyzja autora):** treść §11.4–11.5 i opisy techniki (D18, §2, odpowiedzi 4–5 i punkt 7 w §9, wstęp §11) przeniesione bez zmian do notatki badawcze autora (poza repozytorium publicznym); tutaj zostają krótkie wzmianki. Status speca bez zmian: APPROVED.
 - **§11.3:** odnośnik do [spec 28](28-ai-recap.md) (włączanie, dobór modelu do sprzętu, uruchamianie na żądanie; DRAFT, po 2.0). Status speca bez zmian: APPROVED.
 - **Wersja publiczna (decyzja autora):** pierwsze publiczne wydanie to beta `1.0.0-beta.1` („Afterbattle beta 1.0”, kanał „Public beta” / `public_beta`); wewnętrznie bieg i etapy nazywają się dalej „v2” / E0–E8. Jedno źródło wersji bez zmian (`src-tauri/Cargo.toml`, D11). Tag `v1.0.0-beta.1`, wydanie na GitHubie oznaczone jako pre-release. Podpis Authenticode i updater — wymagane dopiero dla stabilnego 1.0.0.
+
+### Zmiany 2026-11-15
+
+- **E9 — dopracowanie do `1.0.0-beta.2` (decyzja autora):** zakres, kolejność etapów i kryteria akceptacji w [spec 29](29-e9-polish.md) (APPROVED): regresja ruchu w Czołgach i Historii, odświeżanie na żywo, paleta, logo i pasek przewijania, ekran ładowania, ruch nowej bitwy i liczb, wydanie `1.0.0-beta.2` („Afterbattle beta 2”, pre-release). Pliki marki w `docs/design/brand/`. Bez zmian w parserze i bazie. Status speca bez zmian: APPROVED.
 - **§6.3 (decyzja autora):** mutacje nie blokują wydania. Próg ≥ 85% obowiązuje dla logiki nowej lub zmienionej w etapie; starsze moduły są w wewnętrznym backlogu mutacji autora, `baseline.rs` jako warunek startu moonshota A-1 (§11.1). Checkpoint E4 (mutacje średniej odniesienia, `session_insights`, generatora wyzwań) przestaje być bramką E7.
 
 ## 1. Cel v2.0

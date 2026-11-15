@@ -6,6 +6,21 @@
   box-sizing: border-box;
 }
 
+/* Scrollbar (spec 29 §7): every scrolling area (the window, the content, side lists, tables)
+   gets a thin bar in the brand colors by the standard properties WebView2 reads; brighter while
+   the pointer is over the area, the accent while a mouse button is held in it (dragging).
+   No script, no custom scrolling: keyboard, wheel and touch work as before. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+*:hover {
+  scrollbar-color: var(--scroll-thumb-hover) transparent;
+}
+*:active {
+  scrollbar-color: var(--scroll-thumb-active) transparent;
+}
+
 html,
 body,
 #root {
@@ -57,19 +72,25 @@ h3 {
   display: flex;
   align-items: stretch;
   justify-content: space-between;
-  background: var(--bg);
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
   user-select: none;
 }
 .titlebar-title {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
   flex: 1 1 auto;
-  padding-left: var(--space-4);
+  padding-left: var(--space-3);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+/* The 16 px icon before the title; clicks pass to the title, which drags the window. */
+.titlebar-icon {
+  flex: none;
+  pointer-events: none;
 }
 .titlebar-controls {
   display: flex;
@@ -122,18 +143,11 @@ h3 {
   gap: 22px;
   border-right: 1px solid var(--line);
 }
+/* Spec 29 §4: the app icon (inline SVG, colors from the tokens) instead of a letter. */
 .rail-logo {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
-  background: var(--accent);
-  color: var(--text-on-accent);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-num);
-  font-weight: 600;
-  font-size: 22px;
   margin-bottom: 14px;
 }
 .rail-spacer {
@@ -971,6 +985,19 @@ input[type="number"] {
   filter: blur(18px) saturate(0.8) brightness(0.75);
   transform: scale(1.08);
 }
+/* Spec 29 §1: a picture that arrives after the tile is drawn fades in; the tile keeps its size. */
+@keyframes picture-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.map-backdrop[data-loaded="true"] .map-backdrop-picture,
+.map-backdrop[data-loaded="true"] .map-backdrop-sharp {
+  animation: picture-in var(--motion-base) var(--ease-out) both;
+}
 .map-backdrop-sharp {
   position: absolute;
   top: 0;
@@ -1078,8 +1105,34 @@ input[type="number"] {
   gap: 2px;
 }
 .figure-value {
+  position: relative;
+  display: inline-block;
   font-size: 46px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+/* Spec 29 §6: a number that changed carries its direction color as an overlay of the same text
+   for 1 s, then the overlay fades (opacity only); the text color itself never animates. */
+.figure-delta {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: delta-fade 1400ms linear both;
+}
+.figure-up {
+  color: var(--up);
+}
+.figure-down {
+  color: var(--down);
+}
+@keyframes delta-fade {
+  0%,
+  71.4% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 .figure-main .figure-value {
   font-size: 68px;
@@ -1623,6 +1676,11 @@ button.moment:focus-visible::before {
 .contents {
   display: contents;
 }
+/* Spec 29 §1: rows of the first page wait hidden for the wave measurement (one frame after the
+   fonts), so they never show still before the cascade. */
+.wave-pending .hrow-list > li {
+  opacity: 0;
+}
 /* History rows (E5-flare-fix2): the first rows of the first page only, slower and softer. */
 @keyframes row-in {
   from {
@@ -1734,6 +1792,47 @@ button.moment:focus-visible::before {
   .map-tile:hover .map-backdrop-picture {
     transform: none;
   }
+}
+
+/* Loading screen (spec 29 §5): the outline in the middle of the deep background, the ember
+   rising with the real progress (transform only), a calm pulse when progress is unknown. */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-deep);
+}
+.loading-mark {
+  width: clamp(160px, 22vmin, 280px);
+  height: clamp(160px, 22vmin, 280px);
+  overflow: visible;
+}
+.loading-cold {
+  opacity: 0.38;
+}
+.loading-rise {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform 300ms var(--ease-out);
+}
+@keyframes ember-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+.loading-pulse .loading-hot {
+  animation: ember-pulse 1600ms ease-in-out infinite;
+}
+.loading-out {
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
 }
 
 /* Narrow layout: the rail sits above the content as a row and is not sticky. */

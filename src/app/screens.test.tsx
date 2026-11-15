@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../i18n/language";
@@ -35,7 +36,9 @@ const mocks = vi.hoisted(() => ({
   startVehicleChallenge: vi.fn(),
   attemptsConversionSession: vi.fn(() => new Promise(() => {})),
   attemptsConversionRecent: vi.fn(() => new Promise(() => {})),
-  onEvents: vi.fn(() => () => {}),
+  onEvents: vi.fn<(handler: (event: { name: string; payload?: unknown }) => void) => () => void>(
+    () => () => {},
+  ),
 }));
 vi.mock("../api", () => ({ api: mocks }));
 
@@ -76,19 +79,29 @@ async function flush() {
   for (let index = 0; index < 6; index++) await act(async () => Promise.resolve());
 }
 
-async function renderApp(language: Language = "pl") {
-  const view = render(
+async function renderApp(language: Language = "pl", strict = false) {
+  const app = (
     <LanguageProvider initial={language}>
       <App />
-    </LanguageProvider>,
+    </LanguageProvider>
   );
+  const view = render(strict ? <StrictMode>{app}</StrictMode> : app);
   await flush();
   return view;
+}
+
+/** One animation frame (and the microtasks after it) inside act. */
+async function frame() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+  await flush();
 }
 
 async function go(label: string) {
   fireEvent.click(screen.getByRole("button", { name: label }));
   await flush();
+  await frame();
 }
 
 function expectNoCodes(container: HTMLElement) {
@@ -102,6 +115,16 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("navigation and footer", () => {
+  it("shows the app icon at the top of the rail, not a letter (spec 29 §4)", async () => {
+    const { container } = await renderApp();
+    const logo = container.querySelector(".rail-logo")!;
+    expect(logo).toHaveAttribute("aria-hidden", "true");
+    expect(logo.textContent).toBe("");
+    const icon = logo.querySelector("svg")!;
+    expect(icon).toHaveAttribute("width", "40");
+    expect(icon.querySelector("radialGradient")).not.toBeNull();
+  });
+
   it("shows the six destinations with Maps greyed out in the private build", async () => {
     await renderApp();
     const nav = screen.getByRole("navigation", { name: "Główna nawigacja" });
@@ -649,6 +672,30 @@ function layOutRows(windowHeight: number) {
   vi.stubGlobal("innerHeight", windowHeight);
 }
 
+/** Like `layOutRows`, with each day header taking 40 px before its rows (spec 29 §1). */
+function layOutWithHeaders(windowHeight: number) {
+  const original = Element.prototype.getBoundingClientRect;
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+    const items = Array.from(document.querySelectorAll(".day-header, .hrow-list > li"));
+    const index = items.indexOf(this);
+    if (index < 0) return original.call(this);
+    let top = 200;
+    for (const item of items.slice(0, index)) top += item.matches(".day-header") ? 40 : 60;
+    const height = this.matches(".day-header") ? 40 : 56;
+    return {
+      top,
+      bottom: top + height,
+      height,
+      left: 0,
+      right: 0,
+      width: 0,
+      x: 0,
+      y: top,
+    } as DOMRect;
+  });
+  vi.stubGlobal("innerHeight", windowHeight);
+}
+
 describe("History motion (E5-flare-fix2, E8-ui-fix)", () => {
   const entering = (container: HTMLElement) =>
     Array.from(container.querySelectorAll(".hrow-list li.row-enter"));
@@ -674,7 +721,7 @@ describe("History motion (E5-flare-fix2, E8-ui-fix)", () => {
     expect(container.querySelector(".screen")).toHaveClass("screen-still");
   });
 
-  it("stops the wave at 20 rows on a tall window and moves nothing unmeasured", async () => {
+  it("stops the wave at 20 rows on a tall window and moves 14 rows unmeasured", async () => {
     layOutRows(1_440);
     mocks.battleHistory.mockResolvedValue(fx.historyPage(30));
     const { container } = await renderApp();
@@ -683,9 +730,70 @@ describe("History motion (E5-flare-fix2, E8-ui-fix)", () => {
     cleanup();
     vi.restoreAllMocks();
     clearGameImages();
+    // jsdom without a layout mock: every box is 0 x 0, so the default wave of 14 rows enters.
     const unmeasured = await renderApp();
     await go("Historia");
-    expect(entering(unmeasured.container)).toHaveLength(0);
+    expect(entering(unmeasured.container)).toHaveLength(14);
+  });
+
+  it("is not shortened by a day header in the middle of the wave", async () => {
+    layOutWithHeaders(800);
+    const day = 86_400_000;
+    const page = fx.historyPage(30);
+    const now = Date.now();
+    page.items = page.items.map((item, index) => ({
+      ...item,
+      battleTime: index === 0 ? now : now - day - index * 60_000,
+    }));
+    mocks.battleHistory.mockResolvedValue(page);
+    const { container } = await renderApp();
+    await go("Historia");
+    expect(container.querySelectorAll(".day-header")).toHaveLength(2);
+    // Header 200-240, row 240; header 300-340; rows from 340 every 60 px: 340 ... 760 (8) < 800.
+    expect(entering(container)).toHaveLength(9);
+  });
+
+  it("measures only after the fonts are ready, rows hidden until then", async () => {
+    layOutRows(800);
+    let fontsReady: () => void = () => undefined;
+    const ready = new Promise<void>((resolve) => (fontsReady = resolve));
+    Object.defineProperty(document, "fonts", { value: { ready }, configurable: true });
+    try {
+      mocks.battleHistory.mockResolvedValue(fx.historyPage(30));
+      const { container } = await renderApp();
+      await go("Historia");
+      expect(container.querySelector(".wave-pending")).not.toBeNull();
+      expect(entering(container)).toHaveLength(0);
+      fontsReady();
+      await flush();
+      await frame();
+      expect(container.querySelector(".wave-pending")).toBeNull();
+      expect(entering(container)).toHaveLength(10);
+    } finally {
+      delete (document as { fonts?: unknown }).fonts;
+    }
+  });
+
+  it("keeps the wave when effects run twice (StrictMode, as in the dev build)", async () => {
+    layOutRows(800);
+    mocks.battleHistory.mockResolvedValue(fx.historyPage(30));
+    const { container } = await renderApp("pl", true);
+    await go("Historia");
+    expect(entering(container)).toHaveLength(10);
+  });
+
+  it("measures the rows of data that arrives frames later", async () => {
+    layOutRows(800);
+    mocks.battleHistory.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(fx.historyPage(30)), 50)),
+    );
+    const { container } = await renderApp();
+    await go("Historia");
+    await frame();
+    await frame();
+    await frame();
+    expect(container.querySelectorAll(".hrow-list li")).toHaveLength(30);
+    expect(entering(container)).toHaveLength(10);
   });
 
   it("does not move rows after switching Battles/Sessions, on a filter change or back from Battle", async () => {
@@ -777,6 +885,74 @@ describe("Tanks motion (E8-ui-fix)", () => {
     }
   });
 
+  it("keeps the entrance when effects run twice (StrictMode, as in the dev build)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { container } = await renderApp("pl", true);
+      await go("Czołgi");
+      expect(container.querySelector(".tank-main")).toHaveClass("tank-enter");
+      await act(async () => {
+        vi.advanceTimersByTime(1_100);
+      });
+      expect(container.querySelector(".tank-main")).not.toHaveClass("tank-enter");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the detail panel and its data on screen while another tank loads (spec 29 §1)", async () => {
+    const { container } = await renderApp();
+    await go("Czołgi");
+    const layout = container.querySelector(".tank-layout");
+    const grid = container.querySelector(".map-grid");
+    expect(grid).not.toBeNull();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    function later<T>(value: T): Promise<T> {
+      return gate.then(() => value);
+    }
+    mocks.vehicleBaseline.mockImplementation(() => later(fx.vehicleBaseline()));
+    mocks.vehicleHistoryReport.mockImplementation(() => later(fx.vehicleReport()));
+    mocks.performanceTrends.mockImplementation(() => later(fx.trends()));
+    mocks.battleHistory.mockImplementation(() => later(fx.historyPage()));
+    fireEvent.click(screen.getAllByRole("button", { name: /Bravo/ })[0]);
+    await flush();
+    await frame();
+    // Same panel, old data still there, no loading skeleton, marked as refreshing.
+    expect(container.querySelector(".tank-layout")).toBe(layout);
+    expect(container.querySelector(".map-grid")).toBe(grid);
+    expect(container.querySelector(".tank-layout [role='status'][aria-busy='true']")).toBeNull();
+    expect(container.querySelector(".tank-layout")).toHaveAttribute("aria-busy", "true");
+    release();
+    await flush();
+    await frame();
+    expect(container.querySelector(".tank-layout")).toBe(layout);
+    expect(container.querySelector(".tank-layout")).toHaveAttribute("aria-busy", "false");
+    expect(container.querySelector(".tank-main")).not.toHaveClass("tank-enter");
+    expect(container.querySelectorAll(".map-grid > li.row-enter")).toHaveLength(0);
+    expect(screen.getByRole("heading", { level: 1, name: /Bravo/ })).toBeInTheDocument();
+  });
+
+  it("starts the battle list of a newly chosen tank from its first page", async () => {
+    mocks.battleHistory.mockResolvedValue({ ...fx.historyPage(3), nextCursor: { t: 1 } });
+    const { container } = await renderApp();
+    await go("Czołgi");
+    const rows = () => container.querySelectorAll(".tank-side .table-row").length;
+    const before = rows();
+    mocks.battleHistory.mockResolvedValueOnce({
+      items: fx.historyPage(5).items.slice(3),
+      nextCursor: null,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż kolejne" }));
+    await flush();
+    expect(rows()).toBe(before + 2);
+    mocks.battleHistory.mockResolvedValue({ ...fx.historyPage(1), nextCursor: null });
+    fireEvent.click(screen.getAllByRole("button", { name: /Bravo/ })[0]);
+    await flush();
+    await frame();
+    expect(rows()).toBe(1);
+  });
+
   it("has no motion at all with reduced motion", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query.includes("reduce"),
@@ -788,6 +964,495 @@ describe("Tanks motion (E8-ui-fix)", () => {
     await go("Czołgi");
     expect(container.querySelector(".tank-main")).not.toHaveClass("tank-enter");
     expect(container.querySelectorAll(".map-grid > li.row-enter")).toHaveLength(0);
+  });
+});
+
+/**
+ * Live refresh (spec 29 §2): one backend event refreshes the page that is open, keeps its data
+ * on screen until the new data arrives, and keeps the chosen tank, filters and scroll.
+ */
+describe("live refresh after a backend event (spec 29 §2)", () => {
+  type Handler = (event: { name: string; payload?: unknown }) => void;
+  let emit: Handler = () => undefined;
+  beforeEach(() => {
+    mocks.onEvents.mockImplementation((handler: Handler) => {
+      emit = handler;
+      return () => {};
+    });
+  });
+
+  /** Holds every response of `mock` until `release` is called. */
+  function hold<T>(mock: { mockImplementation: (fn: () => Promise<T>) => unknown }, value: T) {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    mock.mockImplementation(() => gate.then(() => value));
+    return () => release();
+  }
+
+  async function event(name = "data-changed") {
+    await act(async () => emit({ name }));
+    await flush();
+  }
+
+  const busy = (container: HTMLElement) =>
+    container.querySelector("main [role='status'][aria-busy='true']");
+
+  it("shows a new battle on Session without re-entering and without a loading frame", async () => {
+    const { container } = await renderApp();
+    const strip = () => container.querySelectorAll(".battle-strip > li").length;
+    expect(strip()).toBe(9);
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    const release = hold(mocks.sessionSummary, fx.summary(10));
+    await event();
+    expect(strip()).toBe(9);
+    expect(busy(container)).toBeNull();
+    release();
+    await flush();
+    expect(strip()).toBe(10);
+    expect(busy(container)).toBeNull();
+  });
+
+  it("refreshes after the end of a session and after a finished import as well", async () => {
+    await renderApp();
+    const calls = () => mocks.sessionSummary.mock.calls.length;
+    const before = calls();
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    await act(async () => emit({ name: "session-ended", payload: { sessionId: "s1" } }));
+    await flush();
+    expect(calls()).toBe(before + 1);
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    await act(async () =>
+      emit({
+        name: "import-progress",
+        payload: { done: 3, total: 3, finished: true, cancelled: false },
+      }),
+    );
+    await flush();
+    expect(calls()).toBe(before + 2);
+  });
+
+  it("shows a new battle in History, keeps the filter and the scroll", async () => {
+    const scrolled = vi.fn();
+    vi.stubGlobal("scrollTo", scrolled);
+    try {
+      const { container } = await renderApp();
+      await go("Historia");
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1_200));
+      });
+      fireEvent.change(screen.getByLabelText("Mapa"), { target: { value: "91_test_valley" } });
+      await flush();
+      const rows = () => container.querySelectorAll(".hrow-list > li").length;
+      expect(rows()).toBe(12);
+      scrolled.mockClear();
+      mocks.snapshot.mockResolvedValue(fx.snapshot());
+      const release = hold(mocks.battleHistory, fx.historyPage(13));
+      await event();
+      expect(rows()).toBe(12);
+      expect(busy(container)).toBeNull();
+      release();
+      await flush();
+      await frame();
+      expect(rows()).toBe(13);
+      // Only the battle that arrived enters (spec 29 §6); the rows that were there stay put.
+      const entering = Array.from(container.querySelectorAll(".hrow-list li.row-enter"));
+      expect(entering.map((row) => row.getAttribute("data-flip"))).toEqual(["battle-12"]);
+      expect(screen.getByLabelText("Mapa")).toHaveValue("91_test_valley");
+      expect(mocks.battleHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ mapKey: "91_test_valley", cursor: null }),
+      );
+      expect(scrolled).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps the rows loaded with Show more after a refresh, with the new battle on top", async () => {
+    const first = fx.historyPage(3);
+    mocks.battleHistory.mockResolvedValue({ ...first, nextCursor: { t: 1 } });
+    const { container } = await renderApp();
+    await go("Historia");
+    const more = fx.historyPage(6);
+    more.items = more.items.slice(3);
+    mocks.battleHistory.mockResolvedValueOnce({ ...more, nextCursor: null });
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż kolejne" }));
+    await flush();
+    const ids = () =>
+      Array.from(container.querySelectorAll(".hrow-list > li .hrow")).map((row) =>
+        row.getAttribute("aria-label"),
+      );
+    expect(container.querySelectorAll(".hrow-list > li")).toHaveLength(6);
+    const fresh = fx.historyPage(7);
+    const newest = { ...fresh.items[6], battleId: "brand-new", battleTime: Date.now() };
+    mocks.battleHistory.mockResolvedValue({
+      items: [newest, ...first.items],
+      nextCursor: { t: 1 },
+    });
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    await event();
+    await frame();
+    expect(container.querySelectorAll(".hrow-list > li")).toHaveLength(7);
+    expect(ids()).toHaveLength(7);
+    expect(screen.queryByRole("button", { name: "Pokaż kolejne" })).toBeNull();
+  });
+
+  it("keeps the chosen tank on Tanks and refreshes its data without a loading frame", async () => {
+    const { container } = await renderApp();
+    await go("Czołgi");
+    fireEvent.click(screen.getAllByRole("button", { name: /Bravo/ })[0]);
+    await flush();
+    await frame();
+    const reports = mocks.vehicleHistoryReport.mock.calls.length;
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    const release = hold(mocks.vehicleHistoryReport, fx.vehicleReport());
+    await event();
+    expect(busy(container)).toBeNull();
+    expect(container.querySelector(".map-grid")).not.toBeNull();
+    release();
+    await flush();
+    expect(mocks.vehicleHistoryReport.mock.calls.length).toBeGreaterThan(reports);
+    expect(mocks.vehicleHistoryReport).toHaveBeenLastCalledWith(102);
+    expect(screen.getByRole("heading", { level: 1, name: /Bravo/ })).toBeInTheDocument();
+    expect(container.querySelector(".tank-main")).not.toHaveClass("tank-enter");
+  });
+
+  it("refreshes Goals and Battle as well", async () => {
+    await renderApp();
+    await go("Cele");
+    const weekly = mocks.weeklyReport.mock.calls.length;
+    const history = mocks.challengeHistory.mock.calls.length;
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    await event();
+    expect(mocks.weeklyReport.mock.calls.length).toBe(weekly + 1);
+    expect(mocks.challengeHistory.mock.calls.length).toBe(history + 1);
+    await go("Sesja");
+    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    await flush();
+    const views = mocks.battleView.mock.calls.length;
+    const records = mocks.mapRecord.mock.calls.length;
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    await event();
+    expect(mocks.battleView.mock.calls.length).toBe(views + 1);
+    expect(mocks.mapRecord.mock.calls.length).toBe(records + 1);
+  });
+});
+
+describe("loading screen (spec 29 §5)", () => {
+  type Handler = (event: { name: string; payload?: unknown }) => void;
+  let emit: Handler = () => undefined;
+  beforeEach(() => {
+    mocks.onEvents.mockImplementation((handler: Handler) => {
+      emit = handler;
+      return () => {};
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+  const bar = () => screen.queryByRole("progressbar", { name: "Wczytywanie" });
+
+  it("never appears when the first snapshot is there within 400 ms", async () => {
+    vi.useFakeTimers();
+    mocks.snapshot.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(fx.snapshot()), 300)),
+    );
+    render(
+      <LanguageProvider initial="pl">
+        <App />
+      </LanguageProvider>,
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+    expect(bar()).toBeNull();
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    await flush();
+    expect(bar()).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Główna nawigacja" })).toBeInTheDocument();
+  });
+
+  it("shows the outline on a slow start without a number, then fills, holds and fades", async () => {
+    vi.useFakeTimers();
+    let release: () => void = () => undefined;
+    mocks.snapshot.mockImplementation(
+      () => new Promise((resolve) => (release = () => resolve(fx.snapshot()))),
+    );
+    const { container } = render(
+      <LanguageProvider initial="pl">
+        <App />
+      </LanguageProvider>,
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(399);
+    });
+    expect(bar()).toBeNull();
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
+    const shown = bar()!;
+    expect(shown).not.toHaveAttribute("aria-valuenow");
+    expect(shown).toHaveClass("loading-pulse");
+    expect(shown.textContent).toBe("");
+    const rise = () => container.querySelector(".loading-rise")!.getAttribute("style") ?? "";
+    expect(rise()).toContain("scaleY(0.08)");
+    release();
+    await flush();
+    expect(bar()).not.toBeNull();
+    expect(rise()).toContain("scaleY(1)");
+    expect(bar()).not.toHaveClass("loading-pulse");
+    await act(async () => {
+      vi.advanceTimersByTime(449);
+    });
+    expect(bar()).not.toHaveClass("loading-out");
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(bar()).toHaveClass("loading-out");
+    await act(async () => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(bar()).toBeNull();
+  });
+
+  it("follows the first import into an empty database and leaves with the first battles", async () => {
+    // No session and no battle in the history: an empty database.
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ activeSession: null, recentSessions: [] }));
+    mocks.battleHistory.mockResolvedValue({ items: [], nextCursor: null });
+    await renderApp();
+    expect(bar()).toBeNull();
+    await act(async () =>
+      emit({
+        name: "import-progress",
+        payload: { done: 0, total: 400, finished: false, cancelled: false },
+      }),
+    );
+    expect(bar()).toHaveAttribute("aria-valuenow", "0");
+    expect(bar()).toHaveAttribute("aria-valuemin", "0");
+    expect(bar()).toHaveAttribute("aria-valuemax", "100");
+    await act(async () =>
+      emit({
+        name: "import-progress",
+        payload: { done: 100, total: 400, finished: false, cancelled: false },
+      }),
+    );
+    expect(bar()).toHaveAttribute("aria-valuenow", "25");
+    expect(bar()).not.toHaveClass("loading-pulse");
+    // The first batch stored old battles without a session: the history is no longer empty.
+    // While the history is asked again, the last answer holds (no flicker).
+    let answer: () => void = () => undefined;
+    mocks.battleHistory.mockImplementation(
+      () => new Promise((resolve) => (answer = () => resolve(fx.historyPage(3)))),
+    );
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ activeSession: null, recentSessions: [] }));
+    await act(async () => emit({ name: "data-changed" }));
+    await flush();
+    expect(bar()).not.toHaveClass("loading-finishing");
+    answer();
+    await flush();
+    expect(bar()).toHaveClass("loading-finishing");
+  });
+
+  it("stays away for a history without sessions during a background scan", async () => {
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ activeSession: null, recentSessions: [] }));
+    await renderApp();
+    await act(async () =>
+      emit({
+        name: "import-progress",
+        payload: { done: 0, total: 5, finished: false, cancelled: false },
+      }),
+    );
+    expect(bar()).toBeNull();
+    expect(mocks.battleHistory).toHaveBeenCalledWith({
+      vehicleId: null,
+      mapKey: null,
+      dataQuality: "all",
+      wn8Availability: "all",
+      dateFrom: null,
+      dateTo: null,
+      cursor: null,
+      pageSize: 1,
+    });
+  });
+
+  it("stays away during a background import when there are battles: the import bar shows", async () => {
+    await renderApp();
+    await act(async () =>
+      emit({
+        name: "import-progress",
+        payload: { done: 10, total: 400, finished: false, cancelled: false },
+      }),
+    );
+    expect(bar()).toBeNull();
+    expect(screen.getByText("Odczyt powtórek: 10 z 400")).toBeInTheDocument();
+  });
+
+  it("has no pulse and leaves at once with reduced motion", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("reduce"),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    vi.useFakeTimers();
+    let release: () => void = () => undefined;
+    mocks.snapshot.mockImplementation(
+      () => new Promise((resolve) => (release = () => resolve(fx.snapshot()))),
+    );
+    render(
+      <LanguageProvider initial="pl">
+        <App />
+      </LanguageProvider>,
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(bar()).not.toBeNull();
+    expect(bar()).not.toHaveClass("loading-pulse");
+    release();
+    await flush();
+    expect(bar()).toBeNull();
+  });
+});
+
+describe("new battle motion (spec 29 §6)", () => {
+  type Handler = (event: { name: string; payload?: unknown }) => void;
+  let emit: Handler = () => undefined;
+  const animate = vi.fn();
+  beforeEach(() => {
+    mocks.onEvents.mockImplementation((handler: Handler) => {
+      emit = handler;
+      return () => {};
+    });
+    animate.mockClear();
+    Object.defineProperty(Element.prototype, "animate", { value: animate, configurable: true });
+  });
+  afterEach(() => {
+    delete (Element.prototype as { animate?: unknown }).animate;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+  async function newBattle(summary = fx.summary(10, 3_400)) {
+    mocks.snapshot.mockResolvedValue(fx.snapshot());
+    mocks.sessionSummary.mockResolvedValue(summary);
+    await act(async () => emit({ name: "data-changed" }));
+    await flush();
+  }
+  const tiles = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll(".battle-strip .tile"));
+  const delta = (container: HTMLElement) => container.querySelector(".figure-delta");
+
+  it("never moves anything on entering Session, also after battles came in meanwhile", async () => {
+    const { container } = await renderApp();
+    expect(container.querySelectorAll(".tile-new")).toHaveLength(0);
+    expect(delta(container)).toBeNull();
+    await go("Historia");
+    await newBattle();
+    await go("Sesja");
+    expect(tiles(container)).toHaveLength(10);
+    expect(container.querySelectorAll(".tile-new")).toHaveLength(0);
+    expect(delta(container)).toBeNull();
+  });
+
+  it("slides in the new tile only, counts the damage up with the rising color", async () => {
+    const { container } = await renderApp();
+    await newBattle();
+    const fresh = tiles(container).filter((tile) => tile.classList.contains("tile-new"));
+    expect(fresh).toEqual([tiles(container)[9]]);
+    const main = container.querySelector(".figure-main .figure-value") as HTMLElement;
+    expect(main.querySelector(".figure-delta")).toHaveClass("figure-up");
+    expect(main.style.minWidth).toMatch(/^\d+ch$/);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    });
+    expect(main.firstChild?.textContent?.replace(/\s/g, " ")).toBe("3 400");
+  });
+
+  it("colors a falling number with the falling color", async () => {
+    const { container } = await renderApp();
+    await newBattle(fx.summary(10, 3_000));
+    expect(container.querySelector(".figure-main .figure-delta")).toHaveClass("figure-down");
+  });
+
+  it("moves nothing for a battle of an ended session", async () => {
+    const endedOnly = () =>
+      fx.snapshot({
+        activeSession: null,
+        recentSessions: fx.snapshot().recentSessions.map((item) => ({ ...item, status: "ended" })),
+      });
+    mocks.snapshot.mockResolvedValue(endedOnly());
+    const ended = fx.summary();
+    ended.session = { ...ended.session, status: "ended" } as typeof ended.session;
+    mocks.sessionSummary.mockResolvedValue(ended);
+    const { container } = await renderApp();
+    const later = fx.summary(10, 3_400);
+    later.session = { ...later.session, status: "ended" } as typeof later.session;
+    mocks.snapshot.mockResolvedValue(endedOnly());
+    mocks.sessionSummary.mockResolvedValue(later);
+    await act(async () => emit({ name: "data-changed" }));
+    await flush();
+    expect(container.querySelectorAll(".tile-new")).toHaveLength(0);
+    expect(delta(container)).toBeNull();
+  });
+
+  it("shows the new value at once with reduced motion", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("reduce"),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const { container } = await renderApp();
+    await newBattle();
+    expect(delta(container)).toBeNull();
+    expect(
+      container.querySelector(".figure-main .figure-value")?.textContent?.replace(/\s/g, " "),
+    ).toBe("3 400");
+    expect(animate).not.toHaveBeenCalled();
+  });
+
+  it("lets a new row enter History at the top and glides the rest down", async () => {
+    layOutRows(500);
+    const { container } = await renderApp();
+    await go("Historia");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_200));
+    });
+    const page = fx.historyPage(12);
+    const newest = { ...page.items[0], battleId: "brand-new" };
+    mocks.battleHistory.mockResolvedValue({ items: [newest, ...page.items], nextCursor: null });
+    animate.mockClear();
+    await newBattle();
+    await frame();
+    const rows = Array.from(container.querySelectorAll(".hrow-list > li"));
+    const entering = rows.filter((row) => row.classList.contains("row-enter"));
+    expect(entering).toHaveLength(1);
+    expect(entering[0].getAttribute("data-flip")).toBe("brand-new");
+    // The old rows moved one row (60 px) down: each glides from its old place. Rows every 60 px
+    // from 200 in a 500 px window: the five that started above the bottom edge move, the rows
+    // below the window before and after are left alone.
+    expect(animate).toHaveBeenCalledTimes(5);
+    for (const [frames] of animate.mock.calls)
+      expect(frames[0]).toEqual({ transform: "translate(0px, -60px)" });
+  });
+
+  it("moves no rows in History on a filter change", async () => {
+    layOutRows(2_000);
+    await renderApp();
+    await go("Historia");
+    animate.mockClear();
+    // The filtered page starts with another battle, so the rows that stay would move down.
+    const page = fx.historyPage(5);
+    mocks.battleHistory.mockResolvedValue({
+      items: [{ ...page.items[0], battleId: "other" }, ...page.items],
+      nextCursor: null,
+    });
+    fireEvent.change(screen.getByLabelText("Mapa"), { target: { value: "91_test_valley" } });
+    await flush();
+    await frame();
+    expect(animate).not.toHaveBeenCalled();
   });
 });
 

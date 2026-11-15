@@ -7,12 +7,13 @@ import { TankName, useTankLabel } from "../components/TankName";
 import { MapBackdrop } from "../components/MapBackdrop";
 import { Async, Card, Empty, VehicleImage } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { daysBetween, formatDate, formatNumber, formatPercent, formatTier } from "../lib/format";
+import { mergeRefreshedPage } from "../lib/pages";
 import { WAVE_MAX_ROWS, prefersReducedMotion, rowEntranceDelay } from "../lib/motion";
 import type {
-  AppSnapshot,
   BaselineMetric,
   BattleHistoryCursor,
   BattleHistoryItem,
@@ -185,18 +186,27 @@ function TankDetail({
 }) {
   const { language, tr } = useLanguage();
   const id = tank.vehicleId;
-  const data = useAsync(async () => {
-    const [baseline, report, trends] = await Promise.all([
-      api.vehicleBaseline(id),
-      api.vehicleHistoryReport(id),
-      api.performanceTrends("last100", id).catch(() => null),
-    ]);
-    return { baseline, report, trends };
-  }, [id]);
-  const [pages, setPages] = useState<{
+  const version = useDataVersion();
+  const data = useAsync(
+    async () => {
+      const [baseline, report, trends] = await Promise.all([
+        api.vehicleBaseline(id),
+        api.vehicleHistoryReport(id),
+        api.performanceTrends("last100", id).catch(() => null),
+      ]);
+      return { baseline, report, trends };
+      // Spec 29 §1: choosing another tank keeps the shown data until the new data arrives.
+    },
+    [id],
+    { keepData: true, refreshKey: version },
+  );
+  // Pages loaded with "Show more", for the tank they were loaded for only.
+  const [loaded, setPages] = useState<{
+    vehicleId: number;
     items: BattleHistoryItem[];
     next: BattleHistoryCursor | null;
   } | null>(null);
+  const pages = loaded?.vehicleId === id ? loaded : null;
   const battles = useAsync(
     () =>
       api.battleHistory({
@@ -210,6 +220,7 @@ function TankDetail({
         pageSize: PAGE,
       }),
     [id],
+    { keepData: true, refreshKey: version },
   );
   const name = useTankLabel()(tank.vehicleKey, tank.tankName).full;
   const className = tr(classKeys[tank.vehicleClass.vehicleClass] ?? "classUnknown");
@@ -226,14 +237,21 @@ function TankDetail({
         cursor,
         pageSize: PAGE,
       })
-      .then((page) => setPages({ items: [...items, ...page.items], next: page.nextCursor }));
+      .then((page) =>
+        setPages({ vehicleId: id, items: [...items, ...page.items], next: page.nextCursor }),
+      );
   const ready = data.state.status === "ready" ? data.state.data : null;
   // E8-ui-fix: the entrance starts only when the data is there (never on the loading state),
   // decided before the first paint so nothing shows still and then jumps; it ends after the
   // cascade, and choosing another tank shows its data without motion.
   const [wave, setWave] = useState(0);
+  // The panel stays mounted across tanks (spec 29 §1): data of another tank ends any cascade.
   useLayoutEffect(() => {
-    if (!ready || !takeEntrance()) return;
+    if (!ready) return;
+    if (!takeEntrance()) {
+      setWave(0);
+      return;
+    }
     setWave(Math.min(ready.report.maps?.length ?? 0, WAVE_MAX_ROWS) || 1);
     const timer = setTimeout(() => setWave(0), 1_100);
     return () => clearTimeout(timer);
@@ -288,7 +306,7 @@ function TankDetail({
           </div>
         )}
       </header>
-      <div className="tank-layout">
+      <div className="tank-layout" aria-busy={data.refreshing || battles.refreshing}>
         <div className={wave > 0 ? "tank-main tank-enter" : "tank-main"}>
           <Async state={data.state} onRetry={data.reload}>
             {({ report, trends }) => {
@@ -321,7 +339,7 @@ function TankDetail({
         <div className="tank-side">
           <Async state={battles.state} onRetry={battles.reload}>
             {(first) => {
-              const items = pages?.items ?? first.items;
+              const items = pages ? mergeRefreshedPage(first.items, pages.items) : first.items;
               const next = pages ? pages.next : first.nextCursor;
               return (
                 <>
@@ -351,13 +369,11 @@ function TankDetail({
 }
 
 export function TanksPage({
-  snapshot,
   initialVehicleId,
   onOpenBattle,
   onOpenMap = () => undefined,
   entranceMotion = true,
 }: {
-  snapshot: AppSnapshot;
   initialVehicleId?: number;
   onOpenBattle: (battleId: string, vehicleId: number) => void;
   onOpenMap?: (mapKey: string) => void;
@@ -366,7 +382,10 @@ export function TanksPage({
 }) {
   const { tr } = useLanguage();
   const label = useTankLabel();
-  const { state, reload } = useAsync(() => api.vehicleHistoryOverview(), [snapshot]);
+  const version = useDataVersion();
+  const { state, reload } = useAsync(() => api.vehicleHistoryOverview(), [], {
+    refreshKey: version,
+  });
   const [selected, setSelected] = useState<number | undefined>(initialVehicleId);
   const entranceLeft = useRef(entranceMotion);
   const takeEntrance = useCallback(() => {
@@ -410,8 +429,9 @@ export function TanksPage({
                 </button>
               ))}
             </nav>
+            {/* No key on the tank: the panel stays mounted when another tank is chosen
+                (spec 29 §1), so it never shows a loading frame or enters again. */}
             <TankDetail
-              key={current.vehicleId}
               tank={current}
               onOpenBattle={(battleId) => onOpenBattle(battleId, current.vehicleId)}
               onOpenMap={onOpenMap}

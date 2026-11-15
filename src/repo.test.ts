@@ -31,12 +31,34 @@ describe("E5 checkpoint checks (spec 20 E5 step 4, spec 25 §8)", () => {
       ...files("docs"),
     ].filter((path) => /\.(png|jpe?g|dds|webp|gif|bmp|svg)$/i.test(path));
     for (const path of images) {
+      // docs/design/brand/: the original Afterbattle mark (spec 29 §4), no game motifs.
       const allowed =
         path.startsWith("src-tauri/icons/") ||
         path.startsWith("docs/status/screens/") ||
+        path.startsWith("docs/design/brand/") ||
         path === "public/favicon.svg";
       expect(allowed, path).toBe(true);
       expect(statSync(path).size, path).toBeLessThan(2_000_000);
+    }
+  });
+});
+
+describe("README logo (spec 29 §4)", () => {
+  it("shows the mark for the reader's theme, from the brand files only", () => {
+    const readme = readFileSync("README.md", "utf8");
+    const picture = /<picture>[\s\S]*?<\/picture>/.exec(readme)?.[0] ?? "";
+    expect(readme.indexOf("<picture>")).toBeLessThan(readme.indexOf("# Afterbattle"));
+    expect(picture).toContain(
+      '<source media="(prefers-color-scheme: dark)" srcset="docs/design/brand/afterbattle-mark-dark-192.png">',
+    );
+    expect(picture).toContain(
+      '<source media="(prefers-color-scheme: light)" srcset="docs/design/brand/afterbattle-mark-light-192.png">',
+    );
+    expect(picture).toMatch(/<img [^>]*src="docs\/design\/brand\/afterbattle-mark-light-192\.png"/);
+    expect(picture).toMatch(/alt="Afterbattle"/);
+    for (const [, path] of picture.matchAll(/(?:srcset|src)="([^"]+)"/g)) {
+      expect(path).toMatch(/^docs\/design\/brand\//);
+      expect(existsSync(path), path).toBe(true);
     }
   });
 });

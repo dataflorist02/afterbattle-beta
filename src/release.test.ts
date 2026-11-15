@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import packageJson from "../package.json";
@@ -14,11 +14,11 @@ function cargoVersion(): string {
 
 describe("release identity", () => {
   it("takes the version from Cargo.toml everywhere and keeps product metadata aligned", () => {
-    // Author decision 2026-11-14: the first public release is beta 1.0 (internally v2).
-    expect(cargoVersion()).toBe("1.0.0-beta.1");
+    // Spec 29 §8 (author decision 2026-11-15): the second public beta, "Afterbattle beta 2".
+    expect(cargoVersion()).toBe("1.0.0-beta.2");
     expect(APP_NAME).toBe("Afterbattle");
     expect(RELEASE_CHANNEL).toBe("Public beta");
-    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 1.0");
+    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 2");
     expect(tauriConfig.app.windows[0].title).toBe(APP_DISPLAY_NAME);
     expect(APP_VERSION).toBe(cargoVersion());
     expect(packageJson.version).toBe(cargoVersion());
@@ -31,8 +31,11 @@ describe("release identity", () => {
     expect(tauriConfig.build.frontendDist).toBe("../dist");
     expect(tauriConfig.app.security.csp).toContain("default-src 'self'");
     expect(tauriConfig.app.security.csp).toContain("object-src 'none'");
-    // E5-maps-hd §6 (author decision 2026-11-14): only the custom title bar's window calls.
+    // E5-maps-hd §6 (author decision 2026-11-14): only the custom title bar's window calls;
+    // spec 29 §2: listening to the backend's own events (no emit, no core:default).
     expect([...capability.permissions].sort()).toEqual([
+      "core:event:allow-listen",
+      "core:event:allow-unlisten",
       "core:window:allow-close",
       "core:window:allow-internal-toggle-maximize",
       "core:window:allow-minimize",
@@ -43,11 +46,38 @@ describe("release identity", () => {
 });
 
 describe("display name (title bar and window title)", () => {
-  it("names the channel and major.minor of a pre-release, the plain version otherwise", () => {
-    expect(displayName("1.0.0-beta.1")).toBe("Afterbattle beta 1.0");
-    expect(displayName("1.2.3-beta.4")).toBe("Afterbattle beta 1.2");
-    expect(displayName("1.0.0-rc.2")).toBe("Afterbattle rc 1.0");
-    expect(displayName("1.0.0")).toBe("Afterbattle 1.0");
+  it("names a pre-release by its channel and number, a final version by the version", () => {
+    // Spec 29 §8: "Afterbattle beta N" with N the pre-release number; final: "Afterbattle 1.0.0".
+    expect(displayName("1.0.0-beta.2")).toBe("Afterbattle beta 2");
+    expect(displayName("1.0.0-beta.1")).toBe("Afterbattle beta 1");
+    expect(displayName("1.2.3-beta.14")).toBe("Afterbattle beta 14");
+    expect(displayName("1.0.0-rc.2")).toBe("Afterbattle rc 2");
+    expect(displayName("1.0.0-beta")).toBe("Afterbattle beta");
+    expect(displayName("1.0.0")).toBe("Afterbattle 1.0.0");
+    expect(displayName("2.10.3")).toBe("Afterbattle 2.10.3");
     expect(displayName("not a version")).toBe("Afterbattle");
+    expect(displayName("1.0")).toBe("Afterbattle");
+    expect(displayName("1.0.0-beta.2 ")).toBe("Afterbattle");
+  });
+});
+
+describe("app icons (spec 29 §4)", () => {
+  it("has every icon the bundle names, from the brand icon, without mobile icons", () => {
+    expect(tauriConfig.bundle.icon).toEqual([
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+    ]);
+    for (const icon of tauriConfig.bundle.icon) {
+      const path = `src-tauri/${icon}`;
+      expect(existsSync(path), path).toBe(true);
+      expect(statSync(path).size, path).toBeGreaterThan(0);
+    }
+    expect(existsSync("src-tauri/icons/android")).toBe(false);
+    expect(existsSync("src-tauri/icons/ios")).toBe(false);
+    expect(readFileSync("src-tauri/icons/icon.svg", "utf8")).toBe(
+      readFileSync("docs/design/brand/afterbattle-icon.svg", "utf8"),
+    );
   });
 });

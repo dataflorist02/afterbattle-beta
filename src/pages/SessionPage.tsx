@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { api } from "../api";
 import { BattleTable } from "../components/BattleTable";
@@ -14,16 +14,11 @@ import {
 import { useTankLabel } from "../components/TankName";
 import { Async, Dialog, Empty, ErrorState } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { formatNumber, formatTime } from "../lib/format";
-import {
-  newBattleIds,
-  prefersReducedMotion,
-  shouldCountUp,
-  useCountUp,
-  type SessionSeen,
-} from "../lib/motion";
+import { prefersReducedMotion, reservedChars, useArrivals, useCountedNumber } from "../lib/motion";
 import {
   MIN_SESSION_BATTLES,
   sessionDamageReference,
@@ -160,18 +155,13 @@ function SessionBody({
     .map((view) => view.battle)
     .sort((a, b) => a.battleTime - b.battleTime || a.arenaId.localeCompare(b.arenaId));
   const active = session.status === "active";
-  const seenNow = { sessionId: session.id, battleIds: battles.map((battle) => battle.arenaId) };
-  const fresh = newBattleIds(lastSeen.get(session.id) ?? null, seenNow, active);
-  const animate = shouldCountUp(
-    lastSeen.get(session.id) ?? null,
-    seenNow,
+  // Spec 29 §6: only battles that arrive while the screen is open move, never on entering it.
+  const fresh = useArrivals(
+    session.id,
+    battles.map((battle) => battle.arenaId),
     active,
-    prefersReducedMotion(),
   );
-  useEffect(() => {
-    lastSeen.set(session.id, seenNow);
-  });
-  const shownDamage = useCountUp(metrics.averageDamage, animate);
+  const animate = fresh.length > 0 && !prefersReducedMotion();
   const xvmOn =
     snapshot.advancedStatus.xvmEnabled &&
     snapshot.wn8Presentation.expectedValues.availability === "available";
@@ -207,20 +197,37 @@ function SessionBody({
         action={action}
         figures={
           <>
-            <Figure main value={formatNumber(shownDamage, language)} label={tr("figureDamage")} />
-            <Figure
-              value={tr("figureOf", {
-                value: formatNumber(metrics.wins, language),
-                count: metrics.outcomeSampleSize,
-              })}
+            <CountedFigure
+              main
+              value={metrics.averageDamage}
+              animate={animate}
+              text={(value) => formatNumber(value, language)}
+              label={tr("figureDamage")}
+            />
+            <CountedFigure
+              value={metrics.wins}
+              animate={animate}
+              text={(value) =>
+                tr("figureOf", {
+                  value: formatNumber(value, language),
+                  count: metrics.outcomeSampleSize,
+                })
+              }
               label={tr("figureWins")}
             />
-            <Figure
-              value={formatNumber(metrics.averageAssist, language)}
+            <CountedFigure
+              value={metrics.averageAssist}
+              animate={animate}
+              text={(value) => formatNumber(value, language)}
               label={tr("figureAssist")}
             />
             {xvmOn && summary.wn8.value !== null && (
-              <Figure value={formatNumber(summary.wn8.value, language)} label={tr("sessionWn8")} />
+              <CountedFigure
+                value={summary.wn8.value}
+                animate={animate}
+                text={(value) => formatNumber(value, language)}
+                label={tr("sessionWn8")}
+              />
             )}
           </>
         }
@@ -263,8 +270,34 @@ function SessionBody({
   );
 }
 
-/** What each session looked like the last time it was shown (count-up and new tiles). */
-const lastSeen = new Map<string, SessionSeen>();
+/**
+ * A summary number (spec 29 §6): counts from the old to the new value when a battle arrived,
+ * with the direction color as a fading overlay; the width is kept for the longer text.
+ */
+function CountedFigure({
+  value,
+  animate,
+  text,
+  label,
+  main = false,
+}: {
+  value: number | null;
+  animate: boolean;
+  text: (value: number | null) => string;
+  label: string;
+  main?: boolean;
+}) {
+  const counted = useCountedNumber(value, animate);
+  return (
+    <Figure
+      main={main}
+      value={text(counted.shown)}
+      label={label}
+      delta={counted.direction ? { direction: counted.direction, key: counted.key } : null}
+      reserve={counted.direction ? reservedChars([text(counted.from), text(value)]) : undefined}
+    />
+  );
+}
 
 export function SessionPage({
   snapshot,
@@ -293,15 +326,20 @@ export function SessionPage({
     snapshot.recentSessions[0] ??
     null;
   const id = session?.id ?? null;
-  const data = useAsync(async () => {
-    if (!id) return null;
-    const [summary, comparison, story] = await Promise.all([
-      api.sessionSummary(id),
-      api.sessionBaselineComparison(id).catch(() => null),
-      api.sessionStory(id).catch(() => null),
-    ]);
-    return { summary, comparison, story };
-  }, [id, snapshot]);
+  const version = useDataVersion();
+  const data = useAsync(
+    async () => {
+      if (!id) return null;
+      const [summary, comparison, story] = await Promise.all([
+        api.sessionSummary(id),
+        api.sessionBaselineComparison(id).catch(() => null),
+        api.sessionStory(id).catch(() => null),
+      ]);
+      return { summary, comparison, story };
+    },
+    [id],
+    { refreshKey: version },
+  );
 
   if (!snapshot.configured) {
     return (

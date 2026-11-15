@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
+import { LoadingScreen } from "../components/LoadingScreen";
 import { VehicleNamesProvider } from "../components/TankName";
 import { Async } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { useLanguage } from "../i18n/language";
+import { LOADING_DELAY_MS, hasSessions, importFraction, loadingNeeded } from "../lib/loading";
 import { BattlePage } from "../pages/BattlePage";
 import { GoalsPage } from "../pages/GoalsPage";
 import { HistoryPage } from "../pages/HistoryPage";
@@ -13,6 +15,7 @@ import { TanksPage } from "../pages/TanksPage";
 import { APP_VERSION } from "../release";
 import type { AppSnapshot, ImportProgressEvent } from "../types";
 import { isPublicBuild } from "./buildFlags";
+import { DataVersionContext } from "./dataVersion";
 import { Navigation, type Page } from "./Navigation";
 import { TitleBar } from "./TitleBar";
 
@@ -69,11 +72,51 @@ export function App() {
   const openMap = (mapKey: string, mapName: string | null) =>
     navigate({ page: "history", mapKey, mapName: mapName ?? undefined });
   const snapshot = state.status === "ready" ? state.data : null;
+  // Spec 29 §2: each new snapshot (after a backend event or an action) is a new data version;
+  // the pages reload with it in place. Derived while rendering, so pages see it with the snapshot.
+  const [version, setVersion] = useState<{ of: AppSnapshot | null; value: number }>({
+    of: null,
+    value: 0,
+  });
+  if (snapshot && snapshot !== version.of) setVersion({ of: snapshot, value: version.value + 1 });
   const progress =
     importProgress ??
     (snapshot?.sourceStatus.importProgress
       ? { ...snapshot.sourceStatus.importProgress, finished: false, cancelled: false }
       : null);
+  // Spec 29 §5: the loading screen only when the start really takes time.
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLate(true), LOADING_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  // Without sessions the history says whether any battle is stored; asked again with every new
+  // snapshot, the last answer kept meanwhile (no flicker of the loading screen).
+  const empty = useAsync(
+    () =>
+      snapshot === null || hasSessions(snapshot)
+        ? Promise.resolve(false)
+        : api
+            .battleHistory({
+              vehicleId: null,
+              mapKey: null,
+              dataQuality: "all",
+              wn8Availability: "all",
+              dateFrom: null,
+              dateTo: null,
+              cursor: null,
+              pageSize: 1,
+            })
+            .then((page) => page.items.length === 0),
+    [snapshot],
+    { keepData: true },
+  );
+  const loading = loadingNeeded({
+    starting: state.status === "loading",
+    late,
+    emptyDatabase: empty.state.status === "ready" && empty.state.data,
+    importing: progress !== null,
+  });
 
   const renderPage = (data: AppSnapshot) => {
     switch (route.page) {
@@ -86,7 +129,6 @@ export function App() {
           />
         ) : (
           <TanksPage
-            snapshot={data}
             initialVehicleId={route.vehicleId}
             onOpenBattle={(battleId, vehicleId) => navigate({ page: "tanks", battleId, vehicleId })}
             onOpenMap={(mapKey) => openMap(mapKey, null)}
@@ -141,35 +183,38 @@ export function App() {
   };
 
   return (
-    <VehicleNamesProvider refreshKey={snapshot}>
-      <TitleBar />
-      <div className="shell">
-        <Navigation
-          page={route.page}
-          onNavigate={(page) => navigate({ page })}
-          publicBuild={isPublicBuild()}
-        />
-        <div className="workspace">
-          <main className="page">
-            <Async state={state} onRetry={reload}>
-              {(data) => (
-                <div
-                  className={
-                    route.entry === "back" ||
-                    ((route.page === "history" || route.page === "tanks") && !route.battleId)
-                      ? "screen screen-still"
-                      : "screen"
-                  }
-                  key={[route.page, route.battleId, route.sessionId, route.mapKey].join("|")}
-                >
-                  {renderPage(data)}
-                </div>
-              )}
-            </Async>
-          </main>
-          <Footer snapshot={snapshot} />
+    <DataVersionContext.Provider value={version.value}>
+      <VehicleNamesProvider refreshKey={snapshot}>
+        <TitleBar />
+        <LoadingScreen needed={loading} fraction={importFraction(progress)} />
+        <div className="shell">
+          <Navigation
+            page={route.page}
+            onNavigate={(page) => navigate({ page })}
+            publicBuild={isPublicBuild()}
+          />
+          <div className="workspace">
+            <main className="page">
+              <Async state={state} onRetry={reload}>
+                {(data) => (
+                  <div
+                    className={
+                      route.entry === "back" ||
+                      ((route.page === "history" || route.page === "tanks") && !route.battleId)
+                        ? "screen screen-still"
+                        : "screen"
+                    }
+                    key={[route.page, route.battleId, route.sessionId, route.mapKey].join("|")}
+                  >
+                    {renderPage(data)}
+                  </div>
+                )}
+              </Async>
+            </main>
+            <Footer snapshot={snapshot} />
+          </div>
         </div>
-      </div>
-    </VehicleNamesProvider>
+      </VehicleNamesProvider>
+    </DataVersionContext.Provider>
   );
 }

@@ -6,9 +6,18 @@ import { ImportBar } from "../components/ImportBar";
 import { useTankLabel } from "../components/TankName";
 import { Async, Empty, ErrorState, SegmentedControl } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import { formatDate, formatNumber } from "../lib/format";
-import { entranceIds, measuredWave, prefersReducedMotion } from "../lib/motion";
+import { mergeRefreshedPage } from "../lib/pages";
+import {
+  afterFontsAndLayout,
+  entranceIds,
+  measuredWave,
+  prefersReducedMotion,
+  useArrivals,
+  useFlip,
+} from "../lib/motion";
 import type {
   AppSnapshot,
   BattleHistoryCursor,
@@ -37,35 +46,40 @@ function filterFor(
 }
 
 function Battles({
-  snapshot,
   progress,
   onOpenBattle,
   initialMapKey,
   initialMapName,
-  entrance,
+  takeEntrance,
 }: {
-  snapshot: AppSnapshot;
   progress: ImportProgressEvent | null;
   onOpenBattle: (battleId: string) => void;
   initialMapKey: string | null;
   initialMapName: string | null;
-  /** Called once with the first page and the wave size; returns the ids that enter with motion. */
-  entrance: (ids: string[], wave: number) => Set<string>;
+  /** True once per visit: the first page shown enters with the wave. */
+  takeEntrance: () => boolean;
 }) {
   const { tr } = useLanguage();
   const label = useTankLabel();
   const [vehicleId, setVehicleId] = useState<number | null>(null);
   const [mapKey, setMapKey] = useState<string | null>(initialMapKey);
-  const [more, setMore] = useState<{
+  // Rows loaded with "Show more", for the filter they were loaded with only; a refresh keeps
+  // them below the refreshed first page (spec 29 §2).
+  const filterKey = `${vehicleId ?? ""}|${mapKey ?? ""}`;
+  const [loadedMore, setMore] = useState<{
+    filter: string;
     items: BattleHistoryItem[];
     next: BattleHistoryCursor | null;
   } | null>(null);
+  const more = loadedMore?.filter === filterKey ? loadedMore : null;
+  const version = useDataVersion();
   const [moreError, setMoreError] = useState<string | undefined | null>(null);
-  const tanks = useAsync(() => api.vehicleHistoryOverview(), [snapshot]);
-  const first = useAsync(() => {
-    setMore(null);
-    return api.battleHistory(filterFor(vehicleId, mapKey, null));
-  }, [vehicleId, mapKey, snapshot]);
+  const tanks = useAsync(() => api.vehicleHistoryOverview(), [], { refreshKey: version });
+  const first = useAsync(
+    () => api.battleHistory(filterFor(vehicleId, mapKey, null)),
+    [vehicleId, mapKey],
+    { refreshKey: version },
+  );
   // Map choices come from the battles already seen; the filter itself runs in the database.
   const [maps, setMaps] = useState<Map<string, string>>(
     () => new Map(initialMapKey ? [[initialMapKey, initialMapName ?? initialMapKey]] : []),
@@ -81,23 +95,41 @@ function Battles({
     if (changed) setMaps(next);
   };
   const [entering, setEntering] = useState<Set<string>>(() => new Set());
+  // Rows of the first page wait hidden (opacity only) until the wave is measured.
+  const [wavePending, setWavePending] = useState(false);
   const rowsRef = useRef<HTMLDivElement>(null);
-  // Measured before the first paint: the rows visible now form the wave (E8-ui-fix), and they
-  // never show still for a frame before the cascade starts.
+  // Spec 29 §1: the wave is measured in the real layout, after the fonts and the first frame,
+  // from the rows' own positions (day headers between rows do not shorten it). Until then the
+  // rows are hidden, so they never show still for a frame before the cascade starts.
   useLayoutEffect(() => {
-    if (first.state.status !== "ready") return;
-    const rows = Array.from(rowsRef.current?.querySelectorAll(".hrow-list > li") ?? []);
-    const ids = entrance(
-      first.state.data.items.map((item) => item.battleId),
-      measuredWave(rows),
-    );
-    if (ids.size === 0) return;
-    setEntering(ids);
-    // The cascade lasts well under a second; afterwards no row carries the entrance class.
-    const timer = setTimeout(() => setEntering(new Set()), 1_000);
-    return () => clearTimeout(timer);
+    if (first.state.status !== "ready" || !takeEntrance()) return;
+    const ids = first.state.data.items.map((item) => item.battleId);
+    setWavePending(true);
+    const cancel = afterFontsAndLayout(() => {
+      const rows = Array.from(rowsRef.current?.querySelectorAll(".hrow-list > li") ?? []);
+      setEntering(entranceIds(ids, measuredWave(rows)));
+      setWavePending(false);
+    });
+    return () => {
+      cancel();
+      setWavePending(false);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [first.state]);
+  // Spec 29 §6: a battle that arrives while History is open enters at the top and the rows that
+  // moved glide down; never on a filter change, "Show more" or entering the screen.
+  const firstIds =
+    first.state.status === "ready" ? first.state.data.items.map((item) => item.battleId) : null;
+  const arrivals = useArrivals(filterKey, firstIds, true);
+  const moving = arrivals.length > 0 && !prefersReducedMotion();
+  useFlip(rowsRef, firstIds?.join(","), moving);
+  const shownEntering = moving ? new Set([...entering, ...arrivals]) : entering;
+  // The cascade lasts about a second; afterwards no row carries the entrance class.
+  useEffect(() => {
+    if (entering.size === 0) return;
+    const timer = setTimeout(() => setEntering(new Set()), 1_100);
+    return () => clearTimeout(timer);
+  }, [entering]);
   useEffect(() => {
     if (first.state.status === "ready") remember(first.state.data.items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,7 +193,7 @@ function Battles({
       </div>
       <Async state={first.state} onRetry={first.reload}>
         {(page) => {
-          const items = more?.items ?? page.items;
+          const items = more ? mergeRefreshedPage(page.items, more.items) : page.items;
           const next = more ? more.next : page.nextCursor;
           if (items.length === 0) {
             if (filtered) return <Empty text={tr("filterEmpty")} />;
@@ -176,8 +208,8 @@ function Battles({
           }
           return (
             <>
-              <div ref={rowsRef} className="contents">
-                <HistoryRows items={items} onOpenBattle={onOpenBattle} entering={entering} />
+              <div ref={rowsRef} className={wavePending ? "contents wave-pending" : "contents"}>
+                <HistoryRows items={items} onOpenBattle={onOpenBattle} entering={shownEntering} />
               </div>
               {moreError !== null && <ErrorState code={moreError} />}
               {next && (
@@ -190,6 +222,7 @@ function Battles({
                       (nextPage) => {
                         remember(nextPage.items);
                         setMore({
+                          filter: filterKey,
                           items: [...items, ...nextPage.items],
                           next: nextPage.nextCursor,
                         });
@@ -217,9 +250,10 @@ function Sessions({
   onOpenSession: (sessionId: string) => void;
 }) {
   const { language, tr } = useLanguage();
-  const wn8 = useAsync(() => api.recentSessionsWn8(), [snapshot]);
+  const version = useDataVersion();
+  const wn8 = useAsync(() => api.recentSessionsWn8(), [], { refreshKey: version });
   const ids = snapshot.recentSessions.map((session) => session.id);
-  const maps = useAsync(() => api.sessionMaps(ids), [snapshot]);
+  const maps = useAsync(() => api.sessionMaps(ids), [ids.join("|")], { refreshKey: version });
   if (snapshot.recentSessions.length === 0) return <Empty text={tr("sessionsEmpty")} />;
   const xvmOn = snapshot.advancedStatus.xvmEnabled;
   return (
@@ -291,8 +325,8 @@ export function HistoryPage({
   // The cascade happens once per visit: not after switching Battles/Sessions, not on a filter
   // change, not for rows loaded later.
   const cascadeLeft = useRef(entranceMotion);
-  const entrance = useCallback((ids: string[], wave: number) => {
-    const result = entranceIds(ids, cascadeLeft.current && !prefersReducedMotion() ? wave : 0);
+  const takeEntrance = useCallback(() => {
+    const result = cascadeLeft.current && !prefersReducedMotion();
     cascadeLeft.current = false;
     return result;
   }, []);
@@ -313,12 +347,11 @@ export function HistoryPage({
       </header>
       {tab === "battles" ? (
         <Battles
-          snapshot={snapshot}
           progress={progress}
           onOpenBattle={onOpenBattle}
           initialMapKey={initialMapKey}
           initialMapName={initialMapName}
-          entrance={entrance}
+          takeEntrance={takeEntrance}
         />
       ) : (
         <Sessions snapshot={snapshot} onOpenSession={onOpenSession} />

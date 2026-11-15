@@ -38,11 +38,28 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("title bar (E5-maps-hd §6)", () => {
+  it("shows the 16 px app icon before the title, part of the drag area (spec 29 §4)", () => {
+    const { container } = renderBar();
+    const title = container.querySelector(".titlebar-title")!;
+    const icon = title.querySelector("svg")!;
+    expect(icon).toHaveAttribute("width", "16");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(title.firstElementChild).toBe(icon);
+    expect(title.querySelector("rect")).not.toBeNull();
+    expect(title.querySelector("defs")).toBeNull();
+    expect(title).toHaveAttribute("data-tauri-drag-region");
+    // Tauri drags only when the pressed element has the attribute: the icon lets clicks through.
+    expect(icon).toHaveClass("titlebar-icon");
+    expect(readFileSync("src/styles/base.css", "utf8")).toMatch(
+      /\.titlebar-icon\s*\{[^}]*pointer-events:\s*none;/,
+    );
+  });
+
   it("drags from the whole bar except the buttons, which have names and keyboard focus", () => {
     renderBar();
     const bar = screen.getByRole("banner");
     expect(bar).toHaveAttribute("data-tauri-drag-region");
-    expect(bar).toHaveTextContent("Afterbattle beta 1.0");
+    expect(bar).toHaveTextContent("Afterbattle beta 2");
     const buttons = screen.getAllByRole("button");
     expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
       "Minimalizuj",
@@ -103,10 +120,12 @@ describe("window configuration (E5-maps-hd §6)", () => {
     expect(main.resizable).toBe(true);
   });
 
-  it("grants only the window permissions the title bar needs", () => {
+  it("grants only the title bar's window calls and listening to backend events", () => {
     const capability = JSON.parse(readFileSync("src-tauri/capabilities/default.json", "utf8"));
     expect(capability.windows).toEqual(["main"]);
     expect([...capability.permissions].sort()).toEqual([
+      "core:event:allow-listen",
+      "core:event:allow-unlisten",
       "core:window:allow-close",
       "core:window:allow-internal-toggle-maximize",
       "core:window:allow-minimize",

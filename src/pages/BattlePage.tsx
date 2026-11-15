@@ -5,6 +5,7 @@ import { MapBackdrop } from "../components/MapBackdrop";
 import { Figure } from "../components/session/SessionStory";
 import { Async, Card, VehicleImage } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import {
   formatDate,
@@ -83,7 +84,8 @@ function MapRecordCard({
   onOpenMap: (mapKey: string, mapName: string | null) => void;
 }) {
   const { language, tr } = useLanguage();
-  const record = useAsync(() => api.mapRecord(mapKey), [mapKey]);
+  const version = useDataVersion();
+  const record = useAsync(() => api.mapRecord(mapKey), [mapKey], { refreshKey: version });
   if (record.state.status !== "ready" || record.state.data.battles === 0) return null;
   const data = record.state.data;
   return (
@@ -248,7 +250,10 @@ export function BattlePage({
   onOpenMap?: (mapKey: string, mapName: string | null) => void;
 }) {
   const { tr } = useLanguage();
-  const { state, reload } = useAsync(() => api.battleView(battleId), [battleId]);
+  const version = useDataVersion();
+  const { state, reload } = useAsync(() => api.battleView(battleId), [battleId], {
+    refreshKey: version,
+  });
   return state.status === "ready" ? (
     <BattleBody detail={state.data} onBack={onBack} onOpenMap={onOpenMap} />
   ) : (

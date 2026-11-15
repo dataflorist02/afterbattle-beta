@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
+import { BrandMark } from "../components/BrandMark";
 
 export type Page = "session" | "tanks" | "goals" | "history" | "maps" | "settings";
 
@@ -93,7 +94,7 @@ export function Navigation({
   return (
     <nav className="rail" aria-label={tr("mainNavigation")}>
       <div className="rail-logo" aria-hidden="true">
-        A
+        <BrandMark variant="icon" size={40} />
       </div>
       {(["session", "tanks", "goals", "history"] as const).map(item)}
       {!publicBuild && (

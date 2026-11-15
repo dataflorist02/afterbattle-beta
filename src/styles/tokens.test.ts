@@ -55,6 +55,40 @@ describe("design tokens (spec 25 §3)", () => {
     expect(css).not.toMatch(/https?:|googleapis/);
   });
 
+  it("has the brand palette of spec 29 §3 under new names only", () => {
+    const palette: [string, string][] = [
+      ["bg-deep", "#070b14"],
+      ["surface", "#0d1422"],
+      ["navy", "#16223a"],
+      ["navy-hi", "#1e3156"],
+      ["steel-line", "#8b97ab"],
+      ["ember-lo", "#e0661f"],
+      ["ember-deep", "#9a3a1a"],
+      ["ember-white", "#ffebd0"],
+      ["up", "var(--accent-soft)"],
+      ["down", "#6e8fc6"],
+      ["scroll-thumb", "rgba(139, 151, 171, 0.35)"],
+      ["scroll-thumb-hover", "rgba(139, 151, 171, 0.6)"],
+      ["scroll-thumb-active", "var(--accent)"],
+    ];
+    for (const [name, value] of palette) expect(token(name), name).toBe(value);
+    // Existing names stay (spec 29 §3): nothing is renamed.
+    for (const name of ["accent", "accent-soft", "accent-link", "text-2", "bg", "danger"])
+      expect(token(name), name).toBeTruthy();
+    // No new token repeats an existing literal: each new color is written once.
+    const literals = [...css.matchAll(/--[\w-]+:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) =>
+      m[1].toLowerCase(),
+    );
+    for (const [name, value] of palette.filter(([, value]) => value.startsWith("#")))
+      expect(
+        literals.filter((literal) => literal === value),
+        name,
+      ).toHaveLength(1);
+    // A falling number reads on the background, and differs from a rising one.
+    expect(contrast(token("down"), token("bg"))).toBeGreaterThanOrEqual(4.5);
+    expect(token("down")).not.toBe(token("accent-soft"));
+  });
+
   it("ships the OFL license for both new families", () => {
     expect(readFileSync("src/assets/fonts/OFL-Inter.txt", "utf8")).toContain(
       "SIL Open Font License, Version 1.1",
@@ -160,10 +194,40 @@ describe("motion (E5-flare §7a)", () => {
         expect(property).toMatch(/^(transform|opacity)$/);
   });
 
-  it("never loops an animation", () => {
-    expect(base).not.toMatch(/infinite/);
+  it("never loops an animation, except the pulse of a loading screen without progress", () => {
+    // Spec 29 §5: with no progress to show, the ember at the base pulses calmly (opacity only).
+    const pulse = "animation: ember-pulse 1600ms ease-in-out infinite;";
+    expect(base.split("infinite")).toHaveLength(2);
+    expect(base).toMatch(
+      /\.loading-pulse \.loading-hot \{\s*animation: ember-pulse 1600ms ease-in-out infinite;/,
+    );
     for (const [, value] of base.matchAll(/animation:\s*([^;]+);/g))
-      expect(value).not.toMatch(/infinite|alternate/);
+      if (`animation: ${value};` !== pulse) expect(value).not.toMatch(/infinite|alternate/);
+  });
+
+  it("draws the loading screen as spec 29 §5 says", () => {
+    expect(base).toMatch(/\.loading-screen\s*\{[^}]*background:\s*var\(--bg-deep\);/);
+    expect(base).toMatch(/\.loading-mark\s*\{[^}]*width:\s*clamp\(160px, 22vmin, 280px\);/);
+    expect(base).toMatch(
+      /\.loading-rise\s*\{[^}]*transform-origin:\s*50% 100%;[^}]*transition:\s*transform 300ms var\(--ease-out\);/,
+    );
+    expect(base).toMatch(/\.loading-out\s*\{[^}]*opacity:\s*0;[^}]*transition:\s*opacity 200ms/);
+    expect(base).toMatch(
+      /@keyframes ember-pulse\s*\{\s*0%,\s*100%\s*\{\s*opacity:\s*1;\s*\}\s*50%\s*\{\s*opacity:\s*0\.7;\s*\}\s*\}/,
+    );
+  });
+
+  it("fades a loaded map picture in without resizing its tile (spec 29 §1)", () => {
+    expect(base).toMatch(
+      /\.map-backdrop-picture\s*\{\s*position:\s*absolute;\s*inset:\s*0;\s*z-index:\s*-2;/,
+    );
+    expect(base).toMatch(/\.map-tile\s*\{[^}]*min-height:\s*190px;/);
+    const rule =
+      /\.map-backdrop\[data-loaded="true"\] \.map-backdrop-picture,\s*\.map-backdrop\[data-loaded="true"\] \.map-backdrop-sharp\s*\{\s*animation:\s*picture-in var\(--motion-base\) var\(--ease-out\) both;\s*\}/;
+    expect(base).toMatch(rule);
+    expect(base).toMatch(
+      /@keyframes picture-in\s*\{\s*from\s*\{\s*opacity:\s*0;\s*\}\s*to\s*\{\s*opacity:\s*1;\s*\}\s*\}/,
+    );
   });
 
   it("turns off movement for prefers-reduced-motion", () => {
@@ -197,5 +261,47 @@ describe("navigation rail and history rows (E5-flare-fix2)", () => {
       /@keyframes row-in \{\s*from \{\s*opacity:\s*0;\s*transform:\s*translateY\(6px\)/,
     );
     expect(base).toMatch(/\.screen-still \{\s*animation:\s*none/);
+  });
+});
+
+describe("scrollbar and title bar (spec 29 §4, §7)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+
+  it("gives every scrolling area a thin bar in the brand colors, by standard CSS only", () => {
+    expect(base).toMatch(
+      /\*\s*\{\s*scrollbar-width:\s*thin;\s*scrollbar-color:\s*var\(--scroll-thumb\) transparent;\s*\}/,
+    );
+    expect(base).toMatch(
+      /\*:hover\s*\{\s*scrollbar-color:\s*var\(--scroll-thumb-hover\) transparent;\s*\}/,
+    );
+    expect(base).toMatch(
+      /\*:active\s*\{\s*scrollbar-color:\s*var\(--scroll-thumb-active\) transparent;\s*\}/,
+    );
+    // Dragging wins over hovering: the :active rule comes after :hover.
+    expect(base.indexOf("*:active {")).toBeGreaterThan(base.indexOf("*:hover {"));
+    expect(base).not.toMatch(/::-webkit-scrollbar/);
+  });
+
+  it("puts the title bar on the brand surface", () => {
+    expect(base).toMatch(/\.titlebar\s*\{[^}]*background:\s*var\(--surface\);/);
+  });
+});
+
+describe("changed numbers (spec 29 §6)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+
+  it("count in tabular digits and show the direction by a fading overlay, never by color motion", () => {
+    expect(base).toMatch(
+      /\.figure-value\s*\{[^}]*position:\s*relative;[^}]*font-variant-numeric:\s*tabular-nums;/,
+    );
+    expect(base).toMatch(
+      /\.figure-delta\s*\{[^}]*position:\s*absolute;[^}]*animation:\s*delta-fade 1400ms linear both;/,
+    );
+    expect(base).toMatch(/\.figure-up\s*\{\s*color:\s*var\(--up\);\s*\}/);
+    expect(base).toMatch(/\.figure-down\s*\{\s*color:\s*var\(--down\);\s*\}/);
+    // Visible for 1 s of 1.4 s, then 400 ms of fading.
+    expect(base).toMatch(
+      /@keyframes delta-fade\s*\{\s*0%,\s*71\.4%\s*\{\s*opacity:\s*1;\s*\}\s*100%\s*\{\s*opacity:\s*0;\s*\}\s*\}/,
+    );
   });
 });

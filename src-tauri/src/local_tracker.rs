@@ -4312,6 +4312,38 @@ INFO sessionStats {stats}
         assert_eq!(tracker.run_full_import().unwrap().imported, 1);
     }
 
+    /// Spec 29 §2: a single new battle during a running session, read by the live scan (not the
+    /// full import), is reported to the window once.
+    #[test]
+    fn live_scan_reports_one_new_battle_of_the_running_session_once() {
+        let directory = tempdir().unwrap();
+        let (root, replays) = game_folder(directory.path());
+        let database = Database::initialize(directory.path().join("db.sqlite3")).unwrap();
+        let session = database.start_session().unwrap();
+        let tracker = configured_tracker(database.clone(), &root);
+        let events = crate::events::RecordedEvents::default();
+        tracker.set_events(Arc::new(events.clone()));
+        let now = Local::now().format("%d.%m.%Y %H:%M:%S").to_string();
+        write_with_mtime(
+            &replays.join("new.wotreplay"),
+            &foundation_replay(1, &now, b""),
+            5,
+        );
+
+        // First pass only notes the file; the second, with the same size and time, reads it.
+        assert_eq!(tracker.reconcile().unwrap().imported, 0);
+        assert!(events.take().is_empty());
+        assert_eq!(tracker.reconcile().unwrap().imported, 1);
+        assert_eq!(events.take(), vec![AppEvent::DataChanged]);
+        let battles = database.recent_battles(10).unwrap();
+        assert_eq!(battles.len(), 1);
+        assert_eq!(battles[0].session_id.as_deref(), Some(session.id.as_str()));
+
+        // Nothing new: no event.
+        assert_eq!(tracker.reconcile().unwrap().imported, 0);
+        assert!(events.take().is_empty());
+    }
+
     #[test]
     fn stale_session_ends_on_the_injected_clock_and_is_reported() {
         let directory = tempdir().unwrap();

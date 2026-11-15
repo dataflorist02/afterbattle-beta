@@ -85,6 +85,7 @@ export function HistoryRows({
               return (
                 <li
                   key={item.battleId}
+                  data-flip={item.battleId}
                   className={entering.has(item.battleId) ? "row-enter" : undefined}
                   style={
                     entering.has(item.battleId)

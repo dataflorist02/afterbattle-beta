@@ -5,6 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { BrandMark } from "../components/BrandMark";
 import { useLanguage } from "../i18n/language";
 import { APP_DISPLAY_NAME } from "../release";
 import { closeWindow, isMaximized, minimizeWindow, toggleMaximizeWindow } from "./windowControls";
@@ -51,6 +52,7 @@ export function TitleBar() {
   return (
     <header className="titlebar" data-tauri-drag-region>
       <span className="titlebar-title" data-tauri-drag-region>
+        <BrandMark variant="icon" size={16} className="titlebar-icon" />
         {APP_DISPLAY_NAME}
       </span>
       <div className="titlebar-controls">

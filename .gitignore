@@ -30,3 +30,7 @@ src-tauri/bindings/
 .pnpm-store/
 artifacts/
 *.wotreplay
+
+# Mutation testing sandbox (tools/mutants).
+tools/mutants/.stryker-tmp/
+tools/mutants/reports/

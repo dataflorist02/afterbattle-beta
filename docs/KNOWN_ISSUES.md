@@ -1,4 +1,4 @@
-# Known issues — 1.0.0-beta.1
+# Known issues — 1.0.0-beta.2
 
 - The beta installer has no Authenticode signature: it is published as a GitHub pre-release with `SHA256SUMS.txt`, and Windows SmartScreen warns on install. Check the installer with `Get-FileHash` against `SHA256SUMS.txt` (README). Code signing and automatic updates come with the stable 1.0.0.
 - Windows 10/11 x64 only; no macOS, Linux or ARM support in this package.

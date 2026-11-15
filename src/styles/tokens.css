@@ -152,6 +152,24 @@
   --text-3: #8693a6;
   --text-on-accent: #0a101c;
 
+  /* Brand (spec 29 §3, docs/design/brand): navy for grounds, steel for lines, ember the one
+     accent; the ember gradient only in the mark, the loading screen and progress. */
+  --bg-deep: #070b14;
+  --surface: #0d1422;
+  --navy: #16223a;
+  --navy-hi: #1e3156;
+  --steel-line: #8b97ab;
+  --ember-lo: #e0661f;
+  --ember-deep: #9a3a1a;
+  --ember-white: #ffebd0;
+  /* Direction of a changed number (spec 29 §6): up warm, down cool, never red. */
+  --up: var(--accent-soft);
+  --down: #6e8fc6;
+  /* Scrollbar (spec 29 §7). */
+  --scroll-thumb: rgba(139, 151, 171, 0.35);
+  --scroll-thumb-hover: rgba(139, 151, 171, 0.6);
+  --scroll-thumb-active: var(--accent);
+
   --accent: #f08a3c;
   --accent-soft: #f7b27a;
   --accent-bg: rgba(240, 138, 60, 0.14);

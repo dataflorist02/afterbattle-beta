@@ -4,6 +4,7 @@ import { api } from "../api";
 import { Card, Dialog, ErrorState } from "../components/ui";
 import { clearGameImages } from "../hooks/useGameImage";
 import { useAsync } from "../hooks/useAsync";
+import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import { formatNumber } from "../lib/format";
 import { APP_VERSION } from "../release";
@@ -65,7 +66,10 @@ export function SettingsPage({
   const [deleting, setDeleting] = useState(false);
   const [typed, setTyped] = useState("");
   const catalog = useAsync(() => api.vehicleClassCatalogStatus(), []);
-  const diagnostics = useAsync(() => api.diagnostics(language), [language, snapshot]);
+  const version = useDataVersion();
+  const diagnostics = useAsync(() => api.diagnostics(language), [language], {
+    refreshKey: version,
+  });
   const expected = snapshot.wn8Presentation.expectedValues;
   const xvmOn = snapshot.advancedStatus.xvmEnabled;
   const run = (action: () => Promise<unknown>, done?: string) => {

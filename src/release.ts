@@ -5,14 +5,16 @@ export const APP_VERSION: string = __APP_VERSION__;
 export const RELEASE_CHANNEL = "Public beta";
 
 /**
- * The name in the title bar and the window title: the pre-release channel and major.minor
- * ("Afterbattle beta 1.0" for 1.0.0-beta.1), or major.minor of a final version.
+ * The name in the title bar and the window title (spec 29 §8): a pre-release by its channel and
+ * number ("Afterbattle beta 2" for 1.0.0-beta.2), a final version by the version
+ * ("Afterbattle 1.0.0").
  */
 export function displayName(version: string): string {
-  const match = /^(\d+)\.(\d+)\.\d+(?:-([A-Za-z]+)[.\d]*)?$/.exec(version);
+  const match = /^(\d+\.\d+\.\d+)(?:-([A-Za-z]+)(?:\.(\d+))?)?$/.exec(version);
   if (!match) return APP_NAME;
-  const [, major, minor, channel] = match;
-  return channel ? `${APP_NAME} ${channel} ${major}.${minor}` : `${APP_NAME} ${major}.${minor}`;
+  const [, release, channel, number] = match;
+  if (!channel) return `${APP_NAME} ${release}`;
+  return number ? `${APP_NAME} ${channel} ${number}` : `${APP_NAME} ${channel}`;
 }
 
 export const APP_DISPLAY_NAME = displayName(APP_VERSION);

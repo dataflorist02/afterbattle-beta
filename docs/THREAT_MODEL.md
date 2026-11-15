@@ -1,6 +1,6 @@
 # Threat model
 
-Last reviewed: 2026-11-14 (1.0.0-beta.1, internally v2: window capability for the custom title bar, game pictures including DDS loading screens, CI with pinned actions and audits, release checksums; earlier in v2.0: `python.log`, Tomato.gg and Wargaming integrations removed, XVM opt-in enforced, recovery mode hardened).
+Last reviewed: 2026-11-15 (1.0.0-beta.2: the window may listen to the backend's own events; 1.0.0-beta.1, internally v2: window capability for the custom title bar, game pictures including DDS loading screens, CI with pinned actions and audits, release checksums; earlier in v2.0: `python.log`, Tomato.gg and Wargaming integrations removed, XVM opt-in enforced, recovery mode hardened).
 
 ## Security objectives and assets
 
@@ -26,7 +26,7 @@ Residual risk: upstream format changes or missing snapshots can reduce coverage.
 
 Controls: bundled assets, restrictive CSP, frozen prototypes, no external frontend networking, no remote HTML/scripts, minimal Tauri capability, typed commands, no raw-file or secret-return command.
 
-Window capability (v2.0, custom title bar): the only permissions are `core:window:allow-start-dragging`, `core:window:allow-internal-toggle-maximize` (double click on the drag region), `core:window:allow-minimize`, `core:window:allow-toggle-maximize` and `core:window:allow-close`, for the main window only. A compromised WebView could move, minimize, maximize or hide the window to the tray (closing hides it, as Alt+F4 does); it cannot resize it to arbitrary values, open new windows, read window state, listen to events, or reach files, shell or network through them. A test keeps the list exact.
+Window capability (v2.0, custom title bar; events since 1.0.0-beta.2): the only permissions are `core:window:allow-start-dragging`, `core:window:allow-internal-toggle-maximize` (double click on the drag region), `core:window:allow-minimize`, `core:window:allow-toggle-maximize`, `core:window:allow-close`, `core:event:allow-listen` and `core:event:allow-unlisten`, for the main window only. A compromised WebView could move, minimize, maximize or hide the window to the tray (closing hides it, as Alt+F4 does) and listen to the events the backend sends anyway (import progress counts, "data changed", the id of an ended session); it cannot emit events, resize the window to arbitrary values, open new windows, read window state, or reach files, shell or network through them. A test keeps the list exact.
 
 Game pictures (v2.0): map loading screens (`map/screen/*.dds`) are decoded in Rust: our own code reads the DDS header and checks it before any allocation, the BC1 blocks are decoded by `bcdec_rs` (MIT, pure Rust, no dependencies, no `unsafe`), and the scaled result is written as PNG by `png` (already in the build through Tauri). The header check covers (magic, header sizes, BC1 FourCC only, sides 1–4096, at most 13 mipmaps, first level fully present, file at most 4 MB from the ZIP's declared size); output boxes are limited to 4096 × 4096 and the result is never larger than the source. Truncation at every length and deterministic mutations are tested. Pictures stay in a RAM cache of at most 64 MB.
 

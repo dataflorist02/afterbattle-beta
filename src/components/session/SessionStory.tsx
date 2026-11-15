@@ -3,6 +3,7 @@
  * the best battle's map with the headline sentence and the numbers, the battle-by-battle strip
  * and the session moments. Every rule comes from `get_session_story` (Rust, deterministic).
  */
+import { useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useLanguage } from "../../i18n/language";
 import type { UiKey } from "../../i18n/ui";
@@ -11,6 +12,7 @@ import type { Battle, BattleOutcome, SessionHeadline, SessionMoment } from "../.
 import { outcomeKey } from "../BattleTable";
 import { MapBackdrop } from "../MapBackdrop";
 import { useTankLabel } from "../TankName";
+import { prefersReducedMotion, useFlip, type Direction } from "../../lib/motion";
 
 type Translate = (key: UiKey, params?: Record<string, string | number>) => string;
 
@@ -99,14 +101,31 @@ export function Figure({
   value,
   label,
   main = false,
+  delta = null,
+  reserve,
 }: {
   value: string;
   label: string;
   main?: boolean;
+  /** A number that just changed (spec 29 §6): an overlay in the direction color, fading out. */
+  delta?: { direction: Direction; key: number } | null;
+  /** Characters kept for the number while it counts, so the width never jumps. */
+  reserve?: number;
 }) {
   return (
     <div className={main ? "figure figure-main" : "figure"}>
-      <span className="num figure-value">{value}</span>{" "}
+      <span className="num figure-value" style={reserve ? { minWidth: `${reserve}ch` } : undefined}>
+        {value}
+        {delta && (
+          <span
+            key={delta.key}
+            className={`figure-delta figure-${delta.direction}`}
+            aria-hidden="true"
+          >
+            {value}
+          </span>
+        )}
+      </span>{" "}
       <span className="figure-label">{label}</span>
     </div>
   );
@@ -128,6 +147,13 @@ export function BattleStrip({
 }) {
   const { language, tr } = useLanguage();
   const label = useTankLabel();
+  // Spec 29 §6: when a battle arrives, the tiles that moved glide to their new place.
+  const strip = useRef<HTMLOListElement>(null);
+  useFlip(
+    strip,
+    battles.map((battle) => battle.arenaId).join(","),
+    newBattleIds.length > 0 && !prefersReducedMotion(),
+  );
   return (
     <section className="section" aria-labelledby="strip-h">
       <div className="card-head">
@@ -135,7 +161,7 @@ export function BattleStrip({
           {tr("stripTitle")}
         </h2>
       </div>
-      <ol className="battle-strip" aria-labelledby="strip-h">
+      <ol ref={strip} className="battle-strip" aria-labelledby="strip-h">
         {battles.map((battle, index) => {
           const best = battle.arenaId === bestBattleId;
           const loss = lossLike(battle.outcome);
@@ -148,6 +174,7 @@ export function BattleStrip({
           return (
             <li
               key={battle.arenaId}
+              data-flip={battle.arenaId}
               className="strip-item"
               style={{ "--stagger": index } as CSSProperties}
             >

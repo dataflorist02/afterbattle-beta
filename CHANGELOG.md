@@ -1,5 +1,55 @@
 # Changelog
 
+## 1.0.0-beta.2
+
+Druga publiczna beta, instalator bez podpisu (pre-release). Wewnętrznie etap E9, spec 29. / Second public beta with an unsigned installer (pre-release). Internally stage E9, spec 29.
+
+### Po polsku — co się zmienia dla gracza
+
+- **Odświeżanie na żywo.** Nowa bitwa pojawia się sama na Sesji, w Historii, Czołgach i Celach, bez wychodzenia z ekranu; pasek „Odczyt powtórek” rośnie sam. Odświeżenie nie miga, nie gubi wybranego czołgu, filtrów ani doczytanych wierszy.
+- **Poprawione animacje Czołgów i Historii.** Wybór czołgu nie miga już prawą stroną; łagodne wejście wierszy w Historii sięga do dołu okna także w dniu z jedną bitwą.
+- **Nowe logo.** Litera A z rozgrzaną poprzeczką w ikonie aplikacji (pasek zadań, zasobnik, Alt+Tab, menu Start), w pasku nawigacji i w pasku tytułu; paleta granat–stal–żar.
+- **Ekran ładowania.** Tylko gdy start naprawdę trwa: kontur znaku rozżarza się od podstawy razem z prawdziwym postępem. Zwykły start — od razu aplikacja.
+- **Animacje nowych bitew i liczb.** Nowa bitwa wjeżdża na pasek Sesji i na górę Historii, liczby sesji liczą od starej do nowej wartości z krótkim kolorem kierunku (ciepły w górę, chłodny w dół). Wejście na ekran niczego nie porusza.
+- **Pasek przewijania** w kolorach Afterbattle: cienki, jaśniejszy po najechaniu, pomarańczowy przy przeciąganiu.
+- Wszystko to bez ruchu przy włączonym w Windows ograniczeniu animacji.
+
+### In English — what changes for the player
+
+- **Live refresh.** A new battle shows up by itself on Session, History, Tanks and Goals without leaving the screen; the "Reading battle files" bar moves by itself. A refresh never flashes and keeps the chosen tank, filters and loaded rows.
+- **Fixed motion on Tanks and History.** Choosing a tank no longer flashes the right-hand side; the soft entrance of History rows reaches the bottom of the window also on a day with a single battle.
+- **New logo.** An A with a glowing bar in the app icon (taskbar, tray, Alt+Tab, Start menu), the navigation rail and the title bar; a navy, steel and ember palette.
+- **Loading screen.** Only when the start really takes time: the outline of the mark glows up from the base with the real progress. A normal start shows the app at once.
+- **Motion of new battles and numbers.** A new battle slides onto the Session strip and onto the top of History; session numbers count from the old to the new value with a short tint of the direction (warm up, cool down). Entering a screen moves nothing.
+- **Scrollbar** in the Afterbattle colors: thin, brighter on hover, orange while dragging.
+- All of it without motion when Windows' reduce-animations setting is on.
+
+### E9 stage 0 — Tanks and History motion in the installed app (spec 29 §1)
+
+- Tanks: choosing another tank keeps the right-hand panel on screen; the old data stays until the new tank's data arrives, with no loading flash and no second entrance.
+- History: the entrance wave reaches the bottom of the window also when the newest day has a single battle (a day header between the first rows no longer shortens it); measured after the fonts and the first frame.
+- Map pictures that arrive after a tile is drawn fade in.
+
+### E9 stage 1 — live refresh (spec 29 §2)
+
+- The window now receives the backend's events (it was not allowed to listen, so they never arrived): a new battle shows up on Session, History, Tanks and Goals without leaving the screen, and the import progress bar moves by itself.
+- A refresh keeps what is on screen until the new data is in: no loading flash, the chosen tank and filters stay, rows loaded with "Show more" stay, nothing scrolls or enters again.
+
+### E9 stage 2 — brand (spec 29 §3, §4, §7)
+
+- New Afterbattle mark: an A outline with a rising bar, in the app icon (taskbar, tray, Alt+Tab, Start), the navigation rail, the title bar and the README.
+- The brand palette as tokens (navy, steel, ember; a cool blue for falling numbers); the title bar on the brand surface.
+- A thin scrollbar in the brand colors everywhere, brighter on hover and orange while dragging.
+
+### E9 stage 3 — loading screen (spec 29 §5)
+
+- When the start really takes time (a slow cold start, or the first reading of your replays into empty data), the outline of the mark glows up from the base with the real progress, then fades. A normal start shows the app at once.
+
+### E9 stage 4 — motion of a new battle (spec 29 §6)
+
+- A battle that arrives while Session is open slides onto the strip; the session's numbers count from the old to the new value with a short warm (up) or cool (down) tint. Entering the screen moves nothing.
+- A battle that arrives while History is open enters at the top and the list glides down; a scrolled list keeps its place.
+
 ## 1.0.0-beta.1
 
 Pierwsze publiczne wydanie — beta, instalator bez podpisu. Wewnętrznie ta wersja to „v2” (etapy E0–E8 niżej). / First public release — a beta with an unsigned installer. Internally this version is "v2" (stages E0–E8 below).

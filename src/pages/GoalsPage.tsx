@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "../api";
 import { Async, Card, Dialog, Empty, ErrorState, VehicleImage } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { formatNumber, formatPercent } from "../lib/format";
@@ -142,7 +143,10 @@ function ActiveGoal({ goal, onChanged }: { goal: ChallengePresentation; onChange
 function Suggestions({ sessionId, onChanged }: { sessionId: string; onChanged: () => void }) {
   const { language, tr } = useLanguage();
   const tankOf = useGoalTank();
-  const { state, reload } = useAsync(() => api.challengeSuggestions(sessionId), [sessionId]);
+  const version = useDataVersion();
+  const { state, reload } = useAsync(() => api.challengeSuggestions(sessionId), [sessionId], {
+    refreshKey: version,
+  });
   const [error, setError] = useState<string | undefined | null>(null);
   return (
     <section className="section" aria-labelledby="suggest-h">
@@ -196,7 +200,10 @@ function Suggestions({ sessionId, onChanged }: { sessionId: string; onChanged: (
 function History() {
   const { language, tr } = useLanguage();
   const tankOf = useGoalTank();
-  const { state, reload } = useAsync(() => api.challengeHistory(0, 10), []);
+  const version = useDataVersion();
+  const { state, reload } = useAsync(() => api.challengeHistory(0, 10), [], {
+    refreshKey: version,
+  });
   const statusKey: Record<string, UiKey> = {
     completed: "goalCompleted",
     failed: "goalFailed",
@@ -246,7 +253,8 @@ export function GoalsPage({
   const { tr } = useLanguage();
   const lastSession =
     snapshot.recentSessions.find((session) => session.status !== "active") ?? null;
-  const weekly = useAsync(() => api.weeklyReport(), [snapshot]);
+  const version = useDataVersion();
+  const weekly = useAsync(() => api.weeklyReport(), [], { refreshKey: version });
   return (
     <>
       {weekly.state.status === "ready" ? (
