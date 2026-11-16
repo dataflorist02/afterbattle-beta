@@ -14,11 +14,11 @@ function cargoVersion(): string {
 
 describe("release identity", () => {
   it("takes the version from Cargo.toml everywhere and keeps product metadata aligned", () => {
-    // Spec 29 §8 (author decision 2026-11-15): the second public beta, "Afterbattle beta 2".
-    expect(cargoVersion()).toBe("1.0.0-beta.2");
+    // Spec 29 §8 (author decision 2026-11-15); hotfix 2026-11-16: "Afterbattle beta 3".
+    expect(cargoVersion()).toBe("1.0.0-beta.3");
     expect(APP_NAME).toBe("Afterbattle");
     expect(RELEASE_CHANNEL).toBe("Public beta");
-    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 2");
+    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 3");
     expect(tauriConfig.app.windows[0].title).toBe(APP_DISPLAY_NAME);
     expect(APP_VERSION).toBe(cargoVersion());
     expect(packageJson.version).toBe(cargoVersion());
@@ -32,7 +32,8 @@ describe("release identity", () => {
     expect(tauriConfig.app.security.csp).toContain("default-src 'self'");
     expect(tauriConfig.app.security.csp).toContain("object-src 'none'");
     // E5-maps-hd §6 (author decision 2026-11-14): only the custom title bar's window calls;
-    // spec 29 §2: listening to the backend's own events (no emit, no core:default).
+    // spec 29 §2: listening to the backend's own events (no emit, no core:default);
+    // hotfix 1.0.0-beta.3: opening the folder dialog only (no save, message or file access).
     expect([...capability.permissions].sort()).toEqual([
       "core:event:allow-listen",
       "core:event:allow-unlisten",
@@ -41,6 +42,7 @@ describe("release identity", () => {
       "core:window:allow-minimize",
       "core:window:allow-start-dragging",
       "core:window:allow-toggle-maximize",
+      "dialog:allow-open",
     ]);
   });
 });
@@ -48,6 +50,7 @@ describe("release identity", () => {
 describe("display name (title bar and window title)", () => {
   it("names a pre-release by its channel and number, a final version by the version", () => {
     // Spec 29 §8: "Afterbattle beta N" with N the pre-release number; final: "Afterbattle 1.0.0".
+    expect(displayName("1.0.0-beta.3")).toBe("Afterbattle beta 3");
     expect(displayName("1.0.0-beta.2")).toBe("Afterbattle beta 2");
     expect(displayName("1.0.0-beta.1")).toBe("Afterbattle beta 1");
     expect(displayName("1.2.3-beta.14")).toBe("Afterbattle beta 14");

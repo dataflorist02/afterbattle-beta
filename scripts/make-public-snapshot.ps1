@@ -43,6 +43,10 @@
 
 .PARAMETER ResolveAuthorOnly
   Prints "AUTHOR: name <email>" and stops (used by the tests).
+
+.PARAMETER NameScanOnly
+  Checks this text with the excluded-name pattern (folder rules only, no ref is read), prints
+  "NAME SCAN: hit (<match>)" or "NAME SCAN: clean" and stops (used by the tests).
 #>
 [CmdletBinding()]
 param(
@@ -53,7 +57,8 @@ param(
   [string]$AuthorEmail = '',
   [string]$AuthorName = '',
   [string]$GhCommand = 'gh',
-  [switch]$ResolveAuthorOnly
+  [switch]$ResolveAuthorOnly,
+  [string]$NameScanOnly
 )
 
 Set-StrictMode -Version Latest
@@ -65,6 +70,7 @@ $ErrorActionPreference = 'Stop'
 # ---------------------------------------------------------------------------------------------
 $Exclusions = @(
   'docs/research/',               # research notes, including path B (encrypted replay part)
+  'research/',                    # research trial code; only on research/* branches, never merged
   'docs/audit/',                  # internal audit; names commits with personal data
   'docs/status/*.md',             # internal task and status notes (screens/ stays: synthetic)
   'STATUS.md',                    # internal run log with local paths and golden numbers
@@ -131,6 +137,30 @@ function Test-Excluded([string]$Path) {
   return $false
 }
 
+# The pattern of the excluded-name scan: the path and the file name of every excluded file, every
+# excluded folder of more segments as a whole name ("docs/research"), and every one-segment
+# folder as a path prefix ("research/..."), because such a name is also an ordinary word in prose.
+function Get-NamePattern([string[]]$ExcludedPaths) {
+  $names = New-Object System.Collections.Generic.List[string]
+  $prefixes = New-Object System.Collections.Generic.List[string]
+  foreach ($path in $ExcludedPaths) {
+    $names.Add($path)
+    $names.Add(($path -split '/')[-1])
+  }
+  foreach ($rule in $Exclusions) {
+    if ($rule.EndsWith('/')) {
+      $folder = $rule.TrimEnd('/')
+      if ($folder.Contains('/')) { $names.Add($folder) } else { $prefixes.Add($rule) }
+    }
+  }
+  # An empty alternative would match everywhere; (?!) never matches.
+  $nameAlternatives = ($names | Sort-Object -Unique | ForEach-Object { [regex]::Escape($_) }) -join '|'
+  if (-not $nameAlternatives) { $nameAlternatives = '(?!)' }
+  $prefixAlternatives = ($prefixes | Sort-Object -Unique | ForEach-Object { [regex]::Escape($_) }) -join '|'
+  if (-not $prefixAlternatives) { $prefixAlternatives = '(?!)' }
+  "(?i)(?<![A-Za-z0-9_.-])(($nameAlternatives)(?![A-Za-z0-9_-])|($prefixAlternatives))"
+}
+
 function Find-Gitleaks {
   if ($Gitleaks) { return $Gitleaks }
   $command = Get-Command gitleaks -ErrorAction SilentlyContinue
@@ -186,6 +216,11 @@ function Resolve-Author {
 if ($ResolveAuthorOnly) {
   $author = Resolve-Author
   Write-Output "AUTHOR: $($author.Name) <$($author.Email)>"
+  return
+}
+if ($PSBoundParameters.ContainsKey('NameScanOnly')) {
+  $match = [regex]::Match($NameScanOnly, (Get-NamePattern @()))
+  if ($match.Success) { Write-Output "NAME SCAN: hit ($($match.Value))" } else { Write-Output 'NAME SCAN: clean' }
   return
 }
 # Decided before any work, so a missing login stops the run early.
@@ -252,16 +287,7 @@ foreach ($name in $Patterns.Keys) {
 }
 
 # No public file may name an excluded file: its path, its file name, or an excluded folder.
-$excludedNames = New-Object System.Collections.Generic.List[string]
-foreach ($path in $excluded) {
-  $excludedNames.Add($path)
-  $excludedNames.Add(($path -split '/')[-1])
-}
-foreach ($rule in $Exclusions) {
-  if ($rule.EndsWith('/')) { $excludedNames.Add($rule.TrimEnd('/')) }
-}
-$nameAlternatives = ($excludedNames | Sort-Object -Unique | ForEach-Object { [regex]::Escape($_) }) -join '|'
-$namePattern = "(?i)(?<![A-Za-z0-9_.-])($nameAlternatives)(?![A-Za-z0-9_-])"
+$namePattern = Get-NamePattern $excluded
 $nameFiles = $textFiles | Where-Object { $NameScanExempt -notcontains (& $relative $_.FullName) }
 $nameLabel = 'excluded name'
 $nameHits = $nameFiles | Select-String -Pattern $namePattern -AllMatches -ErrorAction SilentlyContinue

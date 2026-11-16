@@ -12,7 +12,7 @@ Afterbattle is a local-first Windows desktop analytics application for World of 
 
 | | |
 |---|---|
-| Status | 1.0.0-beta.2, public beta |
+| Status | 1.0.0-beta.3, public beta |
 | Platform | Windows desktop (10/11) |
 | Architecture | Tauri 2 + Rust + React/TypeScript |
 | Storage | Local SQLite (schema v10) |
@@ -135,10 +135,10 @@ AI output is not treated as a source of truth; the repository’s contracts, tes
 
 ## Quality and validation
 
-The 1.0.0-beta.2 candidate has been checked locally on Windows:
+The 1.0.0-beta.3 candidate has been checked locally on Windows:
 
-- Frontend tests: 308/308 passed; ESLint and Prettier clean; production build passes.
-- Rust tests: 744 passed, 0 failed; 5 ignored tests read local game data and are run by the author only.
+- Frontend tests: 318/318 passed; ESLint and Prettier clean; production build passes.
+- Rust tests: 773 passed, 0 failed; 5 ignored tests read local game data and are run by the author only.
 - `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings`: pass.
 - Mutation testing on new and changed logic, at least 85% per run: `cargo mutants` for the Rust parsers, rules and analytics, Stryker (`tools/mutants`) for the frontend logic (motion, live refresh, loading screen).
 - A read-only golden test over the author's local replays keeps the statistics population and a metrics digest fixed between stages.
@@ -147,7 +147,7 @@ GitHub Actions CI (actions pinned to commit SHAs) runs lint, frontend tests and 
 
 ## Project status and limitations
 
-1.0.0-beta.2 is the second public beta, marked as a pre-release. The scope is Windows desktop usage with locally recorded random-battle replays.
+1.0.0-beta.3 is the third public beta (a fix for finding the game folder), marked as a pre-release. The scope is Windows desktop usage with locally recorded random-battle replays.
 
 Known limitations include:
 
@@ -185,27 +185,27 @@ The application asks the user to approve a local World of Tanks installation bef
 
 ### Po polsku
 
-1. Pobierz `Afterbattle_1.0.0-beta.2_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-beta.2` na GitHubie (oznaczonego jako pre-release).
+1. Pobierz `Afterbattle_1.0.0-beta.3_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-beta.3` na GitHubie (oznaczonego jako pre-release).
 2. Sprawdź, czy plik jest nienaruszony. W PowerShellu, w folderze z pobranymi plikami:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.2_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.3_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Oba ciągi znaków muszą być identyczne. Jeśli się różnią, nie instaluj i zgłoś to w zgłoszeniach (Issues) repozytorium.
 3. Uruchom instalator. Instalator nie jest podpisany, więc Windows SmartScreen pokaże ostrzeżenie „System Windows ochronił ten komputer”. Kliknij **Więcej informacji**, sprawdź nazwę pliku i wybierz **Uruchom mimo to**. Instalacja jest tylko dla bieżącego użytkownika i nie wymaga uprawnień administratora.
-4. Przy pierwszym uruchomieniu wskaż folder World of Tanks. Aplikacja czyta tylko powtórki i pliki gry; nic nie wysyła, dopóki nie włączysz danych WN8 z XVM.
+4. Przy pierwszym uruchomieniu wskaż folder World of Tanks: „Znajdź grę” szuka go na wszystkich dyskach i w bibliotekach Steam, „Wskaż ręcznie” otwiera okno wyboru folderu. Aplikacja czyta tylko powtórki i pliki gry; nic nie wysyła, dopóki nie włączysz danych WN8 z XVM.
 
 ### In English
 
-1. Download `Afterbattle_1.0.0-beta.2_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-beta.2` release on GitHub (marked as a pre-release).
+1. Download `Afterbattle_1.0.0-beta.3_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-beta.3` release on GitHub (marked as a pre-release).
 2. Check the file is intact. In PowerShell, in the folder with the downloads:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.2_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.3_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Both strings must be identical. If they differ, do not install and report it in the repository's Issues.
 3. Run the installer. It is not signed, so Windows SmartScreen shows "Windows protected your PC". Click **More info**, check the file name and choose **Run anyway**. It installs for the current user only and needs no administrator rights.
-4. On first start, choose your World of Tanks folder. The app only reads replays and game files; it sends nothing until you turn on XVM WN8 data.
+4. On first start, choose your World of Tanks folder: "Find the game" looks on every drive and in Steam libraries, "Choose manually" opens the folder picker. The app only reads replays and game files; it sends nothing until you turn on XVM WN8 data.
 
 ## Privacy and security
 

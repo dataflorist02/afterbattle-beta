@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { api } from "../api";
 import { BattleTable } from "../components/BattleTable";
+import { GameFolderActions } from "../components/GameFolderActions";
 import { AttemptsConversionPanel } from "../components/session/AttemptsConversion";
 import { BattlePaceSummaryPanel } from "../components/session/BattlePace";
 import { ImportBar } from "../components/ImportBar";
@@ -299,6 +300,45 @@ function CountedFigure({
   );
 }
 
+/**
+ * The first start without a game folder (hotfix 1.0.0-beta.3): choose it right here, by
+ * detection or by hand, instead of an empty screen.
+ */
+function FirstRun({ onChanged }: { onChanged: () => void }) {
+  const { tr } = useLanguage();
+  const [error, setError] = useState<string | undefined | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const run = (action: () => Promise<unknown>, done?: string) => {
+    setError(null);
+    setNotice(null);
+    action().then(
+      () => {
+        if (done) setNotice(done);
+        onChanged();
+      },
+      (failure: { code?: string }) => setError(failure?.code),
+    );
+  };
+  return (
+    <>
+      <header className="page-header">
+        <h1 className="page-title">{tr("firstRunTitle")}</h1>
+      </header>
+      {error !== null && <ErrorState code={error} />}
+      {notice && (
+        <p className="muted" role="status">
+          {notice}
+        </p>
+      )}
+      <div className="card state">
+        <p className="muted">{tr("firstRunText")}</p>
+        <p className="muted">{tr("firstRunHint")}</p>
+        <GameFolderActions run={run} manualLabel={tr("firstRunPick")} />
+      </div>
+    </>
+  );
+}
+
 export function SessionPage({
   snapshot,
   sessionId,
@@ -341,23 +381,7 @@ export function SessionPage({
     { refreshKey: version },
   );
 
-  if (!snapshot.configured) {
-    return (
-      <>
-        <header className="page-header">
-          <h1 className="page-title">{tr("firstRunTitle")}</h1>
-        </header>
-        <Empty
-          text={tr("firstRunText")}
-          action={
-            <button type="button" className="button button-primary" onClick={onOpenSettings}>
-              {tr("openSettings")}
-            </button>
-          }
-        />
-      </>
-    );
-  }
+  if (!snapshot.configured) return <FirstRun onChanged={onChanged} />;
 
   const act = (run: () => Promise<unknown>) => {
     setActionError(null);

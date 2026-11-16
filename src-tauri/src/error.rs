@@ -21,6 +21,14 @@ pub enum AppError {
     Io(#[from] std::io::Error),
     #[error("the selected directory is not a valid World of Tanks installation")]
     InvalidGameDirectory,
+    #[error("the selected folder has no WorldOfTanks.exe")]
+    GameExecutableMissing,
+    #[error("the selected game folder has no replays folder")]
+    ReplaysFolderMissing,
+    #[error("the replays folder of the game has no battle replays")]
+    ReplaysFolderEmpty,
+    #[error("the game folder cannot be read with the current permissions")]
+    GameFolderUnreadable,
     #[error("the replay is still being written")]
     ReplayIncomplete,
     #[error("the replay format is invalid or unsupported")]
@@ -81,6 +89,10 @@ impl From<AppError> for CommandError {
             AppError::Credential => "credential_error",
             AppError::Io(_) => "filesystem_error",
             AppError::InvalidGameDirectory => "invalid_game_directory",
+            AppError::GameExecutableMissing => "game_executable_missing",
+            AppError::ReplaysFolderMissing => "replays_folder_missing",
+            AppError::ReplaysFolderEmpty => "replays_folder_empty",
+            AppError::GameFolderUnreadable => "game_folder_unreadable",
             AppError::ReplayIncomplete => "replay_incomplete",
             AppError::InvalidReplay => "invalid_replay",
             AppError::ReplayTooLarge => "replay_too_large",

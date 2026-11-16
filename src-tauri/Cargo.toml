@@ -1,6 +1,6 @@
 [package]
 name = "afterbattle"
-version = "1.0.0-beta.2"
+version = "1.0.0-beta.3"
 description = "Privacy-first local World of Tanks session coach"
 authors = ["Afterbattle contributors"]
 edition = "2024"
@@ -34,6 +34,15 @@ zip = { version = "9.5", default-features = false }
 png = "0.17.16"
 # E5-maps-hd: BC1 block decoder for the map loading screens (MIT, pure Rust, no dependencies).
 bcdec_rs = "0.2.1"
+# Hotfix 1.0.0-beta.3: the folder picker for the game folder (official plugin; the window
+# may only open the dialog: `dialog:allow-open`).
+tauri-plugin-dialog = "2"
+
+# Hotfix 1.0.0-beta.3: game folder detection (registry, fixed drives). Both crates were already
+# in Cargo.lock (winreg through the build, windows-sys through Tauri).
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
 
 [dev-dependencies]
 tempfile = "3"

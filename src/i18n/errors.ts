@@ -42,6 +42,22 @@ export const errorMessages = {
     pl: "W tym folderze nie ma gry World of Tanks. Wybierz folder, w którym jest gra.",
     en: "This folder does not contain World of Tanks. Choose the folder with the game.",
   },
+  game_executable_missing: {
+    pl: "W tym folderze nie ma pliku WorldOfTanks.exe. Wskaż folder, w którym zainstalowana jest gra.",
+    en: "This folder has no WorldOfTanks.exe file. Choose the folder where the game is installed.",
+  },
+  replays_folder_missing: {
+    pl: "W folderze gry nie ma folderu z nagraniami bitew (replays). W grze włącz Ustawienia → Ogólne → Nagrywaj bitwy, zagraj bitwę i wskaż folder ponownie.",
+    en: "The game folder has no battle recordings folder (replays). In the game, turn on Settings → General → Record battles, play a battle and choose the folder again.",
+  },
+  replays_folder_empty: {
+    pl: "Folder z nagraniami bitew (replays) jest pusty. W grze włącz Ustawienia → Ogólne → Nagrywaj bitwy, zagraj bitwę i wskaż folder ponownie.",
+    en: "The battle recordings folder (replays) is empty. In the game, turn on Settings → General → Record battles, play a battle and choose the folder again.",
+  },
+  game_folder_unreadable: {
+    pl: "Brak uprawnień do odczytu folderu gry. Sprawdź uprawnienia folderu albo wskaż inny.",
+    en: "There is no permission to read the game folder. Check the folder permissions or choose another one.",
+  },
   replay_incomplete: {
     pl: "Gra wciąż zapisuje ostatnią bitwę. Wyniki pojawią się za chwilę same.",
     en: "The game is still saving the last battle. The results will appear on their own shortly.",

@@ -22,7 +22,8 @@ Only the newest published beta will receive security fixes. The project is curre
 - Missing or ambiguous metrics remain NULL/N/A and cannot produce categorical coaching.
 - Optional network bodies are streamed through hard limits; redirects are disabled and destinations are compiled in.
 - The application does not request administrator privileges.
-- The window capability grants only the custom title bar's calls: start dragging, double-click maximize, minimize, maximize/restore and close (which hides to the tray). No other Tauri permission is granted; a test keeps the list exact.
+- The window capability grants only the custom title bar's calls: start dragging, double-click maximize, minimize, maximize/restore and close (which hides to the tray); listening to the backend's own events (since 1.0.0-beta.2); and opening the system folder dialog to choose the game folder (`dialog:allow-open`, since 1.0.0-beta.3: no save or message dialogs, no file system access). The chosen path is normalized and checked in Rust before it is used. No other Tauri permission is granted; a test keeps the list exact.
+- Game folder detection (since 1.0.0-beta.3) only reads: the `InstallLocation` of uninstall entries and the Steam path in the Windows registry, a fixed list of folders on fixed drives and Steam's `libraryfolders.vdf`. It never scans a drive recursively, skips network and removable drives and stops after 4 seconds.
 - Game package pictures are parsed in Rust with limits checked before allocation (PNG at most 1 MB; BC1 DDS at most 4 MB, sides up to 4096, at most 13 mipmaps) and held only in a RAM cache of at most 64 MB.
 - No remote scripts, fonts, images, or frames are loaded.
 - Telemetry and automated crash uploads are absent.
@@ -32,7 +33,7 @@ Only the newest published beta will receive security fixes. The project is curre
 
 ## Release requirements
 
-The public beta 1.0.0-beta.2 (author decisions 2026-11-14 and 2026-11-15; a GitHub pre-release) requires:
+The public beta 1.0.0-beta.3 (author decisions 2026-11-14, 2026-11-15 and the hotfix of 2026-11-16; a GitHub pre-release) requires:
 
 1. Passing Rust and TypeScript tests, lint, formatting and Clippy, and the read-only golden test on the author's replays.
 2. `cargo audit` and `pnpm audit --prod` with no high-severity findings.

@@ -1,4 +1,4 @@
-# Public release review — Afterbattle 1.0.0-beta.2
+# Public release review — Afterbattle 1.0.0-beta.3
 
 The public repository is the tree of the private `v2/integration` **minus whole excluded files** — no file is edited only for the public copy (author decision 2026-11-14). It is produced by [`scripts/make-public-snapshot.ps1`](../scripts/make-public-snapshot.ps1), which holds the exclusion list as data, scans the result and commits only when no new finding appears. This file is part of the private tree and therefore of the snapshot. Nothing is pushed or published by the script; the author pushes.
 
@@ -9,6 +9,7 @@ The exact list is data in `scripts/make-public-snapshot.ps1` (`$Exclusions`); th
 | Category | Files | Reason |
 |---|---|---|
 | Research notes folder | 9 | Research, including path B (decoding the encrypted part of replays), which stays private. |
+| Research trial code folder | 0 | Trial code of research runs; it lives only on research branches and is never merged. Listed for safety (added 2026-11-15). |
 | Internal audit folder | 1 | Names commits with personal data in the private history. |
 | Internal task and status notes | 4 | Working notes of the development run. The synthetic screenshots next to them stay (README, the repository test and `tools/screens` use them). |
 | Internal run log | 1 | Local paths of the author's game folder, golden numbers from the author's replays. |
@@ -22,13 +23,14 @@ The exact list is data in `scripts/make-public-snapshot.ps1` (`$Exclusions`); th
 
 ## 2. Difference from the previous snapshot
 
-The public repository is updated with a new commit by the script's update mode (its history is kept). Differences from the 1.0.0-beta.1 snapshot (2026-11-14):
+The public repository is updated with a new commit by the script's update mode (its history is kept). Differences from the 1.0.0-beta.2 snapshot (2026-11-15):
 
-- **Exclusions:** unchanged (19 files).
-- **New:** spec 29 (E9: motion, live refresh, brand, loading screen), the brand files in `docs/design/brand/` (the Afterbattle mark: 5 SVG, 3 PNG and their README; original work, no game motifs), `tools/mutants/` (Stryker for the frontend logic), the loading screen, the brand mark and the live refresh in `src/`.
-- **App icons:** generated again from the brand icon; the Android and iOS icon folders are gone (the desktop bundle never used them): `src-tauri/icons/` holds 18 files instead of 53.
-- **Window capability:** adds `core:event:allow-listen` and `core:event:allow-unlisten`, so the window receives the backend's own events (THREAT_MODEL).
-- **Content credentials:** the brand SVG and PNG files carry C2PA content credentials signed by Anthropic ("Claude provided this file at the request of a user…", the tool name and certificates); checked: no user name, e-mail address, account or path. The app icons generated from them carry none.
+- **Exclusions:** the same 19 files. The rule list gains the research trial code folder (0 files; it never reaches the integration branch), and a one-segment excluded folder is now searched in public files as a path prefix (section 3).
+- **New (hotfix 1.0.0-beta.3, game folder):** `src-tauri/src/game_folder.rs` (detection from the registry, fixed drives and Steam libraries; folder validation with specific errors; normalization of a chosen `replays` folder or `WorldOfTanks.exe`) and `src/components/GameFolderActions.tsx` (detection results and the manual choice, in Settings and on the first-start screen).
+- **Window capability:** adds `dialog:allow-open` (the system folder picker only) with the official `tauri-plugin-dialog` 2.7.3 and `@tauri-apps/plugin-dialog` ~2.7.3 (THREAT_MODEL, SECURITY). Windows-only runtime crates `winreg` 0.55 and `windows-sys` 0.61 for detection were already in `Cargo.lock`.
+- **Changed documents:** CHANGELOG, README, SECURITY, THREAT_MODEL, KNOWN_ISSUES and RELEASE_CHECKLIST for 1.0.0-beta.3; spec 20 (reference tables per tier and class as a feature candidate) and spec 28 (the author's decisions on local AI summaries, not in the app); the snapshot script and its test (the exclusion rules above).
+- **Screenshots:** refreshed with `tools/screens` ("Afterbattle beta 3" in the title bar, "Choose the game folder" in Settings); 2 new synthetic screenshots of the first-start screen (`session-firstrun.png`, `session-firstrun-found.png`), so `docs/status/screens/` holds 47 files. The mocked IPC of the screenshot page gets a `firstrun` state.
+- **Unchanged:** fonts, brand files and app icons.
 
 ## 3. Scans (run by the script on the snapshot before committing)
 
@@ -41,7 +43,7 @@ The public repository is updated with a new commit by the script's update mode (
 | `src/lib/presentation.test.ts` | `99_synthetic_map`, `usa-A179_Black_Rock` (×2) | synthetic map key; public game catalog vehicle code |
 | `src-tauri/src/local_tracker.rs` | `france-amx_13` | public game catalog vehicle code |
 
-**Excluded names:** the path and the file name of every excluded file (and every excluded folder path) are searched in all snapshot text files except the script and its test — 0 hits.
+**Excluded names:** the path and the file name of every excluded file (and every excluded folder path) are searched in all snapshot text files except the script and its test — 0 hits. Since 2026-11-15 a one-segment excluded folder is searched as a path prefix (its name followed by `/`), because such a name can be an ordinary word in prose.
 
 **Pattern searches** (text files, lockfiles skipped) — 0 hits each:
 
@@ -92,20 +94,20 @@ docs/design/  (6 files)
 docs/design/brand/  (9 files)
 docs/design/flare/  (6 files)
 docs/specs/  (6 files)
-docs/status/screens/  (45 files)
+docs/status/screens/  (47 files)
 scripts/  (2 files)
 src-tauri/  (4 files)
 src-tauri/.cargo/  (1 files)
 src-tauri/capabilities/  (1 files)
 src-tauri/gen/schemas/  (4 files)
 src-tauri/icons/  (18 files)
-src-tauri/src/  (36 files)
+src-tauri/src/  (37 files)
 src/  (10 files)
 src/api/generated/  (159 files)
 src/api/generated/serde_json/  (1 files)
 src/app/  (9 files)
 src/assets/fonts/  (15 files)
-src/components/  (14 files)
+src/components/  (15 files)
 src/components/session/  (4 files)
 src/hooks/  (3 files)
 src/i18n/  (6 files)
@@ -119,4 +121,4 @@ tools/mutants/  (3 files)
 tools/screens/  (3 files)
 ```
 
-421 tracked files.
+425 tracked files.

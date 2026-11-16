@@ -11,6 +11,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use crate::game_folder::{prepare_selection, validate_root};
 use chrono::{Local, NaiveDateTime, TimeZone, Utc};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use serde_json::Value;
@@ -446,7 +447,9 @@ impl LocalTracker {
         if self.disabled {
             return Err(AppError::RecoveryModeTrackerDisabled);
         }
-        let canonical = validate_root(Path::new(root))?;
+        // The chosen folder is normalized (a `replays` folder or `WorldOfTanks.exe` → the game
+        // folder) and checked here; the window assumes nothing about it.
+        let canonical = prepare_selection(Path::new(root))?;
         {
             let _operation = self.operation_lock.lock().map_err(|_| AppError::Tracker)?;
             store_source_root(&canonical.to_string_lossy())?;
@@ -564,19 +567,9 @@ impl LocalTracker {
         Ok(())
     }
 
+    /// Game folders found on this computer (hotfix 1.0.0-beta.3, [`crate::game_folder`]).
     pub fn detect_installations() -> Vec<String> {
-        let mut candidates = Vec::new();
-        for path in [
-            r"C:\Games\World_of_Tanks_EU",
-            r"C:\Games\World_of_Tanks",
-            r"C:\Program Files (x86)\World_of_Tanks_EU",
-            r"C:\Program Files\World_of_Tanks_EU",
-        ] {
-            if validate_root(Path::new(path)).is_ok() {
-                candidates.push(path.to_owned());
-            }
-        }
-        candidates
+        crate::game_folder::detect_installations()
     }
 
     fn refresh_status(&self) {
@@ -1193,21 +1186,6 @@ fn delete_source_root() -> Result<(), AppError> {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(_) => Err(AppError::Credential),
     }
-}
-
-fn validate_root(path: &Path) -> Result<PathBuf, AppError> {
-    let root = fs::canonicalize(path).map_err(|_| AppError::InvalidGameDirectory)?;
-    let has_executable = root.join("WorldOfTanks.exe").is_file()
-        || root.join("win64").join("WorldOfTanks.exe").is_file();
-    if !root.is_dir() || !root.join("replays").is_dir() || !has_executable {
-        return Err(AppError::InvalidGameDirectory);
-    }
-    let replays =
-        fs::canonicalize(root.join("replays")).map_err(|_| AppError::InvalidGameDirectory)?;
-    if !replays.starts_with(&root) {
-        return Err(AppError::InvalidGameDirectory);
-    }
-    Ok(root)
 }
 
 #[cfg(test)]

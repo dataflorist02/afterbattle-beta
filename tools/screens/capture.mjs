@@ -59,6 +59,20 @@ try {
       await page.close();
     }
   }
+  // Hotfix 1.0.0-beta.3: the first start without a game folder, before and after "Znajdź grę".
+  for (const [suffix, detect] of [["", false], ["-found", true]]) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.addInitScript(() => localStorage.setItem("afterbattle-language", "pl"));
+    await page.goto(`http://localhost:${port}/screens.html?state=firstrun`);
+    await page.getByRole("heading", { name: "Wskaż folder gry" }).waitFor();
+    if (detect) {
+      await page.getByRole("button", { name: "Znajdź grę", exact: true }).click();
+      await page.getByRole("button", { name: "Użyj tego folderu" }).waitFor();
+    }
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: resolve(out, `session-firstrun${suffix}.png`), fullPage: true });
+    await page.close();
+  }
   // E5-flare §7: render time with 30 session tiles and 200 history rows (synthetic, real browser).
   const page = await browser.newPage({ viewport: { width: 1920, height: 1200 } });
   await page.addInitScript(() => localStorage.setItem("afterbattle-language", "pl"));

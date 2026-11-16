@@ -20,10 +20,27 @@ describe("error dictionary (D10)", () => {
     for (const [code, texts] of Object.entries(errorMessages)) {
       for (const text of Object.values(texts)) {
         expect(text, code).not.toMatch(/[a-z]+_[a-z_]+/);
-        expect(text.toLowerCase(), code).not.toMatch(/parser|baseline|replay|tracker/);
+        // The folder name the player sees in Explorer is allowed in brackets (author 2026-11-16).
+        const words = text.toLowerCase().replaceAll("(replays)", "");
+        expect(words, code).not.toMatch(/parser|baseline|replay|tracker/);
       }
       expect(texts.pl, code).not.toMatch(/\b(the|and|error|failed)\b/i);
     }
+  });
+
+  it("names the replays folder as the player sees it in Explorer", () => {
+    expect(errorMessages.replays_folder_missing.pl).toContain(
+      "nie ma folderu z nagraniami bitew (replays)",
+    );
+    expect(errorMessages.replays_folder_empty.pl).toContain(
+      "Folder z nagraniami bitew (replays) jest pusty",
+    );
+    expect(errorMessages.replays_folder_missing.en).toContain(
+      "has no battle recordings folder (replays)",
+    );
+    expect(errorMessages.replays_folder_empty.en).toContain(
+      "The battle recordings folder (replays) is empty",
+    );
   });
 
   it("falls back to a generic text for an unknown code", () => {

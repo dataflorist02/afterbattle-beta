@@ -1,4 +1,4 @@
-# Known issues — 1.0.0-beta.2
+# Known issues — 1.0.0-beta.3
 
 - The beta installer has no Authenticode signature: it is published as a GitHub pre-release with `SHA256SUMS.txt`, and Windows SmartScreen warns on install. Check the installer with `Get-FileHash` against `SHA256SUMS.txt` (README). Code signing and automatic updates come with the stable 1.0.0.
 - Windows 10/11 x64 only; no macOS, Linux or ARM support in this package.
@@ -10,5 +10,6 @@
 - Network loss or unavailable XVM data disables WN8 until a valid local snapshot exists, but does not block replay tracking.
 - The window has its own title bar instead of the Windows frame. Windows 11 snap layouts (the flyout when hovering the maximize button) are not available; dragging to screen edges, Win+arrow keys, double-click maximize and resizing at the edges work.
 - A map without a loading screen in the game files (one on the current client) shows its smaller picture at most 1.25× on the right of headers and rows, over a blurred copy, instead of a stretched picture.
+- "Find the game" checks install entries in the registry, the usual folders on fixed drives and Steam libraries. A game copied to another folder without an installer entry is not found; choose it with "Choose the game folder". Network drives are not searched.
 - Diagnostics are copied to the clipboard rather than saved through a file dialog to avoid adding broad filesystem capabilities.
 - The installer has not yet been verified on a second physical computer. This candidate requires a controlled installation test before it is shared.

@@ -59,7 +59,7 @@ describe("title bar (E5-maps-hd §6)", () => {
     renderBar();
     const bar = screen.getByRole("banner");
     expect(bar).toHaveAttribute("data-tauri-drag-region");
-    expect(bar).toHaveTextContent("Afterbattle beta 2");
+    expect(bar).toHaveTextContent("Afterbattle beta 3");
     const buttons = screen.getAllByRole("button");
     expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
       "Minimalizuj",
@@ -120,7 +120,7 @@ describe("window configuration (E5-maps-hd §6)", () => {
     expect(main.resizable).toBe(true);
   });
 
-  it("grants only the title bar's window calls and listening to backend events", () => {
+  it("grants only the title bar's window calls, listening to backend events and the folder dialog", () => {
     const capability = JSON.parse(readFileSync("src-tauri/capabilities/default.json", "utf8"));
     expect(capability.windows).toEqual(["main"]);
     expect([...capability.permissions].sort()).toEqual([
@@ -131,6 +131,7 @@ describe("window configuration (E5-maps-hd §6)", () => {
       "core:window:allow-minimize",
       "core:window:allow-start-dragging",
       "core:window:allow-toggle-maximize",
+      "dialog:allow-open",
     ]);
   });
 });

@@ -22,6 +22,8 @@ describe("public snapshot script", () => {
       "STATUS.md",
       "CLAUDE.md",
       ".github/dependabot.yml",
+      // Research trial code (moonshot sprint 2026-11-15): lives on research/* branches only.
+      "research/",
     ])
       expect(exclusions).toContain(path);
   });
@@ -56,6 +58,48 @@ describe.skipIf(!existsSync(".github/dependabot.yml"))("Dependabot (private repo
     const dependabot = readFileSync(".github/dependabot.yml", "utf8");
     for (const ecosystem of ["npm", "cargo", "github-actions"])
       expect(dependabot).toContain(`package-ecosystem: ${ecosystem}`);
+  });
+});
+
+/**
+ * The excluded-name scan (author decision 2026-11-15): a one-segment excluded folder is searched
+ * as a path prefix, so the ordinary word passes and a path inside the folder stops the script.
+ */
+describe.skipIf(process.platform !== "win32")("excluded-name scan of folders", () => {
+  function scan(text: string): string {
+    const result = spawnSync(
+      "powershell",
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/make-public-snapshot.ps1",
+        "-NameScanOnly",
+        text,
+      ],
+      { encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    return result.stdout.trim();
+  }
+
+  it("lets the word research pass and stops on a path inside research/", () => {
+    expect(scan("Architecture, privacy, threat model, checklists, and research")).toBe(
+      "NAME SCAN: clean",
+    );
+    expect(scan("Research notes folder")).toBe("NAME SCAN: clean");
+    expect(scan("see research/a1-reference/x")).toBe("NAME SCAN: hit (research/)");
+  });
+
+  it("lets the word .claude pass and stops on a path inside .claude/", () => {
+    expect(scan("settings of .claude are local")).toBe("NAME SCAN: clean");
+    expect(scan("see .claude/settings.json")).toBe("NAME SCAN: hit (.claude/)");
+  });
+
+  it("keeps searching a folder of more segments as a whole name", () => {
+    expect(scan("see docs/research for notes")).toBe("NAME SCAN: hit (docs/research)");
+    expect(scan("see src-tauri/tools")).toBe("NAME SCAN: hit (src-tauri/tools)");
   });
 });
 

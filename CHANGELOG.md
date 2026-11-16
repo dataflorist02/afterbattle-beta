@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.0.0-beta.3
+
+Trzecia publiczna beta: poprawka zgłoszenia testerów z 2026-11-16 (przy świeżej instalacji aplikacja nie znajdowała folderu gry), instalator bez podpisu (pre-release). / Third public beta: a fix for the testers' report of 2026-11-16 (on a fresh install the app did not find the game folder), unsigned installer (pre-release).
+
+### Po polsku — co się zmienia dla gracza
+
+- **Gra na dowolnym dysku.** „Znajdź grę” szuka World of Tanks we wpisach instalacji w rejestrze Windows, w typowych folderach na wszystkich dyskach stałych (`Games\World_of_Tanks_EU`, `_NA`, `_ASIA`, `World_of_Tanks`) i w bibliotekach Steam. Wcześniej sprawdzało tylko cztery ścieżki na dysku C:. Wykrywanie trwa najwyżej kilka sekund i nie przeszukuje całych dysków.
+- **Ręczny wybór folderu.** Nowy przycisk „Wskaż folder gry” w Ustawieniach, obok „Znajdź grę”, otwiera systemowe okno wyboru folderu. Można wskazać folder gry albo folder z nagraniami bitew (`replays`) w nim — aplikacja sama przejdzie do folderu gry.
+- **Pierwsze uruchomienie.** Bez wybranej gry Sesja od razu pokazuje „Wskaż folder gry” z przyciskami „Znajdź grę” i „Wskaż ręcznie”, zamiast odsyłać do Ustawień.
+- **Konkretne komunikaty.** Przy złym folderze aplikacja mówi, czego brakuje: pliku WorldOfTanks.exe, folderu z nagraniami bitew (replays), samych nagrań (z podpowiedzią: w grze Ustawienia → Ogólne → Nagrywaj bitwy) albo uprawnień do odczytu. Gdy wykrywanie nic nie znajdzie, mówi to i proponuje wybór ręczny.
+
+### In English — what changes for the player
+
+- **The game on any drive.** "Find the game" looks for World of Tanks in the install entries of the Windows registry, in the usual folders on every fixed drive (`Games\World_of_Tanks_EU`, `_NA`, `_ASIA`, `World_of_Tanks`) and in Steam libraries. Before, it checked only four paths on drive C:. Detection takes a few seconds at most and never searches whole drives.
+- **Choosing the folder by hand.** A new "Choose the game folder" button in Settings, next to "Find the game", opens the system folder picker. You can choose the game folder or the folder with battle recordings (`replays`) inside it — the app moves to the game folder by itself.
+- **First start.** Without a chosen game, Session shows "Choose the game folder" with "Find the game" and "Choose manually" right away instead of pointing to Settings.
+- **Specific messages.** For a wrong folder the app says what is missing: the WorldOfTanks.exe file, the battle recordings folder (replays), the recordings themselves (with a hint: in the game, Settings → General → Record battles) or the permission to read it. When detection finds nothing, it says so and offers the manual choice.
+
+### Hotfix — game folder (technical)
+
+- `src-tauri/src/game_folder.rs`: detection is a function of its sources (registry install locations, fixed drives, Steam roots from the registry) tested on temporary folders; it probes the uninstall entries (HKLM, HKLM WOW6432Node, HKCU) whose `InstallLocation` has `WorldOfTanks.exe`, the usual folders on every fixed drive, `steamapps\common\World of Tanks` in every Steam library (`libraryfolders.vdf`), returns canonical folders without duplicates and stops at a 4 s limit; no recursive scan, no network or removable drives.
+- Validation of a folder (`validate_root`) gives four new error codes with Polish and English texts: `game_executable_missing`, `replays_folder_missing`, `replays_folder_empty` (only when choosing a folder), `game_folder_unreadable`. A chosen `replays` folder becomes its parent; a chosen `WorldOfTanks.exe` (also in `win64`/`win32`) its game folder.
+- `tauri-plugin-dialog` 2.7.3 (official, the newest for Rust 1.89) and `@tauri-apps/plugin-dialog` ~2.7.3; the window capability gains `dialog:allow-open` only. Windows-only runtime crates for detection: `winreg` 0.55 and `windows-sys` 0.61 (both already in `Cargo.lock`).
+
+### Internal (since 1.0.0-beta.2)
+
+- **Internal:** the public snapshot script excludes one more folder (research trial code that never reaches the integration branch) and searches a one-segment excluded folder in public files as a path prefix instead of a bare word; tests cover both cases.
+- **Internal:** research notes of the first discovery-sprint run (local AI summaries, reference tables, replay stream review); they stay in the private repository.
+- **Internal:** spec 28 (local AI summaries, not in the app yet) records the author's decisions: model levels and VRAM thresholds, explicit choice of the discrete GPU, self-published Q4_K_M files, citation repair only when a number fits exactly one fact.
+- **Internal:** spec 20 §11.1 lists reference tables per tier and class (a percentile comparison with the players of the author's own battles, computed locally, nothing sent) as a feature candidate; a mutation run of the reference-average module is the condition before it enters the app.
+
 ## 1.0.0-beta.2
 
 Druga publiczna beta, instalator bez podpisu (pre-release). Wewnętrznie etap E9, spec 29. / Second public beta with an unsigned installer (pre-release). Internally stage E9, spec 29.

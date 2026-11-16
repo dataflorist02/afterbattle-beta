@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-dialog";
 import type {
   BattleDetailView,
   Language,
@@ -375,6 +376,14 @@ export const api = {
   refreshVehicleClassCatalog: () =>
     command<VehicleClassCatalogRefreshResult>("refresh_vehicle_class_catalog"),
   detectInstallations: () => command<string[]>("detect_wot_installations"),
+  /**
+   * The system folder picker; `null` when closed without a choice. The path goes to
+   * `configureLocal` unchanged — the backend normalizes and checks it.
+   */
+  pickGameFolder: async (title: string): Promise<string | null> => {
+    const chosen = await open({ directory: true, multiple: false, title });
+    return typeof chosen === "string" ? chosen : null;
+  },
   configureLocal: (gameRoot: string, language: string) =>
     command<SourceStatus>("configure_local_source", { gameRoot, language }),
   pause: () => command<SourceStatus>("pause_tracker"),

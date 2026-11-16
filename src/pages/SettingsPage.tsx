@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { api } from "../api";
+import { GameFolderActions } from "../components/GameFolderActions";
 import { Card, Dialog, ErrorState } from "../components/ui";
 import { clearGameImages } from "../hooks/useGameImage";
 import { useAsync } from "../hooks/useAsync";
@@ -61,7 +62,6 @@ export function SettingsPage({
   const { language, setLanguage, tr } = useLanguage();
   const [error, setError] = useState<string | undefined | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [folders, setFolders] = useState<string[] | null>(null);
   const [minutes, setMinutes] = useState(String(snapshot.inactivityMinutes));
   const [deleting, setDeleting] = useState(false);
   const [typed, setTyped] = useState("");
@@ -100,14 +100,7 @@ export function SettingsPage({
 
       <Section id="game-h" title={tr("settingsGame")}>
         <p className="muted">{status.gameRootDisplay ?? tr("settingsGameNone")}</p>
-        <div className="actions" style={{ justifyContent: "flex-start" }}>
-          <button
-            type="button"
-            className="button"
-            onClick={() => run(() => api.detectInstallations().then(setFolders))}
-          >
-            {tr("settingsDetect")}
-          </button>
+        <GameFolderActions run={run} manualLabel={tr("settingsPick")}>
           {status.configured &&
             (status.paused ? (
               <button type="button" className="button" onClick={() => run(() => api.resume())}>
@@ -118,24 +111,7 @@ export function SettingsPage({
                 {tr("settingsPause")}
               </button>
             ))}
-        </div>
-        {folders?.map((folder) => (
-          <div key={folder} className="stat-row">
-            <span>{folder}</span>
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={() =>
-                run(() => {
-                  clearGameImages();
-                  return api.configureLocal(folder, language);
-                }, tr("settingsSaved"))
-              }
-            >
-              {tr("settingsUse")}
-            </button>
-          </div>
-        ))}
+        </GameFolderActions>
       </Section>
 
       <Section id="import-h" title={tr("settingsImport")}>

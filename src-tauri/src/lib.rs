@@ -12,6 +12,7 @@ pub mod error;
 mod events;
 pub mod expected_values;
 mod foundations;
+mod game_folder;
 mod game_images;
 mod hashing;
 mod history;
@@ -1681,6 +1682,9 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main(app);
         }))
+        // Hotfix 1.0.0-beta.3: the window opens the folder picker (`dialog:allow-open` only);
+        // the chosen path goes to `configure_local_source`, which checks it.
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             fs::create_dir_all(&dir)?;

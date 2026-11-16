@@ -1,8 +1,9 @@
 /**
  * Mocked Tauri IPC for screenshots outside the app (spec 25 §8): synthetic data only, no game
  * graphics (images answer empty, so placeholders are drawn). The state comes from the URL:
- * `?state=ready|loading|empty|error|noxvm|few|many` (`many`: 30 session battles and 200 history
- * rows, for the render-time measurement of E5-flare §7).
+ * `?state=ready|loading|empty|error|noxvm|few|many|firstrun` (`many`: 30 session battles and 200
+ * history rows, for the render-time measurement of E5-flare §7; `firstrun`: no game folder yet,
+ * detection finds one synthetic folder — hotfix 1.0.0-beta.3).
  */
 import * as fx from "../test/fixtures";
 
@@ -13,6 +14,13 @@ const never = new Promise(() => {});
 const fail = (code: string) => Promise.reject(JSON.stringify({ code, message: code }));
 
 function snapshot() {
+  if (state === "firstrun") {
+    const base = fx.snapshot({ activeSession: null, recentSessions: [], configured: false });
+    return {
+      ...base,
+      sourceStatus: { ...base.sourceStatus, configured: false, gameRootDisplay: null },
+    };
+  }
   if (state === "empty") return fx.snapshot({ activeSession: null, recentSessions: [] });
   if (state === "noxvm")
     return fx.snapshot({ advancedStatus: { xvmEnabled: false, xvmLastUpdatedAt: null } });
@@ -67,6 +75,7 @@ const handlers: Record<string, Handler> = {
   // Screenshots never show names from the game: the readable code stands in for them.
   get_vehicle_names: () => ({ language: null, names: {} }),
   get_game_image: () => new ArrayBuffer(0),
+  detect_wot_installations: () => [String.raw`D:\Games\World_of_Tanks_EU`],
 };
 
 async function invoke(command: string, args: Record<string, unknown> = {}) {

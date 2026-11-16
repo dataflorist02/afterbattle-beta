@@ -33,6 +33,8 @@ const mocks = vi.hoisted(() => ({
   startSession: vi.fn(),
   cancelImport: vi.fn(),
   detectInstallations: vi.fn(),
+  pickGameFolder: vi.fn(),
+  configureLocal: vi.fn(),
   startVehicleChallenge: vi.fn(),
   attemptsConversionSession: vi.fn(() => new Promise(() => {})),
   attemptsConversionRecent: vi.fn(() => new Promise(() => {})),
@@ -73,6 +75,9 @@ function setDefaults() {
     ),
   );
   mocks.abandonActiveChallenge.mockResolvedValue({});
+  mocks.detectInstallations.mockResolvedValue([]);
+  mocks.pickGameFolder.mockResolvedValue(null);
+  mocks.configureLocal.mockResolvedValue(fx.snapshot().sourceStatus);
 }
 
 async function flush() {
@@ -2019,5 +2024,108 @@ describe("texts", () => {
       await go(label);
       expectNoCodes(document.body);
     }
+  });
+});
+
+describe("game folder (hotfix 1.0.0-beta.3)", () => {
+  const unconfigured = () => {
+    const base = fx.snapshot();
+    return fx.snapshot({
+      configured: false,
+      activeSession: null,
+      recentSessions: [],
+      sourceStatus: { ...base.sourceStatus, configured: false, gameRootDisplay: null },
+    } as never);
+  };
+
+  it("lets Settings choose the folder by hand next to detection", async () => {
+    mocks.pickGameFolder.mockResolvedValue(String.raw`D:\Games\World_of_Tanks_EU\replays`);
+    await renderApp();
+    await go("Ustawienia");
+    expect(screen.getByRole("button", { name: "Znajdź grę" })).toBeEnabled();
+    await go("Wskaż folder gry");
+    expect(mocks.pickGameFolder).toHaveBeenCalledTimes(1);
+    // The backend normalizes and checks the folder; the window passes it on unchanged.
+    expect(mocks.configureLocal).toHaveBeenCalledWith(
+      String.raw`D:\Games\World_of_Tanks_EU\replays`,
+      "pl",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Zapisano.");
+  });
+
+  it("does nothing when the folder dialog is closed without a choice", async () => {
+    await renderApp();
+    await go("Ustawienia");
+    await go("Wskaż folder gry");
+    expect(mocks.pickGameFolder).toHaveBeenCalledTimes(1);
+    expect(mocks.configureLocal).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("Zapisano.")).not.toBeInTheDocument();
+  });
+
+  it("says exactly what is wrong with a chosen folder", async () => {
+    mocks.pickGameFolder.mockResolvedValue(String.raw`D:\Games\World_of_Tanks_EU`);
+    mocks.configureLocal.mockRejectedValue({ code: "replays_folder_empty" });
+    await renderApp();
+    await go("Ustawienia");
+    await go("Wskaż folder gry");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Folder z nagraniami bitew (replays) jest pusty. W grze włącz Ustawienia → Ogólne → Nagrywaj bitwy",
+    );
+    expect(screen.queryByText("Zapisano.")).not.toBeInTheDocument();
+  });
+
+  it("says when detection finds nothing and offers the manual choice", async () => {
+    await renderApp("en");
+    await go("Settings");
+    await go("Find the game");
+    expect(
+      screen.getByText("The game was not found on this computer. Choose the folder manually."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Choose the game folder" })).toBeEnabled();
+  });
+
+  it("shows the detected folders and uses the one picked", async () => {
+    mocks.detectInstallations.mockResolvedValue([String.raw`E:\Games\World_of_Tanks_NA`]);
+    await renderApp();
+    await go("Ustawienia");
+    await go("Znajdź grę");
+    expect(screen.queryByText(/Nie znaleziono gry/)).not.toBeInTheDocument();
+    await go("Użyj tego folderu");
+    expect(mocks.configureLocal).toHaveBeenCalledWith(String.raw`E:\Games\World_of_Tanks_NA`, "pl");
+  });
+
+  it("asks for the game folder on Session at the first start, with detection and manual choice", async () => {
+    mocks.snapshot.mockResolvedValue(unconfigured());
+    mocks.detectInstallations.mockResolvedValue([String.raw`D:\Games\World_of_Tanks_EU`]);
+    mocks.pickGameFolder.mockResolvedValue(String.raw`F:\WoT\WorldOfTanks.exe`);
+    await renderApp();
+    expect(screen.getByRole("heading", { name: "Wskaż folder gry" })).toBeInTheDocument();
+    expect(screen.getByText(/folder z nagraniami bitew \(replays\) w nim/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Otwórz Ustawienia" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nie ma jeszcze żadnej sesji/)).not.toBeInTheDocument();
+    await go("Znajdź grę");
+    await go("Użyj tego folderu");
+    expect(mocks.configureLocal).toHaveBeenLastCalledWith(
+      String.raw`D:\Games\World_of_Tanks_EU`,
+      "pl",
+    );
+    await go("Wskaż ręcznie");
+    expect(mocks.configureLocal).toHaveBeenLastCalledWith(
+      String.raw`F:\WoT\WorldOfTanks.exe`,
+      "pl",
+    );
+  });
+
+  it("explains a wrong folder on the first start screen", async () => {
+    mocks.snapshot.mockResolvedValue(unconfigured());
+    mocks.pickGameFolder.mockResolvedValue(String.raw`D:\Temp\NotAGame`);
+    mocks.configureLocal.mockRejectedValue({ code: "game_executable_missing" });
+    await renderApp("en");
+    await go("Choose manually");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This folder has no WorldOfTanks.exe file.",
+    );
+    expectNoCodes(document.body);
   });
 });

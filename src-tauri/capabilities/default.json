@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-window",
-  "description": "Minimum permissions for the local Afterbattle window: the custom title bar's drag, double-click maximize, minimize, maximize/restore and close, and listening to the backend's own events (import progress, data changed, session ended).",
+  "description": "Minimum permissions for the local Afterbattle window: the custom title bar's drag, double-click maximize, minimize, maximize/restore and close, listening to the backend's own events (import progress, data changed, session ended), and opening the folder dialog to choose the game folder.",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",
@@ -10,6 +10,7 @@
     "core:window:allow-internal-toggle-maximize",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
-    "core:window:allow-close"
+    "core:window:allow-close",
+    "dialog:allow-open"
   ]
 }
