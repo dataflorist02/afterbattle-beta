@@ -53,6 +53,7 @@ export function SessionHero({
   figures,
   notes,
   action,
+  notesId,
 }: {
   mapKey: string | null;
   mapName: string | null;
@@ -62,6 +63,8 @@ export function SessionHero({
   figures: ReactNode;
   notes: string[];
   action: ReactNode;
+  /** Lets a summary reference highlight the damage note (spec 30 §8). */
+  notesId?: string;
 }) {
   const { tr } = useLanguage();
   const parts = headlineParts(headline, fallbackTitle, tr);
@@ -87,7 +90,7 @@ export function SessionHero({
         <div className="flare-hero-action">{action}</div>
       </div>
       {notes.length > 0 && (
-        <div className="flare-hero-notes">
+        <div id={notesId} className="flare-hero-notes">
           {notes.map((note) => (
             <p key={note}>{note}</p>
           ))}
@@ -103,17 +106,20 @@ export function Figure({
   main = false,
   delta = null,
   reserve,
+  id,
 }: {
   value: string;
   label: string;
   main?: boolean;
+  /** Lets a summary reference highlight this number (spec 30 §8). */
+  id?: string;
   /** A number that just changed (spec 29 §6): an overlay in the direction color, fading out. */
   delta?: { direction: Direction; key: number } | null;
   /** Characters kept for the number while it counts, so the width never jumps. */
   reserve?: number;
 }) {
   return (
-    <div className={main ? "figure figure-main" : "figure"}>
+    <div id={id} className={main ? "figure figure-main" : "figure"}>
       <span className="num figure-value" style={reserve ? { minWidth: `${reserve}ch` } : undefined}>
         {value}
         {delta && (
@@ -191,6 +197,7 @@ export function BattleStrip({
                   .filter(Boolean)
                   .join(" ")}
                 onClick={() => onOpenBattle(battle.arenaId)}
+                id={best ? "recap-target-best" : undefined}
                 aria-label={tr("tileLabel", {
                   result: best ? bestResult : result,
                   damage: formatNumber(battle.damage, language),

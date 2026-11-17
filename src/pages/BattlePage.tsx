@@ -2,6 +2,7 @@ import { api } from "../api";
 import { outcomeKey } from "../components/BattleTable";
 import { useTankLabel } from "../components/TankName";
 import { MapBackdrop } from "../components/MapBackdrop";
+import { Recap } from "../components/Recap";
 import { Figure } from "../components/session/SessionStory";
 import { Async, Card, VehicleImage } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
@@ -15,7 +16,35 @@ import {
   formatThousands,
   formatTime,
 } from "../lib/format";
+import { BATTLE_TARGETS, battleFactLabel, battleSentences } from "../lib/recap/battle";
 import type { BattleDetailView, TeamComparison, TeamTotals } from "../types";
+
+/** "Podsumowanie bitwy" (spec 30 §2): Polish only, only for a counted battle with 3 sentences. */
+function BattleRecap({ battleId }: { battleId: string }) {
+  const { language, address, tr } = useLanguage();
+  const label = useTankLabel();
+  const version = useDataVersion();
+  const recap = useAsync(() => api.recap("battle", battleId).catch(() => null), [battleId], {
+    refreshKey: version,
+  });
+  const data = recap.state.status === "ready" ? recap.state.data : null;
+  if (language !== "pl" || data?.kind !== "battle") return null;
+  const context = { address, tank: (key: string, name: string | null) => label(key, name).short };
+  const sentences = battleSentences(data, context);
+  if (sentences.length === 0) return null;
+  return (
+    <Recap
+      id="battle-recap"
+      title={tr("recapBattleTitle")}
+      sentences={sentences}
+      facts={data.facts.map((fact) => ({
+        id: fact.id,
+        label: battleFactLabel(fact.fact, context),
+        target: BATTLE_TARGETS[fact.fact.key] ?? null,
+      }))}
+    />
+  );
+}
 
 function tiers(team: TeamTotals): string {
   if (team.tierMin === null || team.tierMax === null) return "—";
@@ -138,7 +167,7 @@ function BattleBody({
     detail.teams?.own.damage && battle.damage !== null
       ? Math.round((battle.damage / detail.teams.own.damage) * 100)
       : null;
-  const stats: [string, string][] = [
+  const stats: [string, string, string][] = [
     [
       battle.shots === null
         ? formatNumber(battle.directEnemyHits ?? battle.hits, language)
@@ -147,15 +176,17 @@ function BattleBody({
             count: battle.shots,
           }),
       tr("statHits"),
+      "recap-target-hits",
     ],
     [
       formatNumber(battle.piercingEnemyHits ?? battle.penetrations, language),
       tr("statPenetrations"),
+      "recap-target-penetrations",
     ],
-    [formatNumber(battle.frags, language), tr("statDestroyed")],
-    [formatNumber(battle.assist, language), tr("statAssist")],
-    [formatNumber(battle.spots, language), tr("statSpotted")],
-    [formatNumber(battle.blocked, language), tr("statBlocked")],
+    [formatNumber(battle.frags, language), tr("statDestroyed"), "recap-target-destroyed"],
+    [formatNumber(battle.assist, language), tr("statAssist"), "recap-target-assist"],
+    [formatNumber(battle.spots, language), tr("statSpotted"), "recap-target-spotted"],
+    [formatNumber(battle.blocked, language), tr("statBlocked"), "recap-target-blocked"],
   ];
   return (
     <>
@@ -180,15 +211,15 @@ function BattleBody({
                 duration: formatDuration(battle.durationSeconds),
               })}
             </p>
-            <h1 className="flare-headline battle-headline">
+            <h1 id="recap-target-headline" className="flare-headline battle-headline">
               {tr("battleTitle", { result: tr(outcomeKey(battle.outcome)), map })}
             </h1>
-            <p className="battle-hero-tank">
+            <p id="recap-target-tank" className="battle-hero-tank">
               <VehicleImage vehicleKey={battle.vehicleKey} label={tank} width={64} height={34} />
               <span>{tank}</span>
             </p>
           </div>
-          <div className="battle-hero-damage">
+          <div id="recap-target-damage" className="battle-hero-damage">
             <span className="num battle-damage-value">{formatNumber(battle.damage, language)}</span>
             <span className="figure-label">
               {teamShare === null
@@ -205,22 +236,25 @@ function BattleBody({
           {tr(partial ? "partialBattle" : "notCounted")}
         </p>
       )}
+      {counted && <BattleRecap battleId={battle.arenaId} />}
       <div className="battle-layout">
         <section className="card section" aria-labelledby="you-h">
           <h2 id="you-h" className="section-title">
             {tr("yourBattle")}
           </h2>
           <div className="stat-grid">
-            {stats.map(([value, label]) => (
-              <Figure key={label} value={value} label={label} />
+            {stats.map(([value, label, id]) => (
+              <Figure key={label} id={id} value={value} label={label} />
             ))}
             {survivedHp ? (
               <Figure
+                id="recap-target-survival"
                 value={tr("hpValue", { hp: formatNumber(survivedHp.hp, language) })}
                 label={tr("survivedOf", { max: formatNumber(survivedHp.max, language) })}
               />
             ) : (
               <Figure
+                id="recap-target-survival"
                 value={tr(battle.survived ? "survivedWord" : "destroyedWord")}
                 label={tr("survival")}
               />

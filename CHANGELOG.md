@@ -1,5 +1,45 @@
 # Changelog
 
+## Unreleased
+
+Bez zmian dla gracza. / No change for the player.
+
+## 1.0.0-beta.4
+
+Czwarta publiczna beta: podsumowania sesji, bitwy i tygodnia prostą polszczyzną, składane z Twoich liczb według stałych reguł (bez modelu AI), i ustawienie formy zwracania się. Instalator bez podpisu (pre-release). / Fourth public beta: plain-Polish summaries of the session, battle and week, put together from your numbers by fixed rules (no AI model), and an address setting. Unsigned installer (pre-release).
+
+### Po polsku — co się zmienia dla gracza
+
+- **Podsumowanie sesji.** Pod liczbami sesji karta z 3–5 zdaniami: liczba bitew i wygrane wobec Twoich ostatnich 100 bitew, obrażenia wobec Twojej średniej na tych czołgach, najlepsza bitwa z mapą, WN8 wobec 30 dni przed sesją (z danymi XVM), przetrwanie (gdy różni się o 5 punktów lub więcej) i najczęściej grany czołg.
+- **Podsumowanie bitwy.** Na ekranie policzonej bitwy: wynik z mapą, czołgiem i przetrwaniem, obrażenia wobec Twojej średniej na tym czołgu, a potem do trzech kolejnych faktów (zniszczone pojazdy z miejscem w drużynie, obrażenia sojuszników dzięki Twojemu wykrywaniu i zrywaniu gąsienic, pancerz, wykrycia, udział w obrażeniach drużyny, strzały) według stałych progów.
+- **Podsumowanie tygodnia.** Na ekranie Celów, pod nagłówkiem tygodnia: liczba bitew i wygrane (tylko kontekst, nigdy cel), wskaźniki, które odbiegają od zwykłego poziomu o 5 punktów lub więcej, stan celów tygodnia, poprzedni tydzień i wyzwania na 5 bitew. Przy mniej niż 15 bitwach jedno zdanie: za mało bitew w tym tygodniu.
+- **Odnośniki do liczb.** Każde zdanie kończy się odnośnikiem (F1, F2, …). Najechanie albo fokus podświetla tę liczbę na ekranie; gdy liczby nie ma na ekranie, podpowiedź mówi, czego dotyczy zdanie.
+- **Bez oceniania i bez AI.** Teksty nie oceniają gry („dobrze”, „słabo”), nie podają przyczyn i nie mówią o „wpływie”. Powstają od razu z gotowych fraz, w kilku wariantach, żeby kolejne sesje nie brzmiały tak samo; ta sama sesja zawsze ma ten sam tekst. Nic nie jest zapisywane ani wysyłane.
+- **Jak się do Ciebie zwracać.** Przy pierwszym uruchomieniu pytanie: on, ona albo bez formy; zmienisz to w Ustawieniach. Forma męska („zadałeś”), żeńska („zadałaś”) albo neutralna, bez czasownika („Wygrana na mapie …, czołg przetrwał do końca.”, „Coraz lepiej z każdą bitwą”) — domyślna, dopóki nie wybierzesz. Obejmuje podsumowania i dotychczasowe teksty w 2. osobie.
+- **Liczby w zdaniach.** Jeden fakt w zdaniu. Zdanie z porównaniem ma zawsze ten sam układ: wartość, różnica, odniesienie w nawiasie („Średnio 3 414 obrażeń, o 13% więcej niż zwykle na tych czołgach (3 021).”, „Wygrałeś 7 z 12 bitew, czyli 58%, o 7 pkt proc. więcej niż w ostatnich 100 bitwach (51%).”). Zero: „0 obrażeń; zwykle na tym czołgu 2 900.”, „Czołg nie przetrwał do końca żadnej bitwy sesji; zwykle 38%.”. Podsumowanie bitwy zaczyna się od wyniku („Przegrana na Test Valley, czołg Synth 44 M zniszczony.”). Najczęściej grany czołg pojawia się tylko, gdy ma ponad połowę bitew sesji („Cała sesja na czołgu X.” przy wszystkich).
+- **Tylko po polsku.** W wersji angielskiej karty podsumowań są ukryte.
+
+### In English — what changes for the player
+
+- **Summaries in Polish.** The Session, Battle and Goals screens show a short summary card in plain Polish: 3–5 sentences (one sentence for a week under 15 battles), each with a reference (F1, F2, …) that highlights its number on the screen. The text is built from your numbers by fixed rules and ready phrases — no AI model, no network, nothing stored. The cards are hidden in the English version.
+- **Address setting.** The first run asks how the Polish texts should address you (he, she or no form); Settings keep the same choice. The neutral form, the default until you answer, uses no verb ("Wygrana na …, czołg przetrwał do końca."). It also covers the existing second-person texts.
+- **Numbers in sentences.** One fact per sentence; every comparison reads value, difference, reference in brackets, with one name per reference; a zero reads "<zero>; zwykle <reference>"; the battle summary opens with the result; the most played tank appears only above half of the session's battles.
+
+### Summaries (technical)
+
+- `src-tauri/src/recap.rs`: the facts of each summary (spec 30 §4) with the selection rules and thresholds as constants; `get_recap(kind, id)` returns facts only (typed with ts-rs), computed on request like the weekly report. Kept facts are numbered in text order; the seed is FNV-1a of the session id, the battle's arena id or the week's start.
+- `src/lib/recap/`: Polish phrases with 2–4 variants, numeral agreement from `Intl.PluralRules`, numbers from `format.ts`, the verb form from a stem (`-łeś`, `-łaś`; the neutral form skips variants with a verb, no impersonal `-no`/`-to`), deterministic variant choice without two sentences starting with the same word.
+- Invariant tests (spec 30 §7) on 100 sessions, 200 battles and 50 weeks of synthetic data, every variant in all three forms: every number from a cited fact, directions with their sign, no contradiction with text facts, every word in the SJP.PL list or a game term (`WN8`, `XP`), no repeated or dropped fact, no judging words, 3–5 sentences of at most 25 words.
+- Word list `src/lib/recap/words.pl.txt` (234 forms) from SJP.PL "odmiany słów" 2026-11-01 under CC BY 4.0 (NOTICE); `scripts/check-recap-words.py` checks it against a local `odm.txt` (SHA-256 of the edition), CI never downloads it.
+- No new dependency, permission or network access.
+
+### Internal (since 1.0.0-beta.3)
+
+- **Internal:** spec 30 approved with the author's decisions of 2026-11-16; spec 20 §11.6 lists the tank lifetime field for the next schema change.
+- **Internal:** mutation rule of 2026-11-16 (spec 20 §6.3): mutations only for decision logic with a function filter, threshold 85%, once before a release, in the background; phrases and variants are covered by the invariant tests.
+- **Internal:** research notes of the local AI summaries study, iterations 3 and 4 (facts as ready phrases, fact selection rules, a dictionary check, an impersonal style, a template baseline); they stay in the private repository.
+- **Internal:** spec 28 (local AI summaries) records the author's decision to postpone the language model, with the numbers behind it, and two checker rules for a possible return: a Polish dictionary (SJP.PL) and rejecting sentences that contradict a text fact.
+
 ## 1.0.0-beta.3
 
 Trzecia publiczna beta: poprawka zgłoszenia testerów z 2026-11-16 (przy świeżej instalacji aplikacja nie znajdowała folderu gry), instalator bez podpisu (pre-release). / Third public beta: a fix for the testers' report of 2026-11-16 (on a fresh install the app did not find the game folder), unsigned installer (pre-release).

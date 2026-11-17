@@ -17,5 +17,9 @@ Inter (fonts: src/assets/fonts/inter-*.woff2)
   Copyright the Inter Project Authors (https://github.com/rsms/inter)
   License: SIL Open Font License, Version 1.1 - src/assets/fonts/OFL-Inter.txt
 
+SJP.PL word list (src/lib/recap/words.pl.txt, used by the tests of the summary texts)
+  Selected inflected forms from SJP.PL "odmiany slow", edition 2026-11-01 (https://sjp.pl/sl/odmiany/)
+  License: Creative Commons Attribution 4.0 International (CC BY 4.0) - https://creativecommons.org/licenses/by/4.0/
+
 Rust and npm dependencies are declared in src-tauri/Cargo.toml and Cargo.lock, and in
 package.json and pnpm-lock.yaml, each under its own license.

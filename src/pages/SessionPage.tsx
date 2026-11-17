@@ -6,6 +6,7 @@ import { GameFolderActions } from "../components/GameFolderActions";
 import { AttemptsConversionPanel } from "../components/session/AttemptsConversion";
 import { BattlePaceSummaryPanel } from "../components/session/BattlePace";
 import { ImportBar } from "../components/ImportBar";
+import { Recap } from "../components/Recap";
 import {
   BattleStrip,
   Figure,
@@ -18,8 +19,10 @@ import { useAsync } from "../hooks/useAsync";
 import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
+import type { Address } from "../lib/recap/address";
 import { formatNumber, formatTime } from "../lib/format";
 import { prefersReducedMotion, reservedChars, useArrivals, useCountedNumber } from "../lib/motion";
+import { SESSION_TARGETS, sessionFactLabel, sessionSentences } from "../lib/recap/session";
 import {
   MIN_SESSION_BATTLES,
   sessionDamageReference,
@@ -32,6 +35,7 @@ import type {
   AppSnapshot,
   ImportProgressEvent,
   Language,
+  Recap as RecapFacts,
   Session,
   SessionBaselineComparison,
   SessionInsight,
@@ -97,6 +101,28 @@ function Highlights({ comparison }: { comparison: SessionBaselineComparison | nu
   );
 }
 
+/** "Podsumowanie sesji" (spec 30 §8): Polish only, hidden in English and without 3 sentences. */
+function SessionRecap({ recap }: { recap: RecapFacts | null }) {
+  const { language, address, tr } = useLanguage();
+  const label = useTankLabel();
+  if (language !== "pl" || recap?.kind !== "session") return null;
+  const context = { address, tank: (key: string, name: string | null) => label(key, name).short };
+  const sentences = sessionSentences(recap, context);
+  if (sentences.length === 0) return null;
+  return (
+    <Recap
+      id="session-recap"
+      title={tr("recapSessionTitle")}
+      sentences={sentences}
+      facts={recap.facts.map((fact) => ({
+        id: fact.id,
+        label: sessionFactLabel(fact.fact, context),
+        target: SESSION_TARGETS[fact.fact.key] ?? null,
+      }))}
+    />
+  );
+}
+
 /** Hero note: the same reference as the insights (E5-ui §4). */
 function heroNote(
   reference: SessionDamageReference,
@@ -132,6 +158,7 @@ function SessionBody({
   summary,
   comparison,
   story,
+  recap,
   snapshot,
   meta,
   action,
@@ -143,6 +170,7 @@ function SessionBody({
   summary: SessionSummary;
   comparison: SessionBaselineComparison | null;
   story: SessionStory | null;
+  recap: RecapFacts | null;
   snapshot: AppSnapshot;
   meta: ReactNode;
   action: ReactNode;
@@ -195,6 +223,7 @@ function SessionBody({
         headline={story?.headline ?? null}
         fallbackTitle={fallbackTitle}
         notes={notes}
+        notesId="recap-target-damage"
         action={action}
         figures={
           <>
@@ -206,6 +235,7 @@ function SessionBody({
               label={tr("figureDamage")}
             />
             <CountedFigure
+              id="recap-target-wins"
               value={metrics.wins}
               animate={animate}
               text={(value) =>
@@ -224,6 +254,7 @@ function SessionBody({
             />
             {xvmOn && summary.wn8.value !== null && (
               <CountedFigure
+                id="recap-target-wn8"
                 value={summary.wn8.value}
                 animate={animate}
                 text={(value) => formatNumber(value, language)}
@@ -241,6 +272,7 @@ function SessionBody({
           </button>
         </p>
       )}
+      <SessionRecap recap={recap} />
       <BattleStrip
         battles={battles}
         bestBattleId={best?.battleId ?? null}
@@ -281,16 +313,19 @@ function CountedFigure({
   text,
   label,
   main = false,
+  id,
 }: {
   value: number | null;
   animate: boolean;
   text: (value: number | null) => string;
   label: string;
   main?: boolean;
+  id?: string;
 }) {
   const counted = useCountedNumber(value, animate);
   return (
     <Figure
+      id={id}
       main={main}
       value={text(counted.shown)}
       label={label}
@@ -304,6 +339,41 @@ function CountedFigure({
  * The first start without a game folder (hotfix 1.0.0-beta.3): choose it right here, by
  * detection or by hand, instead of an empty screen.
  */
+/**
+ * The address question of the first run (decision 2026-11-16): he, she or no form, saved to
+ * the same setting as in Settings; the texts stay neutral until it is answered.
+ */
+function AddressQuestion() {
+  const { language, address, addressChosen, setAddress, tr } = useLanguage();
+  if (language !== "pl") return null;
+  const choices: [Address, UiKey][] = [
+    ["masculine", "firstRunAddressHe"],
+    ["feminine", "firstRunAddressShe"],
+    ["neutral", "firstRunAddressNone"],
+  ];
+  return (
+    <div className="card state" role="group" aria-labelledby="first-run-address">
+      <p id="first-run-address">{tr("firstRunAddress")}</p>
+      <div className="actions" style={{ justifyContent: "flex-start" }}>
+        {choices.map(([value, label]) => {
+          const pressed = addressChosen && address === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              className={pressed ? "button button-primary" : "button"}
+              aria-pressed={pressed}
+              onClick={() => setAddress(value)}
+            >
+              {tr(label)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FirstRun({ onChanged }: { onChanged: () => void }) {
   const { tr } = useLanguage();
   const [error, setError] = useState<string | undefined | null>(null);
@@ -335,6 +405,7 @@ function FirstRun({ onChanged }: { onChanged: () => void }) {
         <p className="muted">{tr("firstRunHint")}</p>
         <GameFolderActions run={run} manualLabel={tr("firstRunPick")} />
       </div>
+      <AddressQuestion />
     </>
   );
 }
@@ -370,12 +441,13 @@ export function SessionPage({
   const data = useAsync(
     async () => {
       if (!id) return null;
-      const [summary, comparison, story] = await Promise.all([
+      const [summary, comparison, story, recap] = await Promise.all([
         api.sessionSummary(id),
         api.sessionBaselineComparison(id).catch(() => null),
         api.sessionStory(id).catch(() => null),
+        api.recap("session", id).catch(() => null),
       ]);
-      return { summary, comparison, story };
+      return { summary, comparison, story, recap };
     },
     [id],
     { refreshKey: version },
@@ -399,7 +471,7 @@ export function SessionPage({
   );
   const meta = session && (
     <>
-      <p>
+      <p id="recap-target-battles">
         {tr("sessionMetaLine", {
           title: tr(active ? "sessionToday" : "sessionLast"),
           meta: tr("sessionMeta", {
@@ -443,6 +515,7 @@ export function SessionPage({
           summary={data.state.data.summary}
           comparison={data.state.data.comparison}
           story={data.state.data.story}
+          recap={data.state.data.recap}
           snapshot={snapshot}
           meta={meta}
           action={action}

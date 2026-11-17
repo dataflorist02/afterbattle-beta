@@ -13,6 +13,7 @@ import type {
   Session,
   SessionBaselineComparison,
   SessionStory,
+  Recap,
   SessionSummary,
   VehicleBaselinePresentation,
   VehicleHistoryOverview,
@@ -485,6 +486,161 @@ export function sessionStory(overrides: Partial<SessionStory> = {}): SessionStor
       },
     ],
     ...overrides,
+  };
+}
+
+/** Battle summary facts as `get_recap` returns them (synthetic, matching `battleDetail()`). */
+export function battleRecap(): Recap {
+  const own = battle(4);
+  return {
+    kind: "battle",
+    seed: 11,
+    facts: [
+      { id: "F1", important: true, fact: { key: "wynik", outcome: "victory" } },
+      { id: "F2", important: false, fact: { key: "mapa", mapName: own.mapName ?? "Test Valley" } },
+      {
+        id: "F3",
+        important: false,
+        fact: { key: "czolg", vehicleKey: own.vehicleKey, tankName: own.tankName, tier: 8 },
+      },
+      { id: "F4", important: true, fact: { key: "przetrwanie", survived: true } },
+      { id: "F5", important: true, fact: { key: "obrazenia", damage: 5_210, reference: 3_244 } },
+      { id: "F6", important: true, fact: { key: "zniszczone", frags: 2 } },
+      { id: "F7", important: true, fact: { key: "miejsce", place: 1 } },
+      {
+        id: "F8",
+        important: false,
+        fact: { key: "strzaly", shots: 18, hits: 15, penetrations: 13 },
+      },
+    ],
+  };
+}
+
+/**
+ * Week summary facts as `get_recap` returns them, the way `recap::week_recap` derives them from
+ * `weeklyReport()` (indicators 104% and 101% are within 5 points, last week has no goals).
+ */
+export function weekRecap(battles = 39): Recap {
+  if (battles < 15)
+    return {
+      kind: "week",
+      seed: 5,
+      facts: [
+        {
+          id: "F1",
+          important: true,
+          fact: { key: "liczba_bitew", battles, confidence: "too_few", minimum: 15 },
+        },
+      ],
+    };
+  return {
+    kind: "week",
+    seed: 5,
+    facts: [
+      {
+        id: "F1",
+        important: true,
+        fact: { key: "liczba_bitew", battles, confidence: "good", minimum: 15 },
+      },
+      { id: "F2", important: false, fact: { key: "odsetek_wygranych", percent: 55 } },
+      {
+        id: "F3",
+        important: true,
+        fact: { key: "wskaznik", metric: "survival", percent: 92, usual: 100 },
+      },
+      {
+        id: "F4",
+        important: true,
+        fact: { key: "cel", kind: "survival", state: "below", vehicleKey: null, tankName: null },
+      },
+      {
+        id: "F5",
+        important: true,
+        fact: {
+          key: "cel",
+          kind: "tank_damage_assist",
+          state: "achieved",
+          vehicleKey: "synth-s01_alpha",
+          tankName: "Alpha",
+        },
+      },
+      {
+        id: "F6",
+        important: true,
+        fact: { key: "cel", kind: "xp", state: "close", vehicleKey: null, tankName: null },
+      },
+      {
+        id: "F7",
+        important: false,
+        fact: { key: "wyzwania", completed: 1, failed: 0, abandoned: 0, battles: 5 },
+      },
+    ],
+  };
+}
+
+/** Session summary facts as `get_recap` returns them (synthetic, matching `summary()`). */
+export function sessionRecap(): Recap {
+  const best = battle(8);
+  return {
+    kind: "session",
+    seed: 7,
+    facts: [
+      { id: "F1", important: true, fact: { key: "liczba_bitew", battles: 9 } },
+      {
+        id: "F2",
+        important: true,
+        fact: {
+          key: "odsetek_wygranych",
+          wins: 6,
+          battles: 9,
+          percent: 67,
+          reference: { percent: 52, battles: 100, difference: 15 },
+        },
+      },
+      {
+        id: "F3",
+        important: true,
+        fact: { key: "obrazenia", current: 3_184, baseline: 2_702, percent: 18 },
+      },
+      {
+        id: "F4",
+        important: true,
+        fact: {
+          key: "najlepsza",
+          battleId: best.arenaId,
+          damage: best.damage ?? 0,
+          mapKey: best.mapKey,
+          mapName: best.mapName,
+        },
+      },
+      {
+        id: "F5",
+        important: true,
+        fact: { key: "wn8", value: 2_150, reference: 1_980, referenceDays: 30 },
+      },
+      {
+        id: "F6",
+        important: false,
+        fact: {
+          key: "przetrwanie_odsetek",
+          survived: 3,
+          battles: 9,
+          percent: 33,
+          reference: { percent: 45, battles: 100, difference: -12 },
+        },
+      },
+      {
+        id: "F7",
+        important: false,
+        fact: {
+          key: "czolg",
+          vehicleKey: "synth-s01_alpha",
+          tankName: "Alpha",
+          battles: 5,
+          total: 9,
+        },
+      },
+    ],
   };
 }
 

@@ -59,8 +59,13 @@ try {
       await page.close();
     }
   }
-  // Hotfix 1.0.0-beta.3: the first start without a game folder, before and after "Znajdź grę".
-  for (const [suffix, detect] of [["", false], ["-found", true]]) {
+  // Hotfix 1.0.0-beta.3: the first start without a game folder, before and after "Znajdź grę";
+  // since 2026-11-16 with the address question, also after answering "Ona".
+  for (const [suffix, detect, answer] of [
+    ["", false, null],
+    ["-found", true, null],
+    ["-address", false, "Ona"],
+  ]) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await page.addInitScript(() => localStorage.setItem("afterbattle-language", "pl"));
     await page.goto(`http://localhost:${port}/screens.html?state=firstrun`);
@@ -69,8 +74,29 @@ try {
       await page.getByRole("button", { name: "Znajdź grę", exact: true }).click();
       await page.getByRole("button", { name: "Użyj tego folderu" }).waitFor();
     }
+    if (answer) await page.getByRole("button", { name: answer, exact: true }).click();
     await page.waitForTimeout(400);
     await page.screenshot({ path: resolve(out, `session-firstrun${suffix}.png`), fullPage: true });
+    await page.close();
+  }
+  // Spec 30: the session summary in the masculine and feminine form (the ready shots use the
+  // neutral default), and the English session screen where the summary card is hidden.
+  for (const [file, language, address] of [
+    ["session-recap-masculine", "pl", "masculine"],
+    ["session-recap-feminine", "pl", "feminine"],
+    ["session-ready-en", "en", "neutral"],
+  ]) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.addInitScript(
+      ([lang, form]) => {
+        localStorage.setItem("afterbattle-language", lang);
+        localStorage.setItem("afterbattle-address", form);
+      },
+      [language, address],
+    );
+    await page.goto(`http://localhost:${port}/screens.html?state=ready`);
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: resolve(out, `${file}.png`), fullPage: true });
     await page.close();
   }
   // E5-flare §7: render time with 30 session tiles and 200 history rows (synthetic, real browser).

@@ -1,4 +1,4 @@
-# Known issues — 1.0.0-beta.3
+# Known issues — 1.0.0-beta.4
 
 - The beta installer has no Authenticode signature: it is published as a GitHub pre-release with `SHA256SUMS.txt`, and Windows SmartScreen warns on install. Check the installer with `Get-FileHash` against `SHA256SUMS.txt` (README). Code signing and automatic updates come with the stable 1.0.0.
 - Windows 10/11 x64 only; no macOS, Linux or ARM support in this package.
@@ -6,6 +6,7 @@
 - Only strict random battles with full results count towards statistics. Old, one-block or incomplete replays may remain Partial and show WN8 N/A.
 - Very old replay formats are not guaranteed to parse.
 - Analyses planned after 2.0 are not included: reference tables per tier and class, what separates your wins from your losses, a local AI recap (spec 20 §11, spec 28). The Maps screen is greyed out until then.
+- The session, battle and week summaries are Polish only; the English version hides their cards. The battle summary has no fact about how long the tank lived (the database has no such field yet). The selection thresholds come from the research study and will be reviewed after two weeks of use.
 - Technical replay metadata does not provide a complete official Polish display-name catalogue for every map; safe cleaned identifiers or “unknown” may be shown. Vehicle names come from the game's own translation files; without them a readable form of the stored code is shown.
 - Network loss or unavailable XVM data disables WN8 until a valid local snapshot exists, but does not block replay tracking.
 - The window has its own title bar instead of the Windows frame. Windows 11 snap layouts (the flyout when hovering the maximize button) are not available; dragging to screen edges, Win+arrow keys, double-click maximize and resizing at the edges work.

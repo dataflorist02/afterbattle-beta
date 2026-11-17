@@ -1,4 +1,5 @@
 import { useTankLabel } from "../components/TankName";
+import { Recap } from "../components/Recap";
 import { WeeklyReportView } from "../components/WeeklyReport";
 import { useState } from "react";
 import { api } from "../api";
@@ -8,6 +9,7 @@ import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { formatNumber, formatPercent } from "../lib/format";
+import { weekFactLabel, weekSentences, weekTarget } from "../lib/recap/week";
 import type {
   AppSnapshot,
   ChallengePresentation,
@@ -242,6 +244,33 @@ function History() {
   );
 }
 
+/** "Podsumowanie tygodnia" (spec 30 §2, §4.3): Polish only; under 15 battles one sentence. */
+function WeekRecap() {
+  const { language, address, tr } = useLanguage();
+  const label = useTankLabel();
+  const version = useDataVersion();
+  const recap = useAsync(() => api.recap("week", "current").catch(() => null), [], {
+    refreshKey: version,
+  });
+  const data = recap.state.status === "ready" ? recap.state.data : null;
+  if (language !== "pl" || data?.kind !== "week") return null;
+  const context = { address, tank: (key: string, name: string | null) => label(key, name).short };
+  const sentences = weekSentences(data, context);
+  if (sentences.length === 0) return null;
+  return (
+    <Recap
+      id="week-recap"
+      title={tr("recapWeekTitle")}
+      sentences={sentences}
+      facts={data.facts.map((fact) => ({
+        id: fact.id,
+        label: weekFactLabel(fact.fact, context),
+        target: weekTarget(fact.fact),
+      }))}
+    />
+  );
+}
+
 /** Goals in v2.0 are the existing 5-battle tank challenges (spec 25 §1, §5.4). */
 export function GoalsPage({
   snapshot,
@@ -259,6 +288,7 @@ export function GoalsPage({
     <>
       {weekly.state.status === "ready" ? (
         <WeeklyReportView
+          summary={<WeekRecap />}
           report={weekly.state.data}
           xvmOn={
             snapshot.advancedStatus.xvmEnabled &&

@@ -1894,3 +1894,69 @@ button.moment:focus-visible::before {
   font-size: 40px;
   line-height: 1;
 }
+
+/* Template summary card (spec 30 §8): sentences with references F1, F2, … */
+.recap-list {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text-body);
+  line-height: 1.55;
+}
+.recap-ref-wrap {
+  position: relative;
+  white-space: nowrap;
+}
+.recap-ref {
+  position: relative;
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-small);
+  background: var(--accent-bg);
+  color: var(--accent-link);
+  font: inherit;
+  font-size: var(--size-s);
+  line-height: 1.5;
+  cursor: help;
+}
+/* The visible badge is small; the target for a click or a tap is at least 44 px. */
+.recap-ref::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+.recap-ref:hover,
+.recap-ref:focus-visible {
+  color: var(--accent-link-hover);
+  border-color: var(--accent);
+}
+.recap-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  width: max-content;
+  max-width: 280px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-s);
+  white-space: normal;
+}
+.recap-note {
+  margin-top: var(--space-3);
+  font-size: var(--size-s);
+}
+.recap-highlight {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-small);
+}

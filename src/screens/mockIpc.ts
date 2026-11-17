@@ -36,6 +36,14 @@ const handlers: Record<string, Handler> = {
     state === "few"
       ? fx.sessionStory({ headline: { kind: "neutral", percent: null, battles: 2 }, moments: [] })
       : fx.sessionStory(),
+  get_recap: (args) =>
+    args.kind === "battle"
+      ? fx.battleRecap()
+      : args.kind === "week"
+        ? fx.weekRecap(state === "few" ? 6 : 39)
+        : state === "few"
+          ? { ...fx.sessionRecap(), facts: fx.sessionRecap().facts.slice(0, 1) }
+          : fx.sessionRecap(),
   get_map_record: () => fx.mapRecord(),
   get_weekly_report: () =>
     state === "few"

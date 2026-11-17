@@ -120,9 +120,23 @@ fn percent_change(current: f64, baseline: f64) -> f64 {
     ((current - baseline) / baseline * 100.0 * 1e6).round() / 1e6
 }
 
+/// Session damage on the compared tanks against the player's average on them (same weights).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct DamageReference {
+    pub current: f64,
+    pub baseline: f64,
+    /// Percent change, rounded to a millionth (see `percent_change`).
+    pub change: f64,
+}
+
 /// Damage on the session's tanks with 30 or more baseline battles, weighted by session battles,
 /// against their baselines with the same weights (the frontend `sessionDamageReference`).
 pub(crate) fn damage_change(comparison: &SessionBaselineComparison) -> Option<f64> {
+    damage_reference(comparison).map(|reference| reference.change)
+}
+
+/// The numbers behind `damage_change`: the headline and the session summary read the same ones.
+pub(crate) fn damage_reference(comparison: &SessionBaselineComparison) -> Option<DamageReference> {
     let (mut current, mut baseline, mut weight) = (0.0, 0.0, 0usize);
     for vehicle in &comparison.vehicles {
         let reference = &vehicle.baseline.average_damage;
@@ -137,7 +151,11 @@ pub(crate) fn damage_change(comparison: &SessionBaselineComparison) -> Option<f6
         baseline += average * battles as f64;
         weight += battles;
     }
-    (weight >= MIN_SESSION_BATTLES && baseline > 0.0).then(|| percent_change(current, baseline))
+    (weight >= MIN_SESSION_BATTLES && baseline > 0.0).then(|| DamageReference {
+        current: current / weight as f64,
+        baseline: baseline / weight as f64,
+        change: percent_change(current, baseline),
+    })
 }
 
 pub(crate) fn headline(

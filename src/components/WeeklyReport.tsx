@@ -3,6 +3,7 @@
  * week, this week against the four before, last week's result. Rules come from Rust
  * (`get_weekly_report`); win rate is context only, never a goal (D12).
  */
+import type { ReactNode } from "react";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { formatNumber, formatPercent } from "../lib/format";
@@ -71,7 +72,11 @@ function GoalCard({ goal }: { goal: WeeklyGoal }) {
   const tank = label(goal.vehicleKey, goal.tankName);
   const share = goal.current === null ? 0 : Math.min(1, goal.current / goal.target);
   return (
-    <div className="card section weekly-goal" data-state={goal.state}>
+    <div
+      id={`recap-target-goal-${goal.kind}`}
+      className="card section weekly-goal"
+      data-state={goal.state}
+    >
       <h3 className="section-title goal-title">
         {goal.kind === "tank_damage_assist" && (
           <VehicleImage vehicleKey={goal.vehicleKey} label={tank.full} width={40} height={22} />
@@ -112,7 +117,16 @@ function range(values: (number | null)[], format: (value: number) => string): st
   return format(low) === format(high) ? format(low) : `${format(low)}–${format(high)}`;
 }
 
-export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmOn: boolean }) {
+export function WeeklyReportView({
+  report,
+  xvmOn,
+  summary = null,
+}: {
+  report: WeeklyReport;
+  xvmOn: boolean;
+  /** The week's summary card (spec 30 §2), right under the header. */
+  summary?: ReactNode;
+}) {
   const { language, tr } = useLanguage();
   const percent = (value: number) => formatPercent(value, language);
   // "97–101%": the unit once, after the range.
@@ -126,7 +140,7 @@ export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmO
       <header className="page-header">
         <div className="section">
           <h1 className="page-title">{tr("weeklyTitle")}</h1>
-          <p className="muted">
+          <p id="recap-target-week-battles" className="muted">
             {tr("weeklySubtitle", {
               range: weekRange(report.weekStart, report.weekEnd, language),
               battles: report.battles,
@@ -134,6 +148,7 @@ export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmO
           </p>
         </div>
       </header>
+      {summary}
       {report.goals.length === 0 ? (
         <p className="muted">{tr("weeklyNoGoals")}</p>
       ) : (
@@ -162,7 +177,11 @@ export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmO
           {report.indicators.map((indicator) => {
             const before = percentRange(indicator.previous);
             return (
-              <div key={indicator.metric} className="weekly-row">
+              <div
+                key={indicator.metric}
+                id={`recap-target-indicator-${indicator.metric}`}
+                className="weekly-row"
+              >
                 <span>{tr(metricKeys[indicator.metric])}</span>{" "}
                 <span className="num weekly-value">
                   {indicator.current === null ? "—" : percent(indicator.current)}
@@ -188,7 +207,7 @@ export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmO
               </span>
             </div>
           )}
-          <div className="weekly-row">
+          <div id="recap-target-week-wins" className="weekly-row">
             <span>{tr("weeklyWins")}</span>{" "}
             <span className="num weekly-value">{formatPercent(report.winRate, language)}</span>{" "}
             <span className="muted">{tr("weeklyWinsContext")}</span>
@@ -199,7 +218,7 @@ export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmO
         <h2 id="last-h" className="section-title">
           {tr("weeklyLastTitle")}
         </h2>
-        <p className="muted">
+        <p id="recap-target-previous-week" className="muted">
           {report.previousWeek.goals.length === 0
             ? tr("weeklyLastNone", { battles: report.previousWeek.battles })
             : tr("weeklyLastLine", {
@@ -211,7 +230,7 @@ export function WeeklyReportView({ report, xvmOn }: { report: WeeklyReport; xvmO
         {(report.challenges.completed > 0 ||
           report.challenges.failed > 0 ||
           report.challenges.abandoned > 0) && (
-          <p className="muted">
+          <p id="recap-target-challenges" className="muted">
             {tr("weeklyChallenges", {
               completed: report.challenges.completed,
               failed: report.challenges.failed,

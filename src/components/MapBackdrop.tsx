@@ -84,6 +84,8 @@ export function MapBackdrop({
   "aria-label"?: string;
   title?: string;
   "data-testid"?: string;
+  /** Lets a summary reference highlight this element (spec 30 §8). */
+  id?: string;
 }) {
   const [element, setElement] = useState<HTMLElement | null>(null);
   const visible = useVisible(element);

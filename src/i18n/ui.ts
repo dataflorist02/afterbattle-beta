@@ -1,3 +1,4 @@
+import { applyAddress, DEFAULT_ADDRESS, type Address } from "../lib/recap/address";
 import type { Language } from "../types";
 
 /** Texts of the redesigned interface (spec 25). `{name}` marks a parameter. */
@@ -167,7 +168,7 @@ const pl = {
   statSpotted: "wykryte",
   statBlocked: "zablokowane",
   hpValue: "{hp} HP",
-  survivedOf: "przeżyłeś, z {max}",
+  survivedOf: "{~przeży}, z {max}",
   survivedWord: "Przeżył",
   destroyedWord: "Zniszczony",
   dayToday: "Dziś",
@@ -200,7 +201,7 @@ const pl = {
   tileLabel: "{result}, {damage} obrażeń, {map}, {tank}",
   bestBattleResult: "Najlepsza, {result}",
   momentsTitle: "Momenty sesji",
-  momentRising: "Rozkręcałeś się",
+  momentRising: "{~Rozkręca} się",
   momentFalling: "Z bitwy na bitwę słabiej",
   momentEveryRising: "Każda kolejna bitwa z większymi obrażeniami niż poprzednia",
   momentEveryFalling: "Każda kolejna bitwa z mniejszymi obrażeniami niż poprzednia",
@@ -243,8 +244,8 @@ const pl = {
   destroyed: "Zniszczone",
   spotted: "Wykrycia",
   blocked: "Zablokowane",
-  survivedHp: "Przeżyłeś, {hp} z {max} HP",
-  survived: "Przeżyłeś",
+  survivedHp: "{~Przeży}, {hp} z {max} HP",
+  survived: "{~Przeży}",
   destroyedSelf: "Zniszczony",
   teams: "Drużyny",
   teamsMeta: "Poziomy {own} i {enemy}, plutony: {ownPlatoons} i {enemyPlatoons}",
@@ -301,6 +302,10 @@ const pl = {
   settingsUse: "Użyj tego folderu",
   settingsPick: "Wskaż folder gry",
   firstRunPick: "Wskaż ręcznie",
+  firstRunAddress: "Jak się do Ciebie zwracać?",
+  firstRunAddressHe: "On",
+  firstRunAddressShe: "Ona",
+  firstRunAddressNone: "Bez formy",
   firstRunHint:
     "„Znajdź grę” sprawdza typowe miejsca na wszystkich dyskach i w bibliotekach Steam. Możesz też wskazać folder gry albo folder z nagraniami bitew (replays) w nim.",
   gameFolderNotFound: "Nie znaleziono gry na tym komputerze. Wskaż folder ręcznie.",
@@ -325,6 +330,16 @@ const pl = {
   settingsCatalogReady: "Wersja klienta {version}, {count} pojazdów",
   settingsCatalogMissing: "Katalog pojazdów nie jest jeszcze gotowy.",
   settingsLanguage: "Język",
+  recapSessionTitle: "Podsumowanie sesji",
+  recapBattleTitle: "Podsumowanie bitwy",
+  recapWeekTitle: "Podsumowanie tygodnia",
+  recapNote:
+    "Złożone z Twoich liczb według stałych reguł. Każde zdanie ma odnośnik do liczby; najechanie podświetla ją wyżej.",
+  recapFact: "Fakt {id}: {label}",
+  settingsAddress: "Jak się do Ciebie zwracać",
+  settingsAddressNeutral: "Bez formy (wygrana, czołg przetrwał)",
+  settingsAddressMasculine: "Forma męska (zadałeś)",
+  settingsAddressFeminine: "Forma żeńska (zadałaś)",
   settingsInactivity: "Limit bezczynności sesji (minuty)",
   settingsSave: "Zapisz",
   settingsSaved: "Zapisano.",
@@ -650,6 +665,10 @@ const en: Record<UiKey, string> = {
   settingsUse: "Use this folder",
   settingsPick: "Choose the game folder",
   firstRunPick: "Choose manually",
+  firstRunAddress: "How should the Polish texts address you?",
+  firstRunAddressHe: "He",
+  firstRunAddressShe: "She",
+  firstRunAddressNone: "No form",
   firstRunHint:
     "“Find the game” checks the usual places on every drive and in Steam libraries. You can also choose the game folder or the battle recordings folder (replays) inside it.",
   gameFolderNotFound: "The game was not found on this computer. Choose the folder manually.",
@@ -674,6 +693,16 @@ const en: Record<UiKey, string> = {
   settingsCatalogReady: "Client version {version}, {count} vehicles",
   settingsCatalogMissing: "The vehicle catalog is not ready yet.",
   settingsLanguage: "Language",
+  recapSessionTitle: "Session summary",
+  recapBattleTitle: "Battle summary",
+  recapWeekTitle: "Week summary",
+  recapNote:
+    "Put together from your numbers by fixed rules. Each sentence links to a number; hovering highlights it above.",
+  recapFact: "Fact {id}: {label}",
+  settingsAddress: "How Polish texts address you",
+  settingsAddressNeutral: "Neutral",
+  settingsAddressMasculine: "Masculine",
+  settingsAddressFeminine: "Feminine",
   settingsInactivity: "Session inactivity limit (minutes)",
   settingsSave: "Save",
   settingsSaved: "Saved.",
@@ -700,12 +729,32 @@ const en: Record<UiKey, string> = {
 
 export const uiTexts: Record<Language, Record<UiKey, string>> = { pl, en };
 
+/**
+ * The neutral form of every Polish text with a `{~stem}` verb (decision 2026-11-16): no
+ * second-person verb and no impersonal "-no/-to" one, a noun phrase instead.
+ */
+export const neutralPl: Partial<Record<UiKey, string>> = {
+  survivedOf: "czołg przetrwał, z {max}",
+  momentRising: "Coraz lepiej z każdą bitwą",
+  survivedHp: "Czołg przetrwał, {hp} z {max} HP",
+  survived: "Czołg przetrwał",
+};
+
+/**
+ * A text in `language`; Polish past-tense verbs written as `{~stem}` take the form of `address`
+ * (spec 30 §2); the neutral form, the default, takes the text from `neutralPl`.
+ */
 export function t(
   language: Language,
   key: UiKey,
   params?: Record<string, string | number>,
+  address: Address = DEFAULT_ADDRESS,
 ): string {
-  let text: string = uiTexts[language][key];
+  const source =
+    language === "pl" && address === "neutral"
+      ? (neutralPl[key] ?? uiTexts.pl[key])
+      : uiTexts[language][key];
+  let text: string = applyAddress(source, address);
   for (const [name, value] of Object.entries(params ?? {})) {
     text = text.replaceAll(`{${name}}`, String(value));
   }

@@ -1482,7 +1482,7 @@ impl Database {
         }))
     }
 
-    #[cfg(test)]
+    /// Team facts of one battle (read-only); the battle summary takes the damage place from it.
     pub(crate) fn team_relative_facts(
         &self,
         battle_id: &str,

@@ -9,6 +9,7 @@ import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import { formatNumber } from "../lib/format";
 import { APP_VERSION } from "../release";
+import type { Address } from "../lib/recap/address";
 import type { AppSnapshot, Language } from "../types";
 
 interface RebuildNumbers {
@@ -59,7 +60,7 @@ export function SettingsPage({
   snapshot: AppSnapshot;
   onChanged: () => void;
 }) {
-  const { language, setLanguage, tr } = useLanguage();
+  const { language, setLanguage, address, setAddress, tr } = useLanguage();
   const [error, setError] = useState<string | undefined | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [minutes, setMinutes] = useState(String(snapshot.inactivityMinutes));
@@ -200,6 +201,14 @@ export function SettingsPage({
             >
               <option value="pl">Polski</option>
               <option value="en">English</option>
+            </select>
+          </label>
+          <label className="field">
+            {tr("settingsAddress")}
+            <select value={address} onChange={(event) => setAddress(event.target.value as Address)}>
+              <option value="neutral">{tr("settingsAddressNeutral")}</option>
+              <option value="masculine">{tr("settingsAddressMasculine")}</option>
+              <option value="feminine">{tr("settingsAddressFeminine")}</option>
             </select>
           </label>
           <label className="field">

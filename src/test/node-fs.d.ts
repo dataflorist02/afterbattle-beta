@@ -1,5 +1,6 @@
 declare module "node:fs" {
   export function readFileSync(path: string, encoding: "utf8"): string;
+  export function appendFileSync(path: string, data: string): void;
   export function existsSync(path: string): boolean;
   export function readdirSync(path: string): string[];
   export function statSync(path: string): { isDirectory(): boolean; size: number };
@@ -24,4 +25,4 @@ declare module "node:child_process" {
   ): { status: number | null; stdout: string; stderr: string };
 }
 
-declare const process: { platform: string };
+declare const process: { platform: string; env: Record<string, string | undefined> };

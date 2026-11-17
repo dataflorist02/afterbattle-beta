@@ -709,7 +709,7 @@ const pl: Record<keyof typeof en, string> = {
   paceUnavailableDescription:
     "Tych bitew nie można było sklasyfikować na podstawie dostępnych danych.",
   paceUnavailableCount: "{battles} bez klasyfikacji.",
-  paceNoBattles: "Kontekst pojawi się po wykryciu pierwszej pełnej bitwy.",
+  paceNoBattles: "Kontekst pojawi się po pierwszej pełnej bitwie.",
   pacePartialOneSided:
     "{oneSided} z {classified} sklasyfikowanych bitew miało jednostronny przebieg. Ewidentne: {obvious}, graniczne: {borderline}.",
   pacePartialNone:
@@ -1087,6 +1087,12 @@ const attemptsConversionV2 = {
   },
 } as const;
 const copy = { en, pl };
+
+/** The older texts by language (tests scan them, e.g. for ambiguous wording). */
+export const legacyTexts = {
+  en: { ...en, ...attemptsConversionV2.en },
+  pl: { ...pl, ...attemptsConversionV2.pl },
+};
 export type TranslationKey = keyof typeof en | keyof typeof attemptsConversionV2.en;
 export function translate(
   language: Language,

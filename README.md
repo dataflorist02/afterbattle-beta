@@ -12,7 +12,7 @@ Afterbattle is a local-first Windows desktop analytics application for World of 
 
 | | |
 |---|---|
-| Status | 1.0.0-beta.3, public beta |
+| Status | 1.0.0-beta.4, public beta |
 | Platform | Windows desktop (10/11) |
 | Architecture | Tauri 2 + Rust + React/TypeScript |
 | Storage | Local SQLite (schema v10) |
@@ -45,6 +45,7 @@ Afterbattle treats those questions as a data-contract and product-engineering pr
 - Battle Pace Context with explicit supported scope and an Unknown state for unsupported or incomplete evidence.
 - Attempts & Conversion v2: metric-specific hit-rate and penetration-rate coverage with separate raw facts.
 - A weekly report with 2–3 goals from fixed rules (win rate is never a goal) and last week's verdict.
+- Short session, battle and week summaries in plain Polish, built from the player's own numbers by fixed rules and ready phrases (no AI model, nothing stored); every sentence links to the number it states, and Polish texts can address the player in the masculine, feminine or a neutral form (asked on the first run).
 - A map-led interface: vehicle icons, map pictures and loading screens read on demand from the approved game folder, decoded and scaled in memory, never written to disk; the game's own vehicle names.
 - Polish and English UI, wide-screen layouts, a custom title bar, reduced-motion support, diagnostics, and anonymous session export.
 - No account or cloud service: the tracker reads only local replay files.
@@ -135,19 +136,20 @@ AI output is not treated as a source of truth; the repository’s contracts, tes
 
 ## Quality and validation
 
-The 1.0.0-beta.3 candidate has been checked locally on Windows:
+The 1.0.0-beta.4 candidate has been checked locally on Windows:
 
-- Frontend tests: 318/318 passed; ESLint and Prettier clean; production build passes.
-- Rust tests: 773 passed, 0 failed; 5 ignored tests read local game data and are run by the author only.
+- Frontend tests: 365/365 passed; ESLint and Prettier clean; production build passes.
+- Rust tests: 815 passed, 0 failed; 5 ignored tests read local game data and are run by the author only.
+- Summary invariants on synthetic data (100 sessions, 200 battles, 50 weeks, every phrase variant in all three address forms): numbers only from cited facts, no contradiction with the battle result or survival, every word in an SJP.PL word list, no judging words.
 - `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings`: pass.
-- Mutation testing on new and changed logic, at least 85% per run: `cargo mutants` for the Rust parsers, rules and analytics, Stryker (`tools/mutants`) for the frontend logic (motion, live refresh, loading screen).
+- Mutation testing, at least 85%: `cargo mutants` for the Rust parsers, rules and analytics, Stryker (`tools/mutants`) for earlier frontend logic; since 1.0.0-beta.4 mutations cover decision logic only (thresholds and selection rules), run once before a release.
 - A read-only golden test over the author's local replays keeps the statistics population and a metrics digest fixed between stages.
 
 GitHub Actions CI (actions pinned to commit SHAs) runs lint, frontend tests and build, Rust formatting, Clippy and tests, `cargo audit` and `pnpm audit --prod`, and an installer build. This repository does not claim a production-readiness guarantee.
 
 ## Project status and limitations
 
-1.0.0-beta.3 is the third public beta (a fix for finding the game folder), marked as a pre-release. The scope is Windows desktop usage with locally recorded random-battle replays.
+1.0.0-beta.4 is the fourth public beta (template summaries in Polish), marked as a pre-release. The scope is Windows desktop usage with locally recorded random-battle replays.
 
 Known limitations include:
 
@@ -185,10 +187,10 @@ The application asks the user to approve a local World of Tanks installation bef
 
 ### Po polsku
 
-1. Pobierz `Afterbattle_1.0.0-beta.3_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-beta.3` na GitHubie (oznaczonego jako pre-release).
+1. Pobierz `Afterbattle_1.0.0-beta.4_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-beta.4` na GitHubie (oznaczonego jako pre-release).
 2. Sprawdź, czy plik jest nienaruszony. W PowerShellu, w folderze z pobranymi plikami:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.3_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.4_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Oba ciągi znaków muszą być identyczne. Jeśli się różnią, nie instaluj i zgłoś to w zgłoszeniach (Issues) repozytorium.
@@ -197,10 +199,10 @@ The application asks the user to approve a local World of Tanks installation bef
 
 ### In English
 
-1. Download `Afterbattle_1.0.0-beta.3_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-beta.3` release on GitHub (marked as a pre-release).
+1. Download `Afterbattle_1.0.0-beta.4_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-beta.4` release on GitHub (marked as a pre-release).
 2. Check the file is intact. In PowerShell, in the folder with the downloads:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.3_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.4_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Both strings must be identical. If they differ, do not install and report it in the repository's Issues.

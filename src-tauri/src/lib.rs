@@ -23,6 +23,7 @@ mod map_picture;
 pub mod models;
 mod performance_trends;
 pub mod ratings;
+pub(crate) mod recap;
 mod schema;
 mod session_insights;
 mod session_story;
@@ -1551,6 +1552,125 @@ fn session_story_view(
     Ok(session_story::session_story(&battles, comparison.as_ref()))
 }
 
+/// Facts of a template summary (spec 30 §3): computed on request, never stored. WN8 enters only
+/// with XVM on and expected values loaded, like on the Session screen.
+#[tauri::command]
+async fn get_recap(
+    app: AppHandle,
+    kind: recap::RecapKind,
+    id: String,
+) -> CommandResult<recap::Recap> {
+    on_state(app, move |state| {
+        let (expected, _) = state.expected_values.snapshot_and_status();
+        let wn8_on = xvm_enabled(&state.database);
+        let classes = state.vehicle_classes.snapshot();
+        recap_view(
+            &state.database,
+            kind,
+            &id,
+            expected.as_ref(),
+            wn8_on,
+            classes.as_ref(),
+            Utc::now().timestamp_millis(),
+        )
+        .map_err(Into::into)
+    })
+    .await
+}
+
+fn recap_view(
+    database: &Database,
+    kind: recap::RecapKind,
+    id: &str,
+    expected: Option<&LoadedExpectedSnapshot>,
+    wn8_on: bool,
+    classes: Option<&vehicle_class_catalog::LoadedVehicleClassCatalog>,
+    now: i64,
+) -> Result<recap::Recap, AppError> {
+    match kind {
+        // The current week, as on the Goals screen; the id is not needed (spec 30 §4.3).
+        recap::RecapKind::Week => Ok(recap::week_recap(&weekly_report_view(
+            database,
+            expected,
+            now,
+            &chrono::Local,
+        )?)),
+        recap::RecapKind::Battle => {
+            let battle = database.battle_by_id(id)?.ok_or(AppError::BattleNotFound)?;
+            let class = match (classes, battle.wg_tank_id) {
+                (Some(catalog), Some(vehicle_id)) => {
+                    catalog
+                        .resolve(vehicle_id, Some(&battle.vehicle_key))
+                        .vehicle_class
+                }
+                _ => models::VehicleClass::Unknown,
+            };
+            let tier = match battle.wg_tank_id {
+                Some(vehicle_id) => database.vehicle_tiers()?.get(&vehicle_id).copied(),
+                None => None,
+            };
+            // The player's average on this tank from the 100 counted battles before this one.
+            let averages = match battle.wg_tank_id {
+                Some(vehicle_id) if vehicle_id > 0 => {
+                    let baseline =
+                        vehicle_baseline(database, vehicle_id, battle.battle_time, None, expected)?;
+                    baseline
+                        .windows
+                        .into_iter()
+                        .find(|window| window.window == models::BaselineWindowKind::Last100)
+                }
+                _ => None,
+            };
+            let average = |metric: Option<&models::BaselineMetric>| {
+                metric
+                    .filter(|metric| metric.eligible_battles >= recap::MIN_REFERENCE_BATTLES)
+                    .and_then(|metric| metric.value)
+            };
+            let place = database.team_relative_facts(id)?.and_then(|facts| {
+                facts
+                    .damage_reason
+                    .is_none()
+                    .then_some(facts.damage_greater_count?)
+                    .map(|greater| greater + 1)
+            });
+            let team_damage = database
+                .team_comparison(id)?
+                .and_then(|teams| teams.own.damage);
+            Ok(recap::battle_recap(&recap::BattleInput {
+                battle: &battle,
+                class,
+                tier,
+                damage_reference: average(averages.as_ref().map(|window| &window.average_damage)),
+                assist_reference: average(averages.as_ref().map(|window| &window.average_assist)),
+                place,
+                team_damage,
+            }))
+        }
+        recap::RecapKind::Session => {
+            let session = database.session(id)?;
+            let battles = database.session_battles(id)?;
+            let history = database.all_history_battles()?;
+            let comparison = session_baseline_comparison(database, id, expected).ok();
+            let wn8 = expected.filter(|_| wn8_on).and_then(|expected| {
+                let value = session_wn8_presentation(&battles, Some(expected)).value?;
+                let window = recap::wn8_reference_battles(&history, id, session.started_at);
+                Some(recap::Wn8Pair {
+                    session: value,
+                    reference: session_wn8_presentation(&window, Some(expected)).value,
+                })
+            });
+            Ok(recap::session_recap(&recap::SessionInput {
+                session_id: id,
+                started_at: session.started_at,
+                battles: &battles,
+                history: &history,
+                comparison: comparison.as_ref(),
+                wn8,
+            }))
+        }
+    }
+}
+
 /// Map keys are lowercase letters, digits and underscores (`NN_name`).
 fn valid_map_key(map_key: &str) -> bool {
     (1..=128).contains(&map_key.len())
@@ -1849,6 +1969,7 @@ pub fn run() {
             get_game_image,
             get_vehicle_names,
             get_session_story,
+            get_recap,
             get_weekly_report,
             get_map_record,
             get_session_maps,
@@ -2533,6 +2654,99 @@ mod tests {
         let maps = session_maps_view(&database, vec![session.id.clone(); 60]).unwrap();
         assert_eq!(maps.len(), session_story::MAX_SESSION_IDS);
         assert_eq!(maps[0].map_keys, ["01_synth"]);
+    }
+
+    #[test]
+    fn recap_view_reads_the_session_and_its_earlier_battles() {
+        let folder = tempdir().unwrap();
+        let database = Database::initialize(folder.path().join("recap.db")).unwrap();
+        let mut first = crate::storage::tests::full_replay_battle("synthetic-recap-1");
+        first.outcome = models::BattleOutcome::Victory;
+        first.survived = Some(true);
+        let mut second = crate::storage::tests::full_replay_battle("synthetic-recap-2");
+        second.battle_time = first.battle_time + 60_000;
+        second.damage = Some(1_000);
+        second.outcome = models::BattleOutcome::Defeat;
+        second.survived = Some(false);
+        database.insert_battle(&mut first, true).unwrap();
+        database.insert_battle(&mut second, true).unwrap();
+        let session = database.active_session().unwrap().unwrap();
+        let recap::Recap::Session { seed, facts } = recap_view(
+            &database,
+            recap::RecapKind::Session,
+            &session.id,
+            None,
+            true,
+            None,
+            0,
+        )
+        .unwrap() else {
+            panic!("session recap");
+        };
+        assert_eq!(seed, recap::seed(&session.id));
+        let keys = facts
+            .iter()
+            .map(|fact| serde_json::to_value(&fact.fact).unwrap()["key"].clone())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            keys,
+            ["liczba_bitew", "odsetek_wygranych", "najlepsza", "czolg"]
+        );
+        assert!(
+            recap_view(
+                &database,
+                recap::RecapKind::Session,
+                "missing",
+                None,
+                true,
+                None,
+                0
+            )
+            .is_err()
+        );
+        let recap::Recap::Battle { facts, .. } = recap_view(
+            &database,
+            recap::RecapKind::Battle,
+            "synthetic-recap-2",
+            None,
+            true,
+            None,
+            0,
+        )
+        .unwrap() else {
+            panic!("battle recap");
+        };
+        let keys = facts
+            .iter()
+            .map(|fact| serde_json::to_value(&fact.fact).unwrap()["key"].clone())
+            .collect::<Vec<_>>();
+        assert_eq!(keys[..2], ["wynik", "czolg"]);
+        assert!(keys.contains(&serde_json::json!("obrazenia")));
+        assert!(
+            recap_view(
+                &database,
+                recap::RecapKind::Battle,
+                "missing",
+                None,
+                true,
+                None,
+                0
+            )
+            .is_err()
+        );
+        let recap::Recap::Week { facts, .. } = recap_view(
+            &database,
+            recap::RecapKind::Week,
+            "current",
+            None,
+            true,
+            None,
+            second.battle_time + 60_000,
+        )
+        .unwrap() else {
+            panic!("week recap");
+        };
+        assert_eq!(serde_json::to_value(&facts[0].fact).unwrap()["battles"], 2);
     }
 
     #[test]

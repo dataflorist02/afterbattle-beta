@@ -1,6 +1,6 @@
 # Threat model
 
-Last reviewed: 2026-11-16 (1.0.0-beta.3: the window may open the folder dialog, game folder detection reads the registry and probes fixed drives; 1.0.0-beta.2: the window may listen to the backend's own events; 1.0.0-beta.1, internally v2: window capability for the custom title bar, game pictures including DDS loading screens, CI with pinned actions and audits, release checksums; earlier in v2.0: `python.log`, Tomato.gg and Wargaming integrations removed, XVM opt-in enforced, recovery mode hardened).
+Last reviewed: 2026-11-16 (1.0.0-beta.4: template summaries add no permission, network access, download or stored data; 1.0.0-beta.3: the window may open the folder dialog, game folder detection reads the registry and probes fixed drives; 1.0.0-beta.2: the window may listen to the backend's own events; 1.0.0-beta.1, internally v2: window capability for the custom title bar, game pictures including DDS loading screens, CI with pinned actions and audits, release checksums; earlier in v2.0: `python.log`, Tomato.gg and Wargaming integrations removed, XVM opt-in enforced, recovery mode hardened).
 
 ## Security objectives and assets
 

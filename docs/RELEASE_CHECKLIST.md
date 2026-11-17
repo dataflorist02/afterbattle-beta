@@ -1,6 +1,6 @@
-# Release checklist — 1.0.0-beta.3
+# Release checklist — 1.0.0-beta.4
 
-Replaces the alpha's Windows checklist. The current public release is `1.0.0-beta.3` ("Afterbattle beta 3"; a hotfix of beta 2 for finding the game folder); before it `1.0.0-beta.2` (internally v2 with E9, spec 29) and `1.0.0-beta.1`. The detailed manual test of the release candidate, in the order it is run, is the author's internal manual test list; this checklist is the frame around it.
+Replaces the alpha's Windows checklist. The current public release is `1.0.0-beta.4` ("Afterbattle beta 4"; template summaries in Polish, spec 30); before it `1.0.0-beta.3` (a hotfix for finding the game folder), `1.0.0-beta.2` (internally v2 with E9, spec 29) and `1.0.0-beta.1`. The detailed manual test of the release candidate, in the order it is run, is the author's internal manual test list; this checklist is the frame around it.
 
 ## Before building
 
@@ -9,7 +9,7 @@ Replaces the alpha's Windows checklist. The current public release is `1.0.0-bet
 - The read-only golden test (`golden_local_replays`, run with `--ignored`) over the author's replays up to 2026-11-11 21:00 gives 2013 battles and digest `1703f8dbeb68775e`.
 - `cargo audit` and `pnpm audit --prod` report no high-severity finding.
 - The version is set only in `src-tauri/Cargo.toml` (`release.test.ts` keeps `package.json` equal; `tauri.conf.json` has none).
-- `CHANGELOG.md` has the 1.0.0-beta.3 section; README, privacy notice (EN/PL), SECURITY, THREAT_MODEL and KNOWN_ISSUES match the code.
+- `CHANGELOG.md` has the 1.0.0-beta.4 section; README, privacy notice (EN/PL), SECURITY, THREAT_MODEL and KNOWN_ISSUES match the code.
 
 ## Building (author)
 
@@ -24,6 +24,6 @@ Replaces the alpha's Windows checklist. The current public release is `1.0.0-bet
 
 ## Publishing (author)
 
-- Private repository: `main` fast-forwarded to the release commit, tag `v1.0.0-beta.3`, push.
+- Private repository: `main` fast-forwarded to the release commit, tag `v1.0.0-beta.4`, push.
 - Public repository: updated by the author with the reviewed snapshot commit (`docs/PUBLIC_RELEASE_REVIEW.md` there); its CI builds the installer artifact.
-- GitHub release `v1.0.0-beta.3` **marked as a pre-release**, with the installer and `SHA256SUMS.txt` (`gh release create v1.0.0-beta.3 --prerelease`).
+- GitHub release `v1.0.0-beta.4` **marked as a pre-release**, with the installer and `SHA256SUMS.txt` (`gh release create v1.0.0-beta.4 --prerelease`).

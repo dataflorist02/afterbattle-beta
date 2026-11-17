@@ -33,7 +33,7 @@ Only the newest published beta will receive security fixes. The project is curre
 
 ## Release requirements
 
-The public beta 1.0.0-beta.3 (author decisions 2026-11-14, 2026-11-15 and the hotfix of 2026-11-16; a GitHub pre-release) requires:
+The public beta 1.0.0-beta.4 (author decisions 2026-11-14, 2026-11-15 and 2026-11-16; a GitHub pre-release) requires:
 
 1. Passing Rust and TypeScript tests, lint, formatting and Clippy, and the read-only golden test on the author's replays.
 2. `cargo audit` and `pnpm audit --prod` with no high-severity findings.

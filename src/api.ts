@@ -7,6 +7,8 @@ import type {
   MapRecord,
   SessionMaps,
   SessionStory,
+  Recap,
+  RecapKind,
   VehicleNamesView,
   WeeklyReport,
   ExpectedValuesStatus,
@@ -356,6 +358,8 @@ export const api = {
   battleView: (battleId: string) => command<BattleDetailView>("get_battle_view", { battleId }),
   weeklyReport: () => command<WeeklyReport>("get_weekly_report"),
   sessionStory: (sessionId: string) => command<SessionStory>("get_session_story", { sessionId }),
+  /** Facts of a template summary (spec 30); the text is put together in `lib/recap`. */
+  recap: (kind: RecapKind, id: string) => command<Recap>("get_recap", { kind, id }),
   mapRecord: (mapKey: string) => command<MapRecord>("get_map_record", { mapKey }),
   sessionMaps: (sessionIds: string[]) => command<SessionMaps[]>("get_session_maps", { sessionIds }),
   vehicleNames: (language: Language) =>

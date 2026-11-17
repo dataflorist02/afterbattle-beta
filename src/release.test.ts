@@ -14,11 +14,11 @@ function cargoVersion(): string {
 
 describe("release identity", () => {
   it("takes the version from Cargo.toml everywhere and keeps product metadata aligned", () => {
-    // Spec 29 §8 (author decision 2026-11-15); hotfix 2026-11-16: "Afterbattle beta 3".
-    expect(cargoVersion()).toBe("1.0.0-beta.3");
+    // Spec 29 §8 (author decision 2026-11-15); spec 30 run 2026-11-16: "Afterbattle beta 4".
+    expect(cargoVersion()).toBe("1.0.0-beta.4");
     expect(APP_NAME).toBe("Afterbattle");
     expect(RELEASE_CHANNEL).toBe("Public beta");
-    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 3");
+    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 4");
     expect(tauriConfig.app.windows[0].title).toBe(APP_DISPLAY_NAME);
     expect(APP_VERSION).toBe(cargoVersion());
     expect(packageJson.version).toBe(cargoVersion());
@@ -50,6 +50,7 @@ describe("release identity", () => {
 describe("display name (title bar and window title)", () => {
   it("names a pre-release by its channel and number, a final version by the version", () => {
     // Spec 29 §8: "Afterbattle beta N" with N the pre-release number; final: "Afterbattle 1.0.0".
+    expect(displayName("1.0.0-beta.4")).toBe("Afterbattle beta 4");
     expect(displayName("1.0.0-beta.3")).toBe("Afterbattle beta 3");
     expect(displayName("1.0.0-beta.2")).toBe("Afterbattle beta 2");
     expect(displayName("1.0.0-beta.1")).toBe("Afterbattle beta 1");

@@ -29,6 +29,8 @@ Podstawa: wewnętrzne badanie podwalin autora (poza repozytorium publicznym; dal
 - **E9 — dopracowanie do `1.0.0-beta.2` (decyzja autora):** zakres, kolejność etapów i kryteria akceptacji w [spec 29](29-e9-polish.md) (APPROVED): regresja ruchu w Czołgach i Historii, odświeżanie na żywo, paleta, logo i pasek przewijania, ekran ładowania, ruch nowej bitwy i liczb, wydanie `1.0.0-beta.2` („Afterbattle beta 2”, pre-release). Pliki marki w `docs/design/brand/`. Bez zmian w parserze i bazie. Status speca bez zmian: APPROVED.
 - **§6.3 (decyzja autora):** mutacje nie blokują wydania. Próg ≥ 85% obowiązuje dla logiki nowej lub zmienionej w etapie; starsze moduły są w wewnętrznym backlogu mutacji autora, `baseline.rs` jako warunek startu moonshota A-1 (§11.1). Checkpoint E4 (mutacje średniej odniesienia, `session_insights`, generatora wyzwań) przestaje być bramką E7.
 
+- **§6.3 (decyzja autora, 2026-11-16):** mutacje tylko dla logiki decyzyjnej (progi i warunki wyboru tego, co widzi gracz), z filtrem funkcji (`cargo-mutants -F` / `--re`), próg ≥ 85%; bez Strykera dla fraz, wariantów i odmiany (chronią je testy niezmienników ze spec 30 §7); uruchamiane raz przed wydaniem, w tle, nie blokują etapów. Zastępuje zasadę z 2026-11-14 w zakresie tego, co i kiedy się mutuje.
+
 ## 1. Cel v2.0
 
 v2.0 to **konsolidacja i naprawa tego, co już jest na `main`, podwaliny danych pod „Wizję po v2.0” (tier i role w katalogu pojazdów, pełniejsza baza v10) oraz redesign interfejsu, bez nowych metryk analitycznych.**
@@ -368,7 +370,7 @@ Zakres dawnego E6 (widok czołgu i wyzwania) jest w E5, krok 3. Numeracji pozost
 - Test golden u autora: liczba bitew w statystykach = liczba powtórek z `battleType == 1 && bonusType == 1` i pełnymi wynikami; odsetek pojazdów z tierem ≥ 99% (E1b).
 
 ### 6.3 Mutacyjne
-`cargo-mutants` dla wskazanych funkcji, próg ≥ 85%, każdy przeżyły mutant ma test albo uzasadnienie. **Od 2026-11-14 (decyzja autora):** mutacje ≥ 85% obowiązują dla logiki nowej lub zmienionej w etapie; starsze moduły są w wewnętrznym backlogu mutacji autora i nie blokują wydania. Funkcje:
+`cargo-mutants` dla wskazanych funkcji, próg ≥ 85%, każdy przeżyły mutant ma test albo uzasadnienie. **Od 2026-11-14 (decyzja autora):** mutacje ≥ 85% obowiązują dla logiki nowej lub zmienionej w etapie; starsze moduły są w wewnętrznym backlogu mutacji autora i nie blokują wydania. **Od 2026-11-16 (decyzja autora):** mutacje tylko dla logiki decyzyjnej (progi i warunki wyboru tego, co widzi gracz), z filtrem funkcji (`cargo-mutants -F` / `--re`), próg ≥ 85%; bez Strykera dla fraz, wariantów i odmiany (chronią je testy niezmienników ze spec 30 §7); uruchamiane raz przed wydaniem, w tle, nie blokują etapów. **Od 2026-11-16 (decyzja autora, liczba mutantów):** przed uruchomieniem mutacji wykonawca podaje liczbę mutantów (`cargo mutants --list` / Stryker dry-run). Powyżej ok. 30 mutantów nie startuje bez zgody autora: wypisuje w raporcie etapu zakres (funkcje, pliki) i liczbę, i idzie dalej z pracą. Mutacje tylko dla logiki decyzyjnej (progi i warunki), z filtrem funkcji (`-F`), bez Strykera dla tekstów i fraz, raz przed wydaniem, w tle, `-j 2`. Funkcje:
 - (E1) bramka zgody XVM przed pobraniem (M9), start trackera w trybie awaryjnym (N1), `delete_all_data` w trybie awaryjnym (N2);
 - `stats_eligibility`;
 - `parse_battle_results`;
@@ -565,6 +567,7 @@ Projekt włączania, doboru modelu do sprzętu i uruchamiania na żądanie: spec
 | `R[1].position`, `deathInfo` | znaczenie niezweryfikowane; `killer_slot` (D17) daje graf zniszczeń |
 | Cokolwiek ze strumienia pakietów w bazie | przed spike'em nie wiadomo, co i w jakiej postaci zapisywać; źródłem zostaje plik powtórki |
 | Pamięć podręczna wyników bitew gry (`battle_results\*.dat` w `%APPDATA%`) | decyzja autora: nie teraz; poza zatwierdzonym folderem gry, publiczne parsery nieaktualne, format pickle |
+| Czas życia czołgu w bitwie (fakt `czas_zycia` podsumowań, spec 30 §4.1) | decyzja autora 2026-11-16: **przy najbliższej zmianie schematu**; `duration_seconds` to długość bitwy, czasu zniszczenia czołgu baza nie ma |
 | Pojazd premium jako cecha | decyzja autora: nie teraz; brak jednoznacznego znacznika w `list.xml` (badanie §2) |
 
 **Nie robimy:**

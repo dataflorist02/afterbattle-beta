@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../i18n/language";
+import { sessionSentences } from "../lib/recap/session";
 import * as fx from "../test/fixtures";
 import { expectNoGluedNumbers } from "../test/glued";
 import type { Language } from "../types";
@@ -26,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   gameImage: vi.fn(),
   vehicleNames: vi.fn(),
   sessionStory: vi.fn(),
+  recap: vi.fn(),
   mapRecord: vi.fn(),
   sessionMaps: vi.fn(),
   weeklyReport: vi.fn(),
@@ -67,6 +69,7 @@ function setDefaults() {
   mocks.gameImage.mockResolvedValue(new ArrayBuffer(0));
   mocks.vehicleNames.mockResolvedValue({ language: null, names: {} });
   mocks.sessionStory.mockResolvedValue(fx.sessionStory());
+  mocks.recap.mockResolvedValue(fx.sessionRecap());
   mocks.mapRecord.mockResolvedValue(fx.mapRecord());
   mocks.weeklyReport.mockResolvedValue(fx.weeklyReport());
   mocks.sessionMaps.mockImplementation((ids: string[]) =>
@@ -79,6 +82,9 @@ function setDefaults() {
   mocks.pickGameFolder.mockResolvedValue(null);
   mocks.configureLocal.mockResolvedValue(fx.snapshot().sourceStatus);
 }
+
+/** A battle tile or row by its tank; summary references ("Fakt F7: … Alpha") are not battles. */
+const BATTLE_BUTTON = /^(?!Fakt ).*(Alpha|Bravo)/;
 
 async function flush() {
   for (let index = 0; index < 6; index++) await act(async () => Promise.resolve());
@@ -115,6 +121,8 @@ function expectNoCodes(container: HTMLElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // A test that chose an address form must not leak it into the next one.
+  localStorage.removeItem("afterbattle-address");
   setDefaults();
 });
 afterEach(cleanup);
@@ -154,12 +162,69 @@ describe("navigation and footer", () => {
 });
 
 describe("Session screen", () => {
+  it("shows the session summary under the numbers with a reference after each sentence (spec 30 §8)", async () => {
+    await renderApp();
+    expect(mocks.recap).toHaveBeenCalledWith("session", fx.summary().session.id);
+    const card = screen.getByRole("region", { name: "Podsumowanie sesji" });
+    const sentences = within(card).getAllByRole("listitem");
+    expect(sentences.length).toBeGreaterThanOrEqual(3);
+    expect(sentences.length).toBeLessThanOrEqual(5);
+    expect(card.textContent).toMatch(/9 bitew/i);
+    expect(card.textContent).not.toMatch(/łeś|łaś/);
+    expect(
+      within(card).getByText(/Złożone z Twoich liczb według stałych reguł\./),
+    ).toBeInTheDocument();
+    const wins = within(card).getByRole("button", { name: "Fakt F2: wygrane 6 z 9 (67%)" });
+    const figure = screen.getByText("6 z 9").closest(".figure")!;
+    fireEvent.mouseEnter(wins);
+    expect(figure).toHaveClass("recap-highlight");
+    fireEvent.mouseLeave(wins);
+    expect(figure).not.toHaveClass("recap-highlight");
+    // Survival has no number on the screen, so its reference shows a tooltip.
+    const survival = within(card).getByRole("button", { name: /^Fakt F6: przetrwanie do końca/ });
+    fireEvent.focus(survival);
+    expect(within(card).getByRole("tooltip")).toHaveTextContent(/3 z 9 bitew/);
+    fireEvent.blur(survival);
+    expect(within(card).queryByRole("tooltip")).not.toBeInTheDocument();
+    expectNoCodes(document.body);
+  });
+
+  it("follows the address setting in the summary", async () => {
+    localStorage.setItem("afterbattle-address", "feminine");
+    // A seed whose text has a verb (the neutral variants have none).
+    const recap = fx.sessionRecap();
+    const facts = recap.kind === "session" ? recap.facts : [];
+    const seed = Array.from({ length: 50 }, (_, value) => value).find((value) =>
+      sessionSentences({ seed: value, facts }, { address: "feminine", tank: (key) => key }).some(
+        (sentence) => /łaś/u.test(sentence.text),
+      ),
+    )!;
+    mocks.recap.mockResolvedValue({ ...recap, seed });
+    await renderApp();
+    const card = screen.getByRole("region", { name: "Podsumowanie sesji" });
+    expect(card.textContent).toMatch(/łaś/);
+    expect(card.textContent).not.toMatch(/łeś/);
+  });
+
+  it("hides the summary card in English (spec 30 §2)", async () => {
+    await renderApp("en");
+    expect(screen.queryByRole("region", { name: /summary/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Podsumowanie sesji" })).not.toBeInTheDocument();
+  });
+
+  it("leaves the summary out when the facts cannot be read", async () => {
+    mocks.recap.mockRejectedValue({ code: "database_error" });
+    await renderApp();
+    expect(screen.queryByRole("region", { name: "Podsumowanie sesji" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Momenty sesji" })).toBeInTheDocument();
+  });
+
   it("shows the hero average, the comparison and the battles", async () => {
     await renderApp();
     expect(
       screen.getByRole("heading", { level: 1, name: /Mocna sesja|Dzisiejsza sesja/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/3\s184/)).toBeInTheDocument();
+    expect(screen.getByText(/^3\s184$/)).toBeInTheDocument();
     expect(
       screen.getByText(/O 18% więcej niż Twoja średnia na tych samych czołgach/),
     ).toBeInTheDocument();
@@ -189,7 +254,7 @@ describe("Session screen", () => {
     for (const tile of tiles.filter((item) => item.classList.contains("tile-loss")))
       expect(within(tile).getByText(/Porażka/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Momenty sesji" })).toBeInTheDocument();
-    expect(screen.getByText("Rozkręcałeś się")).toBeInTheDocument();
+    expect(screen.getByText("Coraz lepiej z każdą bitwą")).toBeInTheDocument();
     expect(screen.getByText(/2\s000 → 4\s480/)).toBeInTheDocument();
     expect(screen.getByText("Do poprawy")).toBeInTheDocument();
     expect(screen.getByText("0 z 3 przeżytych")).toBeInTheDocument();
@@ -204,7 +269,7 @@ describe("Session screen", () => {
     await renderApp();
     const strip = screen.getByRole("list", { name: "Sesja bitwa po bitwie" });
     const tiles = within(strip).getAllByRole("button");
-    const trend = screen.getByText("Rozkręcałeś się").closest(".moment")!;
+    const trend = screen.getByText("Coraz lepiej z każdą bitwą").closest(".moment")!;
     expect(trend).toHaveTextContent(/2\s000 → 4\s480/);
     expect(trend).toHaveTextContent("Każda kolejna bitwa z większymi obrażeniami niż poprzednia");
     expect(tiles[0]).toHaveAccessibleName(/2\s000 obrażeń/);
@@ -226,7 +291,7 @@ describe("Session screen", () => {
       }),
     );
     await renderApp();
-    const averages = screen.getByText("Rozkręcałeś się").closest(".moment")!;
+    const averages = screen.getByText("Coraz lepiej z każdą bitwą").closest(".moment")!;
     expect(averages).toHaveTextContent(/2\s310 → 4\s170/);
     expect(averages).toHaveTextContent("Średnio z pierwszych 3 bitew → z ostatnich 3");
     expect(averages).not.toHaveTextContent(/Każda kolejna/);
@@ -276,7 +341,7 @@ describe("Session screen", () => {
     await renderApp();
     expect(screen.getByRole("alert")).toHaveTextContent("Zapis lub odczyt danych się nie powiódł");
     await go("Spróbuj ponownie");
-    expect(screen.getByText(/3\s184/)).toBeInTheDocument();
+    expect(screen.getByText(/^3\s184$/)).toBeInTheDocument();
   });
 
   it("is empty without a session and asks for the folder before the first run", async () => {
@@ -287,6 +352,28 @@ describe("Session screen", () => {
     mocks.snapshot.mockResolvedValue(fx.snapshot({ configured: false }));
     await renderApp();
     expect(screen.getByRole("heading", { name: "Wskaż folder gry" })).toBeInTheDocument();
+  });
+
+  it("asks on the first run how to address the player, neutral until answered (2026-11-16)", async () => {
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ configured: false }));
+    await renderApp();
+    const group = screen.getByRole("group", { name: "Jak się do Ciebie zwracać?" });
+    const choices = within(group).getAllByRole("button");
+    expect(choices.map((choice) => choice.textContent)).toEqual(["On", "Ona", "Bez formy"]);
+    for (const choice of choices) expect(choice).toHaveAttribute("aria-pressed", "false");
+    expect(localStorage.getItem("afterbattle-address")).toBeNull();
+    fireEvent.click(within(group).getByRole("button", { name: "Ona" }));
+    expect(localStorage.getItem("afterbattle-address")).toBe("feminine");
+    expect(within(group).getByRole("button", { name: "Ona" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.click(within(group).getByRole("button", { name: "Bez formy" }));
+    expect(localStorage.getItem("afterbattle-address")).toBe("neutral");
+    cleanup();
+    // The forms exist only in Polish.
+    await renderApp("en");
+    expect(screen.queryByRole("group")).not.toBeInTheDocument();
   });
 
   it("says when there are too few battles to compare and when XVM is off", async () => {
@@ -350,6 +437,40 @@ describe("Session screen", () => {
 });
 
 describe("Battle screen", () => {
+  it("shows the battle summary with references to the numbers (spec 30 §2, §8)", async () => {
+    mocks.recap.mockImplementation((kind: string) =>
+      Promise.resolve(kind === "battle" ? fx.battleRecap() : fx.sessionRecap()),
+    );
+    await renderApp();
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
+    await flush();
+    expect(mocks.recap).toHaveBeenCalledWith("battle", expect.any(String));
+    const card = screen.getByRole("region", { name: "Podsumowanie bitwy" });
+    const sentences = within(card).getAllByRole("listitem");
+    expect(sentences.length).toBeGreaterThanOrEqual(3);
+    expect(sentences[0].textContent).toMatch(/wygran/iu);
+    expect(card.textContent).toMatch(/pierwsze miejsce w drużynie/u);
+    const damage = within(card).getByRole("button", { name: /^Fakt F5: obrażenia 5\s210/u });
+    const target = document.getElementById("recap-target-damage")!;
+    fireEvent.mouseEnter(damage);
+    expect(target).toHaveClass("recap-highlight");
+    fireEvent.mouseLeave(damage);
+    expect(target).not.toHaveClass("recap-highlight");
+    expectNoCodes(document.body);
+  });
+
+  it("hides the battle summary in English", async () => {
+    mocks.recap.mockImplementation((kind: string) =>
+      Promise.resolve(kind === "battle" ? fx.battleRecap() : fx.sessionRecap()),
+    );
+    await renderApp("en");
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
+    await flush();
+    expect(
+      screen.queryByRole("region", { name: /Podsumowanie|summary/iu }),
+    ).not.toBeInTheDocument();
+  });
+
   it("puts the title on the map image header, or on a placeholder that says where it comes from", async () => {
     clearGameImages();
     const created = vi.fn(() => "blob:synthetic-map");
@@ -360,7 +481,7 @@ describe("Battle screen", () => {
     );
     try {
       await renderApp();
-      fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+      fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
       await flush();
       const header = screen.getByRole("heading", { level: 1, name: /na mapie/ }).closest("header")!;
       expect(header).toHaveClass("map-backdrop");
@@ -374,7 +495,7 @@ describe("Battle screen", () => {
     clearGameImages();
     mocks.gameImage.mockResolvedValue(new ArrayBuffer(0));
     await renderApp();
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
     const placeholder = screen
       .getByRole("heading", { level: 1, name: /na mapie/ })
@@ -386,12 +507,12 @@ describe("Battle screen", () => {
 
   it("compares both teams with totals only and shows remaining health", async () => {
     await renderApp();
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
     expect(screen.getByRole("heading", { level: 1, name: /na mapie/ })).toBeInTheDocument();
     expect(screen.getByText("obrażeń, najwięcej w drużynie, 24% jej obrażeń")).toBeInTheDocument();
     expect(screen.getByText("312 HP")).toBeInTheDocument();
-    expect(screen.getByText(/^przeżyłeś, z 1\s950$/)).toBeInTheDocument();
+    expect(screen.getByText(/^czołg przetrwał, z 1\s950$/)).toBeInTheDocument();
     const you = screen.getByRole("heading", { name: "Twoja bitwa" }).closest("section")!;
     expect(within(you).getByText("15 z 18")).toBeInTheDocument();
     expectNoGluedNumbers(you);
@@ -412,7 +533,7 @@ describe("Battle screen", () => {
 
   it("opens History filtered by the battle's map from the map card", async () => {
     await renderApp();
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
     await go("Wszystkie bitwy na tej mapie");
     expect(screen.getByRole("heading", { level: 1, name: "Historia" })).toBeInTheDocument();
@@ -430,13 +551,13 @@ describe("Battle screen", () => {
       }),
     );
     await renderApp();
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
     expect(screen.getByRole("note")).toHaveTextContent("Ta bitwa nie liczy się do statystyk");
     mocks.battleView.mockResolvedValue(fx.battleDetail({ teams: null }));
     cleanup();
     await renderApp();
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
     expect(
       screen.getByText("Porównanie drużyn jest niedostępne dla tej bitwy."),
@@ -1131,7 +1252,7 @@ describe("live refresh after a backend event (spec 29 §2)", () => {
     expect(mocks.weeklyReport.mock.calls.length).toBe(weekly + 1);
     expect(mocks.challengeHistory.mock.calls.length).toBe(history + 1);
     await go("Sesja");
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
     const views = mocks.battleView.mock.calls.length;
     const records = mocks.mapRecord.mock.calls.length;
@@ -1598,6 +1719,46 @@ describe("weekly report (E7)", () => {
 });
 
 describe("Goals screen", () => {
+  it("shows the week summary under the week header (spec 30 §2, §4.3)", async () => {
+    mocks.recap.mockImplementation((kind: string) =>
+      Promise.resolve(kind === "week" ? fx.weekRecap() : fx.sessionRecap()),
+    );
+    await renderApp();
+    await go("Cele");
+    expect(mocks.recap).toHaveBeenCalledWith("week", "current");
+    const card = screen.getByRole("region", { name: "Podsumowanie tygodnia" });
+    expect(within(card).getAllByRole("listitem").length).toBeGreaterThanOrEqual(3);
+    const survival = within(card).getByRole("button", { name: /^Fakt F3: przetrwanie 92%/u });
+    fireEvent.mouseEnter(survival);
+    expect(document.getElementById("recap-target-indicator-survival")).toHaveClass(
+      "recap-highlight",
+    );
+    fireEvent.mouseLeave(survival);
+  });
+
+  it("says only that the week has too few battles under 15", async () => {
+    mocks.recap.mockImplementation((kind: string) =>
+      Promise.resolve(kind === "week" ? fx.weekRecap(6) : fx.sessionRecap()),
+    );
+    await renderApp();
+    await go("Cele");
+    const card = screen.getByRole("region", { name: "Podsumowanie tygodnia" });
+    const sentences = within(card).getAllByRole("listitem");
+    expect(sentences).toHaveLength(1);
+    expect(sentences[0].textContent).toMatch(/^Za mało bitew w tym tygodniu/u);
+  });
+
+  it("hides the week summary in English", async () => {
+    mocks.recap.mockImplementation((kind: string) =>
+      Promise.resolve(kind === "week" ? fx.weekRecap() : fx.sessionRecap()),
+    );
+    await renderApp("en");
+    await go("Goals");
+    expect(
+      screen.queryByRole("region", { name: /Podsumowanie|summary/iu }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the active goal from the existing 5-battle challenges and never a win-rate goal", async () => {
     mocks.snapshot.mockResolvedValue(fx.snapshot({ activeChallenge: fx.activeChallenge() }));
     await renderApp();
@@ -1620,6 +1781,25 @@ describe("Goals screen", () => {
 });
 
 describe("Settings screen", () => {
+  it("chooses how Polish texts address the player, neutral by default (spec 30 §2)", async () => {
+    await renderApp();
+    await go("Ustawienia");
+    const select = screen.getByRole("combobox", { name: "Jak się do Ciebie zwracać" });
+    expect(select).toHaveValue("neutral");
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual([
+      "Bez formy (wygrana, czołg przetrwał)",
+      "Forma męska (zadałeś)",
+      "Forma żeńska (zadałaś)",
+    ]);
+    fireEvent.change(select, { target: { value: "feminine" } });
+    expect(localStorage.getItem("afterbattle-address")).toBe("feminine");
+    expect(select).toHaveValue("feminine");
+  });
+
   it("deletes data only after typing the word in the current language", async () => {
     await renderApp("en");
     await go("Settings");
@@ -1694,7 +1874,7 @@ describe("screen states (spec 25 §5)", () => {
   const busy = () =>
     screen.queryAllByRole("status").filter((item) => item.getAttribute("aria-busy") === "true");
   const openFirstBattle = async () => {
-    fireEvent.click(screen.getAllByRole("button", { name: /Alpha|Bravo/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
     await flush();
   };
   function withoutXvm() {
@@ -1933,12 +2113,12 @@ describe("screen states (spec 25 §5)", () => {
       });
       await go("Spróbuj ponownie");
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-      const rows = screen.getAllByRole("button", { name: /Alpha|Bravo/ }).length;
+      const rows = screen.getAllByRole("button", { name: BATTLE_BUTTON }).length;
       expect(rows).toBeGreaterThan(0);
       mocks.battleHistory.mockRejectedValueOnce(failure);
       await go("Pokaż kolejne");
       expect(screen.getByRole("alert")).toHaveTextContent(errorText);
-      expect(screen.getAllByRole("button", { name: /Alpha|Bravo/ })).toHaveLength(rows);
+      expect(screen.getAllByRole("button", { name: BATTLE_BUTTON })).toHaveLength(rows);
     });
 
     it("shows session WN8 only with XVM", async () => {

@@ -14,7 +14,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const CHALLENGE_ENGINE_VERSION: &str = "vehicle-challenge-v1";
 pub const CHALLENGE_SCHEMA_VERSION: u32 = 1;
 pub const CHALLENGE_SUGGESTION_VERSION: &str = "vehicle-challenge-suggestion-v1";
-const TARGET_BATTLES: usize = 5;
+pub(crate) const TARGET_BATTLES: usize = 5;
 const CONSISTENCY_SUCCESSES: usize = 4;
 const MIN_BASELINE_BATTLES: usize = 30;
 const MIN_SESSION_BATTLES: usize = 3;
