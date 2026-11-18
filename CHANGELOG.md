@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.0.0-rc.2
+
+Bezpieczeństwo: aktualizacja zip. Druga wersja kandydata na 1.0 („Afterbattle 1.0 RC 2”), bez zmian w tym, co widzi gracz; zegar do 1.0.0 biegnie dalej od rc.1. Instalator bez podpisu Authenticode (pre-release). / Security: zip update. Second build of the 1.0 release candidate ("Afterbattle 1.0 RC 2"), nothing changes for the player; the clock to 1.0.0 keeps running from rc.1. Installer without an Authenticode signature (pre-release).
+
+### Internal
+
+- Security: the updater no longer pulls `zip` 4.6.1 (RUSTSEC-2026-0367, -0368, -0369, -0429, -0545, -0548). `tauri-plugin-updater` 2.12.0, the latest 2.x, keeps TLS and the system proxy without its `zip` feature, which only unpacks zipped Windows updates to disk; our updates are the signed NSIS installer itself. Our own package reader uses `zip` 9.7.0 (was 9.5.0) and reads entries into memory. A test keeps every locked `zip` at 9.0.5 or newer; `cargo audit`: 0 vulnerabilities.
+- Clippy clean on CI's Rust 1.89.0 (a constant `is_empty()` in a test) and on stable 1.100 (`as_chunks`, `?`); MSRV stays 1.89.
+- The update public key was rotated before the first release (key id `112017D205DB8B09`); the old key never signed a release.
+- The public snapshot check for names of excluded files also runs in `pnpm test`, over the tracked files the snapshot keeps.
+
 ## 1.0.0-rc.1
 
 Kandydat na wersję 1.0 („Afterbattle 1.0 RC”): Przegląd jako pierwszy ekran, porównanie z graczami z Twoich bitew na ekranie Czołg, aktualizacje za zgodą i ostatnie szlify interfejsu. Instalator bez podpisu Authenticode (pre-release). / Release candidate for 1.0 ("Afterbattle 1.0 RC"): Overview as the first screen, a comparison with the players of your battles on the Tank screen, updates with consent, and the last interface polish. Installer without an Authenticode signature (pre-release).

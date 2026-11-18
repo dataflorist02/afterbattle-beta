@@ -14,11 +14,12 @@ function cargoVersion(): string {
 
 describe("release identity", () => {
   it("takes the version from Cargo.toml everywhere and keeps product metadata aligned", () => {
-    // Spec 32 §7 (author decision 2026-11-17): 1.0.0-rc.1, "Afterbattle 1.0 RC".
-    expect(cargoVersion()).toBe("1.0.0-rc.1");
+    // Spec 32 §7 (author decision 2026-11-17): 1.0.0-rc.1, "Afterbattle 1.0 RC"; rc.2 (author,
+    // 2026-11-18): security update of zip, the 1.0.0 clock runs on.
+    expect(cargoVersion()).toBe("1.0.0-rc.2");
     expect(APP_NAME).toBe("Afterbattle");
     expect(RELEASE_CHANNEL).toBe("Public beta");
-    expect(APP_DISPLAY_NAME).toBe("Afterbattle 1.0 RC");
+    expect(APP_DISPLAY_NAME).toBe("Afterbattle 1.0 RC 2");
     expect(tauriConfig.app.windows[0].title).toBe(APP_DISPLAY_NAME);
     expect(APP_VERSION).toBe(cargoVersion());
     expect(packageJson.version).toBe(cargoVersion());
@@ -83,6 +84,19 @@ describe("automatic updates (spec 32 §5.2)", () => {
     expect(script).toContain("TAURI_SIGNING_PRIVATE_KEY");
     expect(script).toContain('"createUpdaterArtifacts":true');
     expect(script).toContain("latest.json");
+  });
+
+  it("locks no zip below 9.0.5 (rc.2: RUSTSEC-2026-0367 … -0548 in the updater's zip 4.x)", () => {
+    const lock = readFileSync("src-tauri/Cargo.lock", "utf8");
+    const versions = [...lock.matchAll(/^name = "zip"\r?\nversion = "(\d+)\.(\d+)\.(\d+)"/gm)].map(
+      ([, major, minor, patch]) => [Number(major), Number(minor), Number(patch)],
+    );
+    expect(versions.length).toBeGreaterThan(0);
+    for (const [major, minor, patch] of versions)
+      expect(
+        major * 1e6 + minor * 1e3 + patch,
+        `zip ${major}.${minor}.${patch}`,
+      ).toBeGreaterThanOrEqual(9_000_005);
   });
 });
 

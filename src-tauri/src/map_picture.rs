@@ -70,7 +70,9 @@ pub(crate) fn decode_bc1(bytes: &[u8]) -> Option<Rgb> {
     let blocks_wide = w.div_ceil(4);
     let mut block_rgba = [0u8; 4 * 4 * 4];
     for (index, block) in bytes[DATA_OFFSET..]
-        .chunks_exact(BC1_BLOCK_BYTES)
+        .as_chunks::<BC1_BLOCK_BYTES>()
+        .0
+        .iter()
         .take(blocks_wide * h.div_ceil(4))
         .enumerate()
     {

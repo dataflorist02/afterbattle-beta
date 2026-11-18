@@ -139,7 +139,8 @@ mod tests {
             10,
             "a new schema step needs its own beta.4 → RC migration test"
         );
-        assert!(crate::schema::MIGRATIONS.is_empty());
+        // A count, not `is_empty()`: clippy 1.89 (CI) rejects is_empty() on a constant.
+        assert_eq!(crate::schema::MIGRATIONS.len(), 0);
         let directory = tempdir().unwrap();
         let path = directory.path().join("afterbattle.sqlite3");
         {

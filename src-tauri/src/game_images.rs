@@ -201,10 +201,8 @@ fn key_and_rank(name: &str) -> Option<((ImageKind, String), u8)> {
     } else if let Some(rest) = name.strip_prefix(MAP_SCREEN_DIR) {
         let key = rest.strip_suffix(".dds")?.to_ascii_lowercase();
         return valid_key(&key).then_some(((ImageKind::MapScreen, key), 0));
-    } else if let Some(rest) = name.strip_prefix(MAP_FALLBACK_DIR) {
-        (ImageKind::Map, rest, 1)
     } else {
-        return None;
+        (ImageKind::Map, name.strip_prefix(MAP_FALLBACK_DIR)?, 1)
     };
     let stem = rest.strip_suffix(".png")?;
     let key = stem.to_ascii_lowercase();
