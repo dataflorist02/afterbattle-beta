@@ -5,6 +5,7 @@ import { LanguageProvider } from "../i18n/language";
 import { sessionSentences } from "../lib/recap/session";
 import * as fx from "../test/fixtures";
 import { expectNoGluedNumbers } from "../test/glued";
+import { APP_VERSION } from "../release";
 import type { Language } from "../types";
 
 const mocks = vi.hoisted(() => ({
@@ -37,6 +38,17 @@ const mocks = vi.hoisted(() => ({
   detectInstallations: vi.fn(),
   pickGameFolder: vi.fn(),
   configureLocal: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+  startImport: vi.fn(),
+  setXvmEnabled: vi.fn(),
+  refreshExpectedValues: vi.fn(),
+  updatePreferences: vi.fn(),
+  referenceTables: vi.fn(),
+  updateConsent: vi.fn(),
+  setUpdateConsent: vi.fn(),
+  checkForUpdate: vi.fn(),
+  installUpdate: vi.fn(),
   startVehicleChallenge: vi.fn(),
   attemptsConversionSession: vi.fn(() => new Promise(() => {})),
   attemptsConversionRecent: vi.fn(() => new Promise(() => {})),
@@ -81,6 +93,22 @@ function setDefaults() {
   mocks.detectInstallations.mockResolvedValue([]);
   mocks.pickGameFolder.mockResolvedValue(null);
   mocks.configureLocal.mockResolvedValue(fx.snapshot().sourceStatus);
+  for (const action of [
+    mocks.pause,
+    mocks.resume,
+    mocks.startImport,
+    mocks.setXvmEnabled,
+    mocks.refreshExpectedValues,
+    mocks.updatePreferences,
+  ])
+    action.mockResolvedValue(undefined);
+  mocks.referenceTables.mockResolvedValue(fx.referenceTables());
+  mocks.updateConsent.mockResolvedValue("off");
+  mocks.setUpdateConsent.mockImplementation((enabled: boolean) =>
+    Promise.resolve(enabled ? "on" : "off"),
+  );
+  mocks.checkForUpdate.mockResolvedValue(null);
+  mocks.installUpdate.mockResolvedValue(undefined);
 }
 
 /** A battle tile or row by its tank; summary references ("Fakt F7: … Alpha") are not battles. */
@@ -119,10 +147,26 @@ function expectNoCodes(container: HTMLElement) {
   expect(container.textContent ?? "").not.toMatch(/\b[a-z]+_[a-z_]+\b/);
 }
 
+/** Spec 31 §3: opens a summary card ("Pokaż więcej (N)"); returns its sentences, first one first. */
+function expandRecap(card: HTMLElement): HTMLElement[] {
+  const more = within(card).queryByRole("button", { name: /^Pokaż więcej/u });
+  if (more) fireEvent.click(more);
+  return recapSentences(card);
+}
+
+/** The sentences of a summary card the player can see now (the hidden rest is left out). */
+function recapSentences(card: HTMLElement): HTMLElement[] {
+  return [
+    card.querySelector<HTMLElement>(".recap-first")!,
+    ...within(card).queryAllByRole("listitem"),
+  ];
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  // A test that chose an address form must not leak it into the next one.
+  // A test that chose an address form or opened a summary must not leak it into the next one.
   localStorage.removeItem("afterbattle-address");
+  localStorage.removeItem("afterbattle-recap-expanded");
   setDefaults();
 });
 afterEach(cleanup);
@@ -138,13 +182,16 @@ describe("navigation and footer", () => {
     expect(icon.querySelector("radialGradient")).not.toBeNull();
   });
 
-  it("shows the six destinations with Maps greyed out in the private build", async () => {
+  // Spec 32 §4: Overview is the first destination (was: six, Session first).
+  it("shows the seven destinations with Maps greyed out in the private build", async () => {
     await renderApp();
     const nav = screen.getByRole("navigation", { name: "Główna nawigacja" });
     const names = within(nav)
       .getAllByRole("button")
       .map((button) => button.textContent?.trim());
-    expect(names[0]).toContain("Sesja");
+    expect(names).toHaveLength(7);
+    expect(names[0]).toContain("Przegląd");
+    expect(names[1]).toContain("Sesja");
     expect(names.some((name) => name?.startsWith("Mapy"))).toBe(true);
     const maps = within(nav).getByRole("button", { name: /Mapy/ });
     expect(maps).toHaveAttribute("aria-disabled", "true");
@@ -166,7 +213,7 @@ describe("Session screen", () => {
     await renderApp();
     expect(mocks.recap).toHaveBeenCalledWith("session", fx.summary().session.id);
     const card = screen.getByRole("region", { name: "Podsumowanie sesji" });
-    const sentences = within(card).getAllByRole("listitem");
+    const sentences = expandRecap(card);
     expect(sentences.length).toBeGreaterThanOrEqual(3);
     expect(sentences.length).toBeLessThanOrEqual(5);
     expect(card.textContent).toMatch(/9 bitew/i);
@@ -187,6 +234,65 @@ describe("Session screen", () => {
     fireEvent.blur(survival);
     expect(within(card).queryByRole("tooltip")).not.toBeInTheDocument();
     expectNoCodes(document.body);
+  });
+
+  it("shows only the first sentence until 'Pokaż więcej (N)' opens the rest (spec 31 §3)", async () => {
+    await renderApp();
+    const card = screen.getByRole("region", { name: "Podsumowanie sesji" });
+    expect(card.querySelector(".recap-first")?.textContent).toMatch(/9 bitew/u);
+    expect(within(card).queryAllByRole("listitem")).toHaveLength(0);
+    const more = within(card).getByRole("button", { name: /^Pokaż więcej \(\d\)$/u });
+    const hidden = Number(/\((\d)\)/u.exec(more.textContent ?? "")?.[1]);
+    expect(more).toHaveAttribute("aria-expanded", "false");
+    const rest = document.getElementById(more.getAttribute("aria-controls") ?? "")!;
+    expect(rest).toBeInTheDocument();
+    // Hidden sentences take no focus and are not read out.
+    expect(rest).toHaveAttribute("inert");
+    expect(rest).toHaveAttribute("aria-hidden", "true");
+    expect(rest.querySelectorAll("li")).toHaveLength(hidden);
+    // No sentence is numbered, the first one and the rest alike (author, 2026-11-17).
+    expect(rest.querySelector("ol")).not.toHaveAttribute("start");
+
+    fireEvent.click(more);
+    const less = within(card).getByRole("button", { name: "Pokaż mniej" });
+    expect(less).toBe(more);
+    expect(less).toHaveAttribute("aria-expanded", "true");
+    expect(rest).not.toHaveAttribute("inert");
+    expect(within(card).getAllByRole("listitem")).toHaveLength(hidden);
+    expect(localStorage.getItem("afterbattle-recap-expanded")).toBe("true");
+
+    fireEvent.click(less);
+    expect(less).toHaveAttribute("aria-expanded", "false");
+    expect(localStorage.getItem("afterbattle-recap-expanded")).toBe("false");
+  });
+
+  it("remembers the open summary for every screen, and drops highlights hidden by closing", async () => {
+    mocks.recap.mockImplementation((kind: string) =>
+      Promise.resolve(kind === "battle" ? fx.battleRecap() : fx.sessionRecap()),
+    );
+    await renderApp();
+    const card = screen.getByRole("region", { name: "Podsumowanie sesji" });
+    fireEvent.click(within(card).getByRole("button", { name: /^Pokaż więcej/u }));
+    // A reference of a later sentence (damage, F3; F1 and F2 share the first) highlights its
+    // number; closing the card removes it.
+    const damage = within(card).getByRole("button", { name: /^Fakt F3:/u });
+    const figure = document.getElementById("recap-target-damage")!;
+    expect(card.querySelector(".recap-first")?.textContent).not.toMatch(/F3/u);
+    fireEvent.focus(damage);
+    expect(figure).toHaveClass("recap-highlight");
+    fireEvent.click(within(card).getByRole("button", { name: "Pokaż mniej" }));
+    expect(figure).not.toHaveClass("recap-highlight");
+    fireEvent.click(within(card).getByRole("button", { name: /^Pokaż więcej/u }));
+
+    // One setting for all screens: the battle summary opens already expanded.
+    fireEvent.click(screen.getAllByRole("button", { name: BATTLE_BUTTON })[0]);
+    await flush();
+    const battle = screen.getByRole("region", { name: "Podsumowanie bitwy" });
+    expect(within(battle).getByRole("button", { name: "Pokaż mniej" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(within(battle).getAllByRole("listitem").length).toBeGreaterThanOrEqual(2);
   });
 
   it("follows the address setting in the summary", async () => {
@@ -347,33 +453,41 @@ describe("Session screen", () => {
   it("is empty without a session and asks for the folder before the first run", async () => {
     mocks.snapshot.mockResolvedValue(fx.snapshot({ activeSession: null, recentSessions: [] }));
     await renderApp();
-    expect(screen.getByText(/Nie ma jeszcze żadnej sesji/)).toBeInTheDocument();
+    // Spec 32 §4.1: without a session the app opens Overview; Session keeps its empty state.
+    await go("Sesja");
+    expect(screen.getByText(/^Zagraj bitwę losową, a wyniki sesji/)).toBeInTheDocument();
     cleanup();
     mocks.snapshot.mockResolvedValue(fx.snapshot({ configured: false }));
     await renderApp();
-    expect(screen.getByRole("heading", { name: "Wskaż folder gry" })).toBeInTheDocument();
+    // RC-Start (fixup after STOP 2): the first start is the welcome card.
+    expect(screen.getByRole("heading", { name: "Witaj w Afterbattle" })).toBeInTheDocument();
   });
 
   it("asks on the first run how to address the player, neutral until answered (2026-11-16)", async () => {
     mocks.snapshot.mockResolvedValue(fx.snapshot({ configured: false }));
     await renderApp();
-    const group = screen.getByRole("group", { name: "Jak się do Ciebie zwracać?" });
-    const choices = within(group).getAllByRole("button");
+    // RC-Start: the segmented switch of Settings; "Bez formy" is the neutral default shown
+    // as chosen, nothing is stored until the player picks.
+    const group = screen.getByRole("radiogroup", { name: "Jak się do Ciebie zwracać?" });
+    const choices = within(group).getAllByRole("radio");
     expect(choices.map((choice) => choice.textContent)).toEqual(["On", "Ona", "Bez formy"]);
-    for (const choice of choices) expect(choice).toHaveAttribute("aria-pressed", "false");
-    expect(localStorage.getItem("afterbattle-address")).toBeNull();
-    fireEvent.click(within(group).getByRole("button", { name: "Ona" }));
-    expect(localStorage.getItem("afterbattle-address")).toBe("feminine");
-    expect(within(group).getByRole("button", { name: "Ona" })).toHaveAttribute(
-      "aria-pressed",
+    expect(within(group).getByRole("radio", { name: "Bez formy" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
-    fireEvent.click(within(group).getByRole("button", { name: "Bez formy" }));
+    expect(localStorage.getItem("afterbattle-address")).toBeNull();
+    fireEvent.click(within(group).getByRole("radio", { name: "Ona" }));
+    expect(localStorage.getItem("afterbattle-address")).toBe("feminine");
+    expect(within(group).getByRole("radio", { name: "Ona" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(within(group).getByRole("radio", { name: "Bez formy" }));
     expect(localStorage.getItem("afterbattle-address")).toBe("neutral");
     cleanup();
     // The forms exist only in Polish.
     await renderApp("en");
-    expect(screen.queryByRole("group")).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
   });
 
   it("says when there are too few battles to compare and when XVM is off", async () => {
@@ -446,7 +560,7 @@ describe("Battle screen", () => {
     await flush();
     expect(mocks.recap).toHaveBeenCalledWith("battle", expect.any(String));
     const card = screen.getByRole("region", { name: "Podsumowanie bitwy" });
-    const sentences = within(card).getAllByRole("listitem");
+    const sentences = expandRecap(card);
     expect(sentences.length).toBeGreaterThanOrEqual(3);
     expect(sentences[0].textContent).toMatch(/wygran/iu);
     expect(card.textContent).toMatch(/pierwsze miejsce w drużynie/u);
@@ -649,7 +763,7 @@ describe("Tanks screen", () => {
     mocks.vehicleHistoryOverview.mockResolvedValue(fx.overview(0));
     await renderApp();
     await go("Czołgi");
-    expect(screen.getByText(/Brak bitew losowych/)).toBeInTheDocument();
+    expect(screen.getByText(/^Zagraj bitwę losową, a czołgi/)).toBeInTheDocument();
   });
 });
 
@@ -1727,7 +1841,7 @@ describe("Goals screen", () => {
     await go("Cele");
     expect(mocks.recap).toHaveBeenCalledWith("week", "current");
     const card = screen.getByRole("region", { name: "Podsumowanie tygodnia" });
-    expect(within(card).getAllByRole("listitem").length).toBeGreaterThanOrEqual(3);
+    expect(expandRecap(card).length).toBeGreaterThanOrEqual(3);
     const survival = within(card).getByRole("button", { name: /^Fakt F3: przetrwanie 92%/u });
     fireEvent.mouseEnter(survival);
     expect(document.getElementById("recap-target-indicator-survival")).toHaveClass(
@@ -1743,9 +1857,11 @@ describe("Goals screen", () => {
     await renderApp();
     await go("Cele");
     const card = screen.getByRole("region", { name: "Podsumowanie tygodnia" });
-    const sentences = within(card).getAllByRole("listitem");
+    const sentences = recapSentences(card);
     expect(sentences).toHaveLength(1);
     expect(sentences[0].textContent).toMatch(/^Za mało bitew w tym tygodniu/u);
+    // One sentence: nothing to open.
+    expect(within(card).queryByRole("button", { name: /^Pokaż/u })).not.toBeInTheDocument();
   });
 
   it("hides the week summary in English", async () => {
@@ -1781,23 +1897,249 @@ describe("Goals screen", () => {
 });
 
 describe("Settings screen", () => {
+  // Spec 31 §4: the new layout keeps every option working as before. These tests find each
+  // option by its name, not by its place, so they hold across the rearrangement.
+  describe("every option (characterization before the spec 31 §4 layout)", () => {
+    it("game folder: find, use, choose by hand, pause and resume", async () => {
+      mocks.detectInstallations.mockResolvedValue(["C:\\Games\\SyntheticGame"]);
+      mocks.pickGameFolder.mockResolvedValue("D:\\SyntheticGame");
+      await renderApp();
+      await go("Ustawienia");
+      expect(screen.getByText("C:\\Games\\SyntheticGame")).toBeInTheDocument();
+      await go("Znajdź grę");
+      expect(mocks.detectInstallations).toHaveBeenCalledTimes(1);
+      await go("Użyj tego folderu");
+      expect(mocks.configureLocal).toHaveBeenCalledWith("C:\\Games\\SyntheticGame", "pl");
+      await go("Wskaż folder gry");
+      expect(mocks.configureLocal).toHaveBeenLastCalledWith("D:\\SyntheticGame", "pl");
+      // Author's fixup after STOP 1: saving battles is a switch like WN8 (was: a button).
+      const saving = screen.getByRole("checkbox", { name: "Zapisywanie bitew" });
+      expect(saving).toBeChecked();
+      expect(screen.queryByText("Włączone")).not.toBeInTheDocument();
+      fireEvent.click(saving);
+      await flush();
+      expect(mocks.pause).toHaveBeenCalledTimes(1);
+    });
+
+    it("resumes saving when paused", async () => {
+      const base = fx.snapshot();
+      mocks.snapshot.mockResolvedValue({
+        ...base,
+        sourceStatus: { ...base.sourceStatus, paused: true },
+      });
+      await renderApp();
+      await go("Ustawienia");
+      const saving = screen.getByRole("checkbox", { name: "Zapisywanie bitew" });
+      expect(saving).not.toBeChecked();
+      fireEvent.click(saving);
+      await flush();
+      expect(mocks.resume).toHaveBeenCalledTimes(1);
+    });
+
+    it("data: read all battle files, vehicle catalog, WN8 from XVM with refresh", async () => {
+      await renderApp();
+      await go("Ustawienia");
+      await go("Odczytaj wszystkie powtórki");
+      expect(mocks.startImport).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/^Wersja klienta 2\.0, 1\s270 pojazdów$/u)).toBeInTheDocument();
+      const xvm = screen.getByRole("checkbox", { name: "Pobieraj dane WN8 z XVM" });
+      expect(xvm).toBeChecked();
+      fireEvent.click(xvm);
+      await flush();
+      expect(mocks.setXvmEnabled).toHaveBeenCalledWith(false);
+      await go("Odśwież dane WN8");
+      expect(mocks.refreshExpectedValues).toHaveBeenCalledTimes(1);
+    });
+
+    // Spec 31 §4 changes how these are saved: at once, without "Zapisz" (was: one Save button).
+    it("you: language and the inactivity limit are saved at once, with 'Zapisano.'", async () => {
+      await renderApp();
+      await go("Ustawienia");
+      expect(screen.queryByRole("button", { name: "Zapisz" })).not.toBeInTheDocument();
+      const minutes = screen.getByRole("spinbutton", { name: /Limit bezczynności/u });
+      fireEvent.change(minutes, { target: { value: "45" } });
+      expect(mocks.updatePreferences).not.toHaveBeenCalled();
+      fireEvent.blur(minutes);
+      await flush();
+      expect(mocks.updatePreferences).toHaveBeenCalledWith("pl", 45);
+      const you = screen.getByRole("region", { name: "Ty" });
+      expect(within(you).getByRole("status")).toHaveTextContent("Zapisano.");
+      // Leaving the field unchanged saves nothing again.
+      fireEvent.blur(minutes);
+      await flush();
+      expect(mocks.updatePreferences).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole("radio", { name: "English" }));
+      await flush();
+      expect(mocks.updatePreferences).toHaveBeenLastCalledWith("en", 45);
+      expect(screen.getByRole("heading", { name: "Settings", level: 1 })).toBeInTheDocument();
+      expect(screen.getByRole("radiogroup", { name: "Language" })).toBeInTheDocument();
+    });
+
+    it("you: the address form is kept at once, with 'Zapisano.'", async () => {
+      await renderApp();
+      await go("Ustawienia");
+      fireEvent.click(screen.getByRole("radio", { name: "On" }));
+      await flush();
+      expect(localStorage.getItem("afterbattle-address")).toBe("masculine");
+      const you = screen.getByRole("region", { name: "Ty" });
+      expect(within(you).getByRole("status")).toHaveTextContent("Zapisano.");
+    });
+
+    it("about: privacy texts, diagnostics copied, version", async () => {
+      const writeText = vi.fn(() => Promise.resolve());
+      Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+      await renderApp();
+      await go("Ustawienia");
+      expect(screen.getByText(/Aplikacja nie ma telemetrii/u)).toBeInTheDocument();
+      await go("Kopiuj raport diagnostyczny");
+      expect(writeText).toHaveBeenCalledWith("{}");
+      const about = screen.getByRole("region", { name: "O aplikacji" });
+      expect(about).toHaveTextContent(APP_VERSION);
+      expect(screen.getByRole("button", { name: "Usuń wszystkie dane" })).toBeInTheDocument();
+      // No repeats (author, 2026-11-17): WN8 data is in Data, the version only in About.
+      expect(about).not.toHaveTextContent(/Dane WN8/u);
+      expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("layout (spec 31 §4)", () => {
+    const groups = ["Gra", "Ty", "Dane", "Prywatność i dane", "O aplikacji"];
+    const group = (name: string) => screen.getByRole("region", { name });
+
+    it("shows the groups in the order of use, with a list of links to them", async () => {
+      await renderApp();
+      await go("Ustawienia");
+      const headings = within(screen.getByRole("main"))
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent);
+      expect(headings).toEqual(groups);
+      const links = within(screen.getByRole("navigation", { name: "Grupy ustawień" })).getAllByRole(
+        "link",
+      );
+      expect(links.map((link) => link.textContent)).toEqual(groups);
+      for (const [index, link] of links.entries()) {
+        const target = document.getElementById(link.getAttribute("href")!.slice(1));
+        expect(target, groups[index]).toBe(group(groups[index]));
+      }
+    });
+
+    it("puts each option in its group", async () => {
+      await renderApp();
+      await go("Ustawienia");
+      const has = (name: string, role: "button" | "checkbox" | "radiogroup", label: RegExp) =>
+        expect(within(group(name)).getByRole(role, { name: label })).toBeInTheDocument();
+      has("Gra", "button", /^Znajdź grę$/u);
+      has("Gra", "button", /^Wskaż folder gry$/u);
+      has("Gra", "checkbox", /^Zapisywanie bitew$/u);
+      has("Ty", "radiogroup", /^Język$/u);
+      has("Ty", "radiogroup", /^Jak się do Ciebie zwracać$/u);
+      expect(
+        within(group("Ty")).getByRole("spinbutton", { name: /Limit bezczynności/u }),
+      ).toBeInTheDocument();
+      has("Dane", "button", /^Odczytaj wszystkie powtórki$/u);
+      has("Dane", "checkbox", /^Pobieraj dane WN8 z XVM$/u);
+      expect(within(group("Dane")).getByText(/^Wersja klienta 2\.0/u)).toBeInTheDocument();
+      expect(
+        within(group("Prywatność i dane")).getByText(/nie ma telemetrii/u),
+      ).toBeInTheDocument();
+      has("O aplikacji", "button", /^Kopiuj raport diagnostyczny$/u);
+      // Deleting everything comes last in its group; only its button is in the warning colour.
+      const privacy = within(group("Prywatność i dane")).getAllByRole("button");
+      expect(privacy.at(-1)).toHaveAccessibleName("Usuń wszystkie dane");
+      expect(privacy.at(-1)).toHaveClass("button-danger");
+      expect(document.querySelector(".setting-danger")).toBeNull();
+    });
+
+    it("marks the group in view in the list of links (aria-current)", async () => {
+      const observers: { callback: IntersectionObserverCallback; targets: Element[] }[] = [];
+      class FakeObserver {
+        targets: Element[] = [];
+        constructor(public callback: IntersectionObserverCallback) {
+          observers.push(this);
+        }
+        observe(target: Element) {
+          this.targets.push(target);
+        }
+        unobserve() {}
+        disconnect() {}
+      }
+      vi.stubGlobal("IntersectionObserver", FakeObserver);
+      try {
+        await renderApp();
+        await go("Ustawienia");
+        const nav = screen.getByRole("navigation", { name: "Grupy ustawień" });
+        const current = () =>
+          within(nav)
+            .getAllByRole("link")
+            .filter((link) => link.getAttribute("aria-current") === "true")
+            .map((link) => link.textContent);
+        expect(current()).toEqual(["Gra"]);
+        const observer = observers.at(-1)!;
+        expect(observer.targets.map((target) => target.id)).toEqual([
+          "settings-game",
+          "settings-you",
+          "settings-data",
+          "settings-privacy",
+          "settings-about",
+        ]);
+        const entry = (id: string, isIntersecting: boolean) =>
+          ({
+            target: document.getElementById(id)!,
+            isIntersecting,
+          }) as unknown as IntersectionObserverEntry;
+        act(() =>
+          observer.callback(
+            [entry("settings-game", false), entry("settings-data", true)],
+            observer as unknown as IntersectionObserver,
+          ),
+        );
+        expect(current()).toEqual(["Dane"]);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("gives every option a label and one sentence about it", async () => {
+      await renderApp();
+      await go("Ustawienia");
+      const options = [...document.querySelectorAll<HTMLElement>(".setting")];
+      expect(options.length).toBeGreaterThanOrEqual(10);
+      for (const option of options) {
+        const label = option.querySelector(".setting-label")?.textContent ?? "";
+        const description = option.querySelector(".setting-desc")?.textContent ?? "";
+        expect(label, option.outerHTML).not.toBe("");
+        expect(description, label).toMatch(/^[A-ZĄĆĘŁŃÓŚŹŻ„][^.!?]*[^.!?\s][.!?]$/u);
+      }
+      expectNoCodes(document.body);
+    });
+
+    it("has the same groups in English", async () => {
+      await renderApp("en");
+      await go("Settings");
+      const headings = within(screen.getByRole("main"))
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent);
+      expect(headings).toEqual(["Game", "You", "Data", "Privacy and data", "About"]);
+    });
+  });
+
   it("chooses how Polish texts address the player, neutral by default (spec 30 §2)", async () => {
     await renderApp();
     await go("Ustawienia");
-    const select = screen.getByRole("combobox", { name: "Jak się do Ciebie zwracać" });
-    expect(select).toHaveValue("neutral");
-    expect(
-      within(select)
-        .getAllByRole("option")
-        .map((option) => option.textContent),
-    ).toEqual([
-      "Bez formy (wygrana, czołg przetrwał)",
-      "Forma męska (zadałeś)",
-      "Forma żeńska (zadałaś)",
-    ]);
-    fireEvent.change(select, { target: { value: "feminine" } });
+    // Author's fixup after STOP 1: a segmented control On / Ona / Bez formy, like the first run.
+    const group = screen.getByRole("radiogroup", { name: "Jak się do Ciebie zwracać" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios.map((radio) => radio.textContent)).toEqual(["On", "Ona", "Bez formy"]);
+    expect(within(group).getByRole("radio", { name: "Bez formy" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(within(group).getByRole("radio", { name: "Ona" }));
     expect(localStorage.getItem("afterbattle-address")).toBe("feminine");
-    expect(select).toHaveValue("feminine");
+    expect(within(group).getByRole("radio", { name: "Ona" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 
   it("deletes data only after typing the word in the current language", async () => {
@@ -1823,7 +2165,7 @@ describe("Settings screen", () => {
     );
     await renderApp();
     await go("Ustawienia");
-    expect(screen.getByRole("heading", { name: "Prywatność" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Prywatność i dane" })).toBeInTheDocument();
     expect(screen.getByText(/trzymane tylko w pamięci/)).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -2082,8 +2424,11 @@ describe("screen states (spec 25 §5)", () => {
       await renderApp();
       await go("Historia");
       expect(
-        screen.getByText("Historia jest pusta. Wypełni się z plików powtórek."),
+        screen.getByText("Odczytaj powtórki z folderu gry, a historia wypełni się sama."),
       ).toBeInTheDocument();
+      // Spec 31 §5: the empty state has its action.
+      await go("Odczytaj wszystkie powtórki");
+      expect(mocks.startImport).toHaveBeenCalledTimes(1);
       cleanup();
       const base = fx.snapshot();
       mocks.snapshot.mockResolvedValue(
@@ -2099,7 +2444,9 @@ describe("screen states (spec 25 §5)", () => {
       expect(screen.getByText(/Odczyt powtórek: 300 z 2\s000/)).toBeInTheDocument();
       fireEvent.click(screen.getByRole("radio", { name: "Sesje" }));
       await flush();
-      expect(screen.getByText("Nie ma jeszcze żadnej sesji.")).toBeInTheDocument();
+      expect(
+        screen.getByText("Zagraj bitwę losową, a sesje pojawią się tu same."),
+      ).toBeInTheDocument();
     });
 
     it("explains an error of the first page and of a further page", async () => {
@@ -2185,11 +2532,12 @@ describe("screen states (spec 25 §5)", () => {
     it("shows XVM as off without a refresh button", async () => {
       mocks.snapshot.mockResolvedValue(withoutXvm());
       await renderApp();
+      // The footer is on every screen but Settings (author's fixup after STOP 1).
+      expect(screen.getByRole("contentinfo")).toHaveTextContent("Dane WN8: wyłączone");
       await go("Ustawienia");
       expect(screen.getByRole("checkbox", { name: "Pobieraj dane WN8 z XVM" })).not.toBeChecked();
       expect(screen.queryByRole("button", { name: "Odśwież dane WN8" })).not.toBeInTheDocument();
       expect(screen.getByText("Brak pobranych danych.")).toBeInTheDocument();
-      expect(screen.getByRole("contentinfo")).toHaveTextContent("Dane WN8: wyłączone");
     });
   });
 });
@@ -2280,10 +2628,10 @@ describe("game folder (hotfix 1.0.0-beta.3)", () => {
     mocks.detectInstallations.mockResolvedValue([String.raw`D:\Games\World_of_Tanks_EU`]);
     mocks.pickGameFolder.mockResolvedValue(String.raw`F:\WoT\WorldOfTanks.exe`);
     await renderApp();
-    expect(screen.getByRole("heading", { name: "Wskaż folder gry" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Folder gry" })).toBeInTheDocument();
     expect(screen.getByText(/folder z nagraniami bitew \(replays\) w nim/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Otwórz Ustawienia" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Nie ma jeszcze żadnej sesji/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/a wyniki sesji pojawią się/)).not.toBeInTheDocument();
     await go("Znajdź grę");
     await go("Użyj tego folderu");
     expect(mocks.configureLocal).toHaveBeenLastCalledWith(
@@ -2307,5 +2655,553 @@ describe("game folder (hotfix 1.0.0-beta.3)", () => {
       "This folder has no WorldOfTanks.exe file.",
     );
     expectNoCodes(document.body);
+  });
+});
+
+describe("UI review (spec 31 §5)", () => {
+  it("says in one sentence what to do on every empty screen", async () => {
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ activeSession: null, recentSessions: [] }));
+    mocks.vehicleHistoryOverview.mockResolvedValue(fx.overview(0));
+    mocks.battleHistory.mockResolvedValue({ items: [], nextCursor: null });
+    await renderApp();
+    const texts: string[] = [];
+    const collect = () =>
+      texts.push(
+        ...[...document.querySelectorAll(".card.state > p")].map((p) => p.textContent ?? ""),
+      );
+    collect();
+    await go("Czołgi");
+    collect();
+    await go("Historia");
+    collect();
+    fireEvent.click(screen.getByRole("radio", { name: "Sesje" }));
+    await flush();
+    collect();
+    expect(texts).toHaveLength(4);
+    for (const text of texts) expect(text).toMatch(/^[A-ZĄĆĘŁŃÓŚŹŻ][^.!?]*[^.!?\s]\.$/u);
+  });
+});
+
+describe("Tank screen: against the players in your battles (spec 32 §3)", () => {
+  const section = () => screen.getByRole("region", { name: "Na tle graczy z Twoich bitew" });
+  const openTanks = async () => {
+    await renderApp();
+    await go("Czołgi");
+  };
+
+  it("shows the tier and class cell with percentiles and the player's median, without judging", async () => {
+    await openTanks();
+    expect(mocks.referenceTables).toHaveBeenCalled();
+    const card = section();
+    expect(card).toHaveTextContent(/Czołgi średnie X poziomu: 5\s354 wyników innych graczy/u);
+    expect(card).toHaveTextContent(/Twoja mediana ze wszystkich 131 Twoich bitew w tej komórce/u);
+    const damage = within(card).getByRole("group", { name: "Obrażenia" });
+    // RC-Czolg: name and "Ty X · gracze Y" on the left, the bar, the percentile on the right.
+    expect(damage).toHaveTextContent(/Ty 1\s870 · gracze 1\s650/u);
+    expect(damage.querySelector(".ref-percentile")).toHaveTextContent(/^58\.\s*percentyl$/u);
+    // p25–p75 and p90 are in the bar's label instead of a line of text under it.
+    expect(within(damage).getByRole("img")).toHaveAccessibleName(
+      /Obrażenia: środkowa połowa graczy 1\s100–2\s300, mediana graczy 1\s650, 90% graczy do 3\s050, Ty 1\s870/u,
+    );
+    expect(damage).not.toHaveTextContent(/25–75%|90%/u);
+    expect(within(card).getAllByRole("group")).toHaveLength(7);
+    expect(card.textContent).not.toMatch(/lepsz|gorsz|słab|dobr|świetn|ocen/iu);
+    expectNoCodes(card);
+  });
+
+  it("explains the bar in a legend (RC-Czolg)", async () => {
+    await openTanks();
+    const legend = within(section()).getByRole("list", { name: "Legenda" });
+    expect(
+      within(legend)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "pasek: środkowa połowa graczy",
+      "kreska: mediana graczy",
+      "kropka: Twoja mediana",
+      "prawa kreska: 90% graczy",
+    ]);
+    for (const mark of [
+      ".ref-legend-range",
+      ".ref-legend-median",
+      ".ref-legend-own",
+      ".ref-legend-p90",
+    ])
+      expect(legend.querySelector(mark), mark).not.toBeNull();
+  });
+
+  it("leaves the dot out of the legend without the player's median", async () => {
+    mocks.referenceTables.mockResolvedValue(
+      fx.referenceTables({
+        ownBattles: 4,
+        metrics: [
+          fx.referenceMetric("damage", { ownCount: 4, ownMedian: null, ownPosition: null }),
+        ],
+      }),
+    );
+    await openTanks();
+    const legend = within(section()).getByRole("list", { name: "Legenda" });
+    expect(legend).not.toHaveTextContent(/kropka/u);
+  });
+
+  it("shows in every row the numbers of its own metric", async () => {
+    await openTanks();
+    const rows: [string, RegExp, string][] = [
+      ["Obrażenia", /Ty 1\s870 · gracze 1\s650/u, "58."],
+      ["Asysta (radio i gąsienice)", /Ty 410 · gracze 320/u, "63."],
+      ["Wykrycia", /Ty 1,5 · gracze 1(?!,)/u, "61."],
+      ["Zniszczenia", /Ty 1 · gracze 1/u, "53."],
+      ["Zablokowane pancerzem", /Ty 1\s200 · gracze 860/u, "66."],
+      ["Czas życia (s)", /Ty 269 · gracze 277/u, "47."],
+    ];
+    for (const [name, numbers, percentile] of rows) {
+      const row = within(section()).getByRole("group", { name });
+      expect(row, name).toHaveTextContent(numbers);
+      expect(row.querySelector(".ref-percentile"), name).toHaveTextContent(percentile);
+    }
+    expect(
+      within(within(section()).getByRole("group", { name: "Czas życia (s)" })).getByRole("img"),
+    ).toHaveAccessibleName(
+      /środkowa połowa graczy 180–380, mediana graczy 277, 90% graczy do 440/u,
+    );
+  });
+
+  it("keeps accuracy as background only", async () => {
+    await openTanks();
+    const accuracy = within(section()).getByRole("group", { name: "Celność (%)" });
+    expect(accuracy).toHaveTextContent(/tylko tło/u);
+    expect(accuracy).toHaveTextContent(/gracze 71/u);
+    expect(accuracy).not.toHaveTextContent(/Ty /u);
+    expect(accuracy.querySelector(".ref-percentile")).toBeNull();
+    expect(accuracy.querySelector(".ref-own")).toBeNull();
+  });
+
+  it("highlights the mark of a number on hover and focus", async () => {
+    await openTanks();
+    const damage = within(section()).getByRole("group", { name: "Obrażenia" });
+    const median = within(damage).getByText(/gracze 1\s650/u);
+    const mark = damage.querySelector(".ref-median")!;
+    fireEvent.mouseEnter(median);
+    expect(mark).toHaveClass("is-active");
+    fireEvent.mouseLeave(median);
+    expect(mark).not.toHaveClass("is-active");
+    fireEvent.focus(within(damage).getByText(/Ty 1\s870/u));
+    expect(damage.querySelector(".ref-own")).toHaveClass("is-active");
+  });
+
+  it("says how far the background is from 200 results", async () => {
+    mocks.referenceTables.mockResolvedValue(
+      fx.referenceTables({ level: "count_only", population: 120 }),
+    );
+    await openTanks();
+    expect(section()).toHaveTextContent("Za mało danych: tło od 200 wyników, masz 120.");
+    expect(within(section()).queryAllByRole("group")).toHaveLength(0);
+  });
+
+  it("marks an approximate background and the player's median from 10 battles", async () => {
+    mocks.referenceTables.mockResolvedValue(
+      fx.referenceTables({
+        level: "approximate",
+        population: 140,
+        ownBattles: 4,
+        metrics: [
+          fx.referenceMetric("damage", { ownCount: 4, ownMedian: null, ownPosition: null }),
+        ],
+      }),
+    );
+    await openTanks();
+    expect(section()).toHaveTextContent(/Orientacyjnie: mniej niż 200 wyników \(140\)/u);
+    expect(section()).toHaveTextContent("Twoja mediana od 10 bitew w tej komórce (masz 4).");
+    expect(section().querySelector(".ref-own")).toBeNull();
+  });
+
+  it("explains a tank without a tier and a cell below tier VI", async () => {
+    mocks.vehicleHistoryOverview.mockResolvedValue(fx.overview(3, null));
+    await openTanks();
+    expect(section()).toHaveTextContent("Porównanie wymaga tieru i klasy czołgu.");
+    cleanup();
+    mocks.vehicleHistoryOverview.mockResolvedValue(fx.overview(3, 5));
+    mocks.referenceTables.mockResolvedValue(
+      fx.referenceTables({ tier: 5, level: "count_only", population: 300 }),
+    );
+    await openTanks();
+    expect(section()).toHaveTextContent("Porównanie od VI poziomu.");
+  });
+});
+
+describe("Overview and the start screen (spec 32 §4)", () => {
+  const noRecentSession = () =>
+    fx.snapshot({
+      activeSession: null,
+      recentSessions: [fx.session({ id: "session-0", status: "ended", endedAt: fx.NOW })],
+    });
+  const openOverview = async () => {
+    mocks.snapshot.mockResolvedValue(noRecentSession());
+    mocks.performanceTrends.mockResolvedValue(fx.overviewTrends());
+    await renderApp();
+  };
+  const block = (name: string) => screen.getByRole("region", { name });
+
+  it("opens Overview without a recent session; it is first in the navigation", async () => {
+    await openOverview();
+    expect(screen.getByRole("heading", { name: "Przegląd", level: 1 })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "Główna nawigacja" });
+    const first = within(nav).getAllByRole("button")[0];
+    expect(first).toHaveAccessibleName("Przegląd");
+    expect(first).toHaveAttribute("aria-current", "page");
+  });
+
+  it("opens Session during a session, and a choice in the navigation wins", async () => {
+    await renderApp();
+    expect(screen.getByRole("region", { name: "Podsumowanie sesji" })).toBeInTheDocument();
+    await go("Przegląd");
+    expect(screen.getByRole("heading", { name: "Przegląd", level: 1 })).toBeInTheDocument();
+  });
+
+  it("shows the last session with its first summary sentence and opens it", async () => {
+    await openOverview();
+    const last = block("Ostatnia sesja");
+    expect(mocks.sessionSummary).toHaveBeenCalledWith("session-0");
+    expect(last).toHaveTextContent(/9 bitew/u);
+    // RC-Przeglad: the card spans the row, the best battle's map is its background, and the
+    // big numbers are the average damage, the wins and the session's WN8.
+    expect(last).toHaveClass("map-backdrop");
+    expect(last).toHaveTextContent(/3\s184\s*średnie obrażenia/u);
+    expect(last).toHaveTextContent(/6 z 9\s*wygranych/u);
+    expect(last).toHaveTextContent(/2\s150\s*WN8 sesji/u);
+    expect(last).toHaveTextContent(/Wygrane: 6 z 9 bitew/u);
+    fireEvent.click(within(last).getByRole("button", { name: /Otwórz sesję/u }));
+    await flush();
+    expect(screen.getByRole("region", { name: "Podsumowanie sesji" })).toBeInTheDocument();
+  });
+
+  it("shows trends over 100 battles, win rate as context, WN8 only with XVM", async () => {
+    await openOverview();
+    const trends = block("Trendy");
+    expect(mocks.performanceTrends).toHaveBeenCalledWith("last100");
+    // One caption (author's fixup after STOP 2).
+    expect(trends.querySelector(".overview-note")).toHaveTextContent(
+      /^ostatnie 100 bitew wobec 100 wcześniejszych$/u,
+    );
+    expect(trends).not.toHaveTextContent(/100 ostatnich bitew wobec/u);
+    // A small line chart per metric, described in words.
+    expect(within(trends).getAllByRole("img")).toHaveLength(3);
+    expect(within(trends).getAllByRole("img")[0]).toHaveAccessibleName(
+      /Obrażenia w 10 punktach ostatnich 100 bitew/u,
+    );
+    expect(trends).toHaveTextContent(/Obrażenia\s*2\s702/u);
+    expect(trends).toHaveTextContent(/poprzednio 2\s600/u);
+    expect(trends).toHaveTextContent(/tylko kontekst/u);
+    expect(trends).toHaveTextContent(/WN8\s*2\s150/u);
+    cleanup();
+    mocks.snapshot.mockResolvedValue({ ...noRecentSession(), ...{} });
+    mocks.performanceTrends.mockResolvedValue(fx.overviewTrends(false));
+    await renderApp();
+    expect(block("Trendy")).toHaveTextContent(/WN8: wyłączone/u);
+  });
+
+  it("names the best tanks by their percentile in their group and the most played in a line", async () => {
+    await openOverview();
+    const tanks = block("Czołgi");
+    // Decision 2026-11-18: the percentile of the tank's median damage in its tier × class.
+    expect(tanks).toHaveTextContent(
+      "Najwyższy percentyl mediany obrażeń czołgu na tle graczy z Twoich bitew w tej samej grupie tier × klasa, od 10 bitew.",
+    );
+    const rows = within(tanks).getAllByRole("listitem");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringMatching(/^Bravo.*średni X.*64 bitwy.*88\..*w średnich X$/u),
+      expect.stringMatching(/^Alpha.*131 bitew.*81\..*w średnich X$/u),
+      expect.stringMatching(/^Charlie.*41 bitew.*79\..*w średnich X$/u),
+    ]);
+    expect(tanks).toHaveTextContent(
+      /Najczęściej grane: Alpha \(214\), Bravo \(174\), Charlie \(134\)/u,
+    );
+    expect(tanks.textContent).not.toMatch(/lepsz|gorsz|słab|świetn/iu);
+    fireEvent.click(within(tanks).getAllByRole("button", { name: /Alpha/u })[0]);
+    await flush();
+    expect(screen.getByRole("heading", { name: "Alpha", level: 1 })).toBeInTheDocument();
+  });
+
+  it("places the player against the players of their battles, position only", async () => {
+    mocks.referenceTables.mockResolvedValue({
+      ...fx.referenceTables(),
+      cells: [
+        ...fx.referenceTables().cells,
+        {
+          ...fx.referenceTables().cells[0],
+          tier: 6,
+          vehicleClass: "light_tank",
+          level: "count_only",
+          population: 120,
+          ownBattles: 4,
+          metrics: [],
+        },
+        {
+          ...fx.referenceTables().cells[0],
+          tier: 4,
+          vehicleClass: "light_tank",
+          level: "count_only",
+          population: 90,
+          metrics: [],
+        },
+      ],
+    });
+    await openOverview();
+    const background = block("Na tle graczy z Twoich bitew");
+    expect(background).toHaveTextContent(/Percentyl Twojej mediany obrażeń w grupie tier × klasa/u);
+    const tiles = within(background).getAllByRole("listitem");
+    expect(tiles.map((tile) => tile.textContent)).toEqual([
+      expect.stringMatching(/^średnie X\s*58\.$/u),
+      expect.stringMatching(/^lekkie VI\s*Tło od 200 wyników, masz 120\.$/u),
+    ]);
+    // Four columns, no holes: one value tile (1) and the collecting tile widened to 3.
+    expect(tiles[0].style.gridColumn).toBe("");
+    expect(tiles[1].style.gridColumn).toBe("span 3");
+    fireEvent.click(within(background).getByRole("button", { name: "Otwórz czołgi" }));
+    await flush();
+    expect(screen.getByRole("heading", { name: "Alpha", level: 1 })).toBeInTheDocument();
+  });
+
+  it("opens History from the trends and shows the map of the session's best battle", async () => {
+    await openOverview();
+    // RC-Przeglad: the card itself carries the map (no separate picture inside it).
+    expect(block("Ostatnia sesja")).toHaveClass("map-backdrop");
+    fireEvent.click(within(block("Trendy")).getByRole("button", { name: "Otwórz historię" }));
+    await flush();
+    expect(screen.getByRole("heading", { name: "Historia", level: 1 })).toBeInTheDocument();
+  });
+
+  it("shows the week's goals", async () => {
+    await openOverview();
+    const goals = block("Cele tygodnia");
+    // RC-Przeglad: the count of goals met and a bar for each goal.
+    expect(goals).toHaveTextContent(/1 z 3\s*celów spełnionych/u);
+    expect(within(goals).getAllByRole("img")).toHaveLength(3);
+    fireEvent.click(within(goals).getByRole("button", { name: /Otwórz cele/u }));
+    await flush();
+    expect(
+      screen.getByRole("heading", { name: "Cele na ten tydzień", level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it("says when the best tanks appear if no cell has a background yet", async () => {
+    mocks.referenceTables.mockResolvedValue(
+      fx.referenceTables({ level: "count_only", population: 120 }),
+    );
+    await openOverview();
+    expect(block("Czołgi")).toHaveTextContent(
+      "Pojawią się, gdy czołg ma 10 bitew w grupie z co najmniej 200 wynikami innych graczy.",
+    );
+    expect(block("Czołgi")).toHaveTextContent(/Najczęściej grane: Alpha \(214\)/u);
+  });
+
+  it("keeps every number in one piece (no breakable space inside a number)", async () => {
+    await openOverview();
+    const main = screen.getByRole("main");
+    expect(main.textContent).toMatch(/3\u00a0184/u);
+    expect(main.textContent).not.toMatch(/\d[ \u2009]\d{3}/u);
+  });
+
+  it("says what to do with no battles yet", async () => {
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ activeSession: null, recentSessions: [] }));
+    mocks.vehicleHistoryOverview.mockResolvedValue(fx.overview(0));
+    await renderApp();
+    expect(
+      screen.getByText("Zagraj bitwę losową, a przegląd wypełni się sam."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Trendy" })).not.toBeInTheDocument();
+  });
+});
+
+describe("automatic updates (spec 32 §5)", () => {
+  it("asks once whether to check for updates and checks only after a yes", async () => {
+    mocks.updateConsent.mockResolvedValue("unasked");
+    await renderApp();
+    const ask = screen.getByRole("group", { name: "Sprawdzać aktualizacje przy starcie?" });
+    // Makieta RC-Start: what the check sends, said in the question itself.
+    expect(ask).toHaveTextContent(/Nic o Tobie nie wysyła/u);
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled();
+    fireEvent.click(within(ask).getByRole("button", { name: "Tak" }));
+    await flush();
+    expect(mocks.setUpdateConsent).toHaveBeenCalledWith(true);
+    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(1);
+    await go("Dalej");
+    expect(
+      screen.queryByRole("group", { name: "Sprawdzać aktualizacje przy starcie?" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("asks on the first-run screen once, below the folder and the address", async () => {
+    mocks.updateConsent.mockResolvedValue("unasked");
+    mocks.snapshot.mockResolvedValue(fx.snapshot({ configured: false }));
+    await renderApp();
+    const asks = screen.getAllByRole("group", { name: "Sprawdzać aktualizacje przy starcie?" });
+    expect(asks).toHaveLength(1);
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled();
+  });
+
+  it("says when the install failed and keeps the notice", async () => {
+    mocks.updateConsent.mockResolvedValue("on");
+    mocks.checkForUpdate.mockResolvedValue({ version: "1.0.1", notes: null });
+    mocks.installUpdate.mockRejectedValue({ code: "update_error" });
+    await renderApp();
+    fireEvent.click(screen.getByRole("button", { name: "Zainstaluj i uruchom ponownie" }));
+    await flush();
+    expect(screen.getByRole("alert")).toHaveTextContent(/Nie udało się zainstalować/u);
+    expect(screen.getByRole("region", { name: "Dostępna wersja 1.0.1" })).toBeInTheDocument();
+  });
+
+  it("checks once after the switch is turned on in Settings", async () => {
+    await renderApp();
+    await go("Ustawienia");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Sprawdzanie aktualizacji" }));
+    await flush();
+    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Sprawdzanie aktualizacji" }));
+    await flush();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Sprawdzanie aktualizacji" }));
+    await flush();
+    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("makes no request after a no", async () => {
+    mocks.updateConsent.mockResolvedValue("unasked");
+    await renderApp();
+    fireEvent.click(screen.getByRole("button", { name: "Nie" }));
+    await flush();
+    expect(mocks.setUpdateConsent).toHaveBeenCalledWith(false);
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled();
+  });
+
+  it("offers a found update and installs it only on a click", async () => {
+    mocks.updateConsent.mockResolvedValue("on");
+    mocks.checkForUpdate.mockResolvedValue({ version: "1.0.1", notes: "Poprawki." });
+    await renderApp();
+    const notice = screen.getByRole("region", { name: "Dostępna wersja 1.0.1" });
+    expect(notice).toHaveTextContent("Poprawki.");
+    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(1);
+    expect(mocks.installUpdate).not.toHaveBeenCalled();
+    fireEvent.click(within(notice).getByRole("button", { name: "Później" }));
+    expect(screen.queryByRole("region", { name: /Dostępna wersja/u })).not.toBeInTheDocument();
+    cleanup();
+    await renderApp();
+    fireEvent.click(screen.getByRole("button", { name: "Zainstaluj i uruchom ponownie" }));
+    await flush();
+    expect(mocks.installUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("has a switch in Privacy and data; without consent About points to the releases page", async () => {
+    await renderApp();
+    await go("Ustawienia");
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled();
+    const privacy = screen.getByRole("region", { name: "Prywatność i dane" });
+    const toggle = within(privacy).getByRole("checkbox", { name: "Sprawdzanie aktualizacji" });
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByRole("region", { name: "O aplikacji" })).toHaveTextContent(
+      "github.com/dataflorist02/afterbattle-beta/releases",
+    );
+    fireEvent.click(toggle);
+    await flush();
+    expect(mocks.setUpdateConsent).toHaveBeenCalledWith(true);
+    expect(toggle).toBeChecked();
+  });
+});
+
+describe("first start (RC-Start, author's fixup after STOP 2)", () => {
+  const unconfigured = () => {
+    const base = fx.snapshot();
+    return fx.snapshot({
+      configured: false,
+      activeSession: null,
+      recentSessions: [],
+      sourceStatus: { ...base.sourceStatus, configured: false, gameRootDisplay: null },
+    } as never);
+  };
+  /** Focusable controls of the welcome screen in Tab order (DOM order, no positive tabindex). */
+  const tabOrder = () =>
+    [...screen.getByRole("main").querySelectorAll<HTMLElement>("button, input, [tabindex]")]
+      .filter((element) => !(element as HTMLButtonElement).disabled && element.tabIndex === 0)
+      .map((element) => element.textContent);
+
+  it("is one card without the navigation, three numbered steps, and starts only with a folder", async () => {
+    mocks.snapshot.mockResolvedValue(unconfigured());
+    mocks.updateConsent.mockResolvedValue("unasked");
+    await renderApp();
+    expect(screen.queryByRole("navigation", { name: "Główna nawigacja" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Witaj w Afterbattle", level: 1 })).toBeVisible();
+    const card = screen.getByRole("region", { name: "Pierwsze ustawienia" });
+    const steps = within(card).getAllByRole("group");
+    expect(steps.map((step) => step.getAttribute("aria-label") ?? step.textContent)).toHaveLength(
+      3,
+    );
+    expect(within(steps[0]).getByRole("heading", { name: "Folder gry" })).toBeVisible();
+    expect(
+      within(steps[1]).getByRole("heading", { name: "Jak się do Ciebie zwracać?" }),
+    ).toBeVisible();
+    expect(
+      within(steps[2]).getByRole("heading", { name: "Sprawdzać aktualizacje przy starcie?" }),
+    ).toBeVisible();
+    expect(steps[2]).toHaveTextContent(/Nic o Tobie nie wysyła/u);
+    expect(screen.getByRole("button", { name: "Zaczynamy" })).toBeDisabled();
+    expect(tabOrder()).toEqual(["Znajdź grę", "Wskaż ręcznie", "Bez formy", "Tak", "Nie"]);
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled();
+  });
+
+  it("saves all three answers and opens the app after Zaczynamy", async () => {
+    mocks.snapshot.mockResolvedValueOnce(unconfigured()).mockResolvedValue(fx.snapshot());
+    mocks.updateConsent.mockResolvedValue("unasked");
+    mocks.detectInstallations.mockResolvedValue([String.raw`D:\Games\World_of_Tanks_EU`]);
+    mocks.configureLocal.mockResolvedValue(fx.snapshot());
+    await renderApp();
+    await go("Znajdź grę");
+    await go("Użyj tego folderu");
+    expect(mocks.configureLocal).toHaveBeenCalledWith(String.raw`D:\Games\World_of_Tanks_EU`, "pl");
+    const folder = within(screen.getByRole("region", { name: "Pierwsze ustawienia" })).getAllByRole(
+      "group",
+    )[0];
+    expect(folder).toHaveTextContent(/Znaleziony:/u);
+    expect(folder.querySelector(".welcome-dot-done")).not.toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: "Ona" }));
+    expect(localStorage.getItem("afterbattle-address")).toBe("feminine");
+    fireEvent.click(screen.getByRole("button", { name: "Tak" }));
+    await flush();
+    expect(mocks.setUpdateConsent).toHaveBeenCalledWith(true);
+    expect(screen.getByRole("button", { name: "Tak" })).toHaveAttribute("aria-pressed", "true");
+    expect(tabOrder()).toEqual([
+      "Znajdź grę",
+      "Wskaż inny folder",
+      "Użyj tego folderu",
+      "Ona",
+      "Tak",
+      "Nie",
+      "Zaczynamy",
+    ]);
+    await go("Zaczynamy");
+    expect(screen.getByRole("navigation", { name: "Główna nawigacja" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Witaj w Afterbattle" })).not.toBeInTheDocument();
+  });
+
+  it("asks a player coming from a beta only about updates, in the same card", async () => {
+    mocks.updateConsent.mockResolvedValue("unasked");
+    await renderApp();
+    expect(screen.queryByRole("navigation", { name: "Główna nawigacja" })).not.toBeInTheDocument();
+    const card = screen.getByRole("region", { name: "Pierwsze ustawienia" });
+    expect(within(card).getAllByRole("group")).toHaveLength(1);
+    expect(card).toHaveTextContent(/Sprawdzać aktualizacje przy starcie\?/u);
+    expect(screen.getByRole("button", { name: "Dalej" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Nie" }));
+    await flush();
+    expect(mocks.setUpdateConsent).toHaveBeenCalledWith(false);
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled();
+    await go("Dalej");
+    expect(screen.getByRole("navigation", { name: "Główna nawigacja" })).toBeInTheDocument();
+  });
+
+  it("does not ask a player who already answered", async () => {
+    mocks.updateConsent.mockResolvedValue("off");
+    await renderApp();
+    expect(screen.queryByRole("region", { name: "Pierwsze ustawienia" })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Główna nawigacja" })).toBeInTheDocument();
   });
 });

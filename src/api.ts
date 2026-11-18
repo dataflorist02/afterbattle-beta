@@ -11,6 +11,9 @@ import type {
   RecapKind,
   VehicleNamesView,
   WeeklyReport,
+  ReferenceTables,
+  AvailableUpdate,
+  UpdateConsent,
   ExpectedValuesStatus,
   AppSnapshot,
   BackendEvent,
@@ -357,6 +360,15 @@ export const api = {
   snapshot: () => command<AppSnapshot>("get_snapshot"),
   battleView: (battleId: string) => command<BattleDetailView>("get_battle_view", { battleId }),
   weeklyReport: () => command<WeeklyReport>("get_weekly_report"),
+  /** A-1 (spec 32 §2): aggregates per tier and class from the player's battles. */
+  referenceTables: () => command<ReferenceTables>("get_reference_tables"),
+  /** Spec 32 §5: the consent to the update check ("unasked" until the player answers). */
+  updateConsent: () => command<UpdateConsent>("get_update_consent"),
+  setUpdateConsent: (enabled: boolean) => command<UpdateConsent>("set_update_consent", { enabled }),
+  /** One check per start, only with consent (the backend refuses without it). */
+  checkForUpdate: () => command<AvailableUpdate | null>("check_for_update"),
+  /** Installs the signed update and restarts; only after the player's click. */
+  installUpdate: () => command<void>("install_update"),
   sessionStory: (sessionId: string) => command<SessionStory>("get_session_story", { sessionId }),
   /** Facts of a template summary (spec 30); the text is put together in `lib/recap`. */
   recap: (kind: RecapKind, id: string) => command<Recap>("get_recap", { kind, id }),

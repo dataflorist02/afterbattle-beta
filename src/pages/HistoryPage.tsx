@@ -51,8 +51,11 @@ function Battles({
   initialMapKey,
   initialMapName,
   takeEntrance,
+  canImport,
 }: {
   progress: ImportProgressEvent | null;
+  /** The game folder is set: the empty history offers reading the battle files (spec 31 §5). */
+  canImport: boolean;
   onOpenBattle: (battleId: string) => void;
   initialMapKey: string | null;
   initialMapName: string | null;
@@ -61,6 +64,7 @@ function Battles({
 }) {
   const { tr } = useLanguage();
   const label = useTankLabel();
+  const [importError, setImportError] = useState<string | undefined | null>(null);
   const [vehicleId, setVehicleId] = useState<number | null>(null);
   const [mapKey, setMapKey] = useState<string | null>(initialMapKey);
   // Rows loaded with "Show more", for the filter they were loaded with only; a refresh keeps
@@ -203,7 +207,27 @@ function Battles({
                 <Empty text={tr("historyFilling")} />
               </>
             ) : (
-              <Empty text={tr("historyEmpty")} />
+              <>
+                {importError !== null && <ErrorState code={importError} />}
+                <Empty
+                  text={tr("historyEmpty")}
+                  action={
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={!canImport}
+                      onClick={() => {
+                        setImportError(null);
+                        api
+                          .startImport()
+                          .catch((failure: { code?: string }) => setImportError(failure?.code));
+                      }}
+                    >
+                      {tr("settingsImportStart")}
+                    </button>
+                  }
+                />
+              </>
             );
           }
           return (
@@ -352,6 +376,7 @@ export function HistoryPage({
           initialMapKey={initialMapKey}
           initialMapName={initialMapName}
           takeEntrance={takeEntrance}
+          canImport={snapshot.sourceStatus.configured}
         />
       ) : (
         <Sessions snapshot={snapshot} onOpenSession={onOpenSession} />

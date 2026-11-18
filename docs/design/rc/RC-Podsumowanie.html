@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>RC-Podsumowanie — makieta 1.0 RC (statyczna)</title>
+<!-- Makieta z płótna "Afterbattle 2.0 — redesign", rząd "1.0 RC", zaakceptowana 2026-11-17.
+     Dane syntetyczne; mapy i ikony czołgów to zamienniki (D19). Wzorzec układu, nie kod do skopiowania. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.muted{color:#9AA6B8}
+.chip{display:inline-flex;align-items:center;font-size:11px;font-weight:600;color:#F7B27A;background:rgba(240,138,60,0.14);border:1px solid rgba(240,138,60,0.45);border-radius:6px;padding:0 6px;height:20px;margin-left:4px;vertical-align:2px}
+.more{font:inherit;font-size:14px;font-weight:500;color:#F3A36B;background:transparent;border:0;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 4px}
+</style>
+</head>
+<body>
+<div style="width: 1040px; height: 480px; box-sizing: border-box; padding: 40px; background: #0A101C;">
+  <section class="card" style="padding: 18px 26px 22px; display: flex; flex-direction: column; gap: 10px;" aria-labelledby="h-recap">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <h2 id="h-recap" class="muted" style="margin: 0; font-size: 13px; font-weight: 500;">Podsumowanie sesji</h2>
+        <p style="margin: 0; font-size: 17px; line-height: 1.5;">Zwycięstwa: 7 z 12 bitew, czyli 58%, o 7 pkt proc. więcej niż w ostatnich 100 bitwach (51%).<span class="chip">F1</span></p>
+      </div>
+      <button type="button" class="more" aria-expanded="true" aria-controls="recap-rest">Pokaż mniej<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"></polyline></svg></button>
+    </div>
+    <ol id="recap-rest" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 17px; line-height: 1.5;">
+      <li>Średnio 3 414 obrażeń, o 13% więcej niż zwykle na tych czołgach (3 021).<span class="chip">F2</span></li>
+      <li>Najwięcej obrażeń w jednej bitwie: 5 873 na mapie Synthetic Hills.<span class="chip">F3</span></li>
+      <li>WN8 sesji: 2 311, o 207 więcej niż w 30 dniach przed sesją (2 104).<span class="chip">F4</span></li>
+      <li>Przetrwanie do końca: 5 z 12 bitew, czyli 42%, o 8 pkt proc. więcej niż w ostatnich 100 bitwach (34%).<span class="chip">F5</span></li>
+    </ol>
+    <p class="muted" style="margin: 4px 0 0; font-size: 12.5px;">Najechanie na odnośnik podświetla liczbę na ekranie. Stan rozwinięcia jest zapamiętany.</p>
+  </section>
+</div>
+</body>
+</html>

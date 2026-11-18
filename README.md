@@ -12,7 +12,7 @@ Afterbattle is a local-first Windows desktop analytics application for World of 
 
 | | |
 |---|---|
-| Status | 1.0.0-beta.4, public beta |
+| Status | 1.0.0-rc.1, release candidate (pre-release) |
 | Platform | Windows desktop (10/11) |
 | Architecture | Tauri 2 + Rust + React/TypeScript |
 | Storage | Local SQLite (schema v10) |
@@ -136,10 +136,10 @@ AI output is not treated as a source of truth; the repository’s contracts, tes
 
 ## Quality and validation
 
-The 1.0.0-beta.4 candidate has been checked locally on Windows:
+The 1.0.0-rc.1 candidate has been checked locally on Windows:
 
-- Frontend tests: 365/365 passed; ESLint and Prettier clean; production build passes.
-- Rust tests: 815 passed, 0 failed; 5 ignored tests read local game data and are run by the author only.
+- Frontend tests: 429/429 passed; ESLint and Prettier clean.
+- Rust tests: 843 passed, 0 failed; 6 ignored tests read local game data or measure speed and are run by the author only.
 - Summary invariants on synthetic data (100 sessions, 200 battles, 50 weeks, every phrase variant in all three address forms): numbers only from cited facts, no contradiction with the battle result or survival, every word in an SJP.PL word list, no judging words.
 - `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings`: pass.
 - Mutation testing, at least 85%: `cargo mutants` for the Rust parsers, rules and analytics, Stryker (`tools/mutants`) for earlier frontend logic; since 1.0.0-beta.4 mutations cover decision logic only (thresholds and selection rules), run once before a release.
@@ -149,14 +149,14 @@ GitHub Actions CI (actions pinned to commit SHAs) runs lint, frontend tests and 
 
 ## Project status and limitations
 
-1.0.0-beta.4 is the fourth public beta (template summaries in Polish), marked as a pre-release. The scope is Windows desktop usage with locally recorded random-battle replays.
+1.0.0-rc.1 is the release candidate for 1.0 ("Afterbattle 1.0 RC": Overview, comparison with the players of your battles, updates with consent), marked as a pre-release. After two weeks without a serious bug the same commit becomes 1.0.0. The scope is Windows desktop usage with locally recorded random-battle replays.
 
 Known limitations include:
 
 - Replay formats are version-gated; unsupported or ambiguous shapes remain partial or Unknown.
 - Attempts & Conversion deliberately excludes SPG mechanics and does not infer missing counters or causes.
 - Optional XVM expected-value updates require a validated dataset; offline operation uses the local snapshot when available.
-- The installer is unsigned and has no automatic updater (see "Installing" below).
+- The installer has no Authenticode signature (see "Installing" below). Automatic updates are opt-in and offer only releases marked as latest, so RC users install 1.0.0 by hand.
 - See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the full list.
 - Native Tauri behavior at every Windows scaling and display configuration remains part of the release checklist.
 
@@ -187,27 +187,27 @@ The application asks the user to approve a local World of Tanks installation bef
 
 ### Po polsku
 
-1. Pobierz `Afterbattle_1.0.0-beta.4_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-beta.4` na GitHubie (oznaczonego jako pre-release).
+1. Pobierz `Afterbattle_1.0.0-rc.1_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-rc.1` na GitHubie (oznaczonego jako pre-release).
 2. Sprawdź, czy plik jest nienaruszony. W PowerShellu, w folderze z pobranymi plikami:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.4_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-rc.1_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Oba ciągi znaków muszą być identyczne. Jeśli się różnią, nie instaluj i zgłoś to w zgłoszeniach (Issues) repozytorium.
 3. Uruchom instalator. Instalator nie jest podpisany, więc Windows SmartScreen pokaże ostrzeżenie „System Windows ochronił ten komputer”. Kliknij **Więcej informacji**, sprawdź nazwę pliku i wybierz **Uruchom mimo to**. Instalacja jest tylko dla bieżącego użytkownika i nie wymaga uprawnień administratora.
-4. Przy pierwszym uruchomieniu wskaż folder World of Tanks: „Znajdź grę” szuka go na wszystkich dyskach i w bibliotekach Steam, „Wskaż ręcznie” otwiera okno wyboru folderu. Aplikacja czyta tylko powtórki i pliki gry; nic nie wysyła, dopóki nie włączysz danych WN8 z XVM.
+4. Przy pierwszym uruchomieniu wskaż folder World of Tanks: „Znajdź grę” szuka go na wszystkich dyskach i w bibliotekach Steam, „Wskaż ręcznie” otwiera okno wyboru folderu. Tam też odpowiesz, czy sprawdzać aktualizacje przy starcie. Aplikacja czyta tylko powtórki i pliki gry; nic nie wysyła, dopóki nie włączysz danych WN8 z XVM albo sprawdzania aktualizacji.
 
 ### In English
 
-1. Download `Afterbattle_1.0.0-beta.4_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-beta.4` release on GitHub (marked as a pre-release).
+1. Download `Afterbattle_1.0.0-rc.1_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-rc.1` release on GitHub (marked as a pre-release).
 2. Check the file is intact. In PowerShell, in the folder with the downloads:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-beta.4_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-rc.1_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Both strings must be identical. If they differ, do not install and report it in the repository's Issues.
 3. Run the installer. It is not signed, so Windows SmartScreen shows "Windows protected your PC". Click **More info**, check the file name and choose **Run anyway**. It installs for the current user only and needs no administrator rights.
-4. On first start, choose your World of Tanks folder: "Find the game" looks on every drive and in Steam libraries, "Choose manually" opens the folder picker. The app only reads replays and game files; it sends nothing until you turn on XVM WN8 data.
+4. On first start, choose your World of Tanks folder: "Find the game" looks on every drive and in Steam libraries, "Choose manually" opens the folder picker. It also asks whether to check for updates at start. The app only reads replays and game files; it sends nothing until you turn on XVM WN8 data or the update check.
 
 ## Privacy and security
 

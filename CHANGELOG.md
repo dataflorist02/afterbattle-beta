@@ -2,7 +2,42 @@
 
 ## Unreleased
 
-Bez zmian dla gracza. / No change for the player.
+## 1.0.0-rc.1
+
+Kandydat na wersję 1.0 („Afterbattle 1.0 RC”): Przegląd jako pierwszy ekran, porównanie z graczami z Twoich bitew na ekranie Czołg, aktualizacje za zgodą i ostatnie szlify interfejsu. Instalator bez podpisu Authenticode (pre-release). / Release candidate for 1.0 ("Afterbattle 1.0 RC"): Overview as the first screen, a comparison with the players of your battles on the Tank screen, updates with consent, and the last interface polish. Installer without an Authenticode signature (pre-release).
+
+### Po polsku — co się zmienia dla gracza
+
+- **Przegląd.** Nowy pierwszy ekran: ostatnia sesja na całą szerokość z mapą najlepszej bitwy w tle, średnimi obrażeniami, wygranymi, WN8 sesji i pierwszym zdaniem podsumowania; trendy z ostatnich 100 bitew z małymi wykresami (obrażenia, WN8, wygrane — tylko kontekst); cele tygodnia; najlepsze czołgi i Twoja pozycja na tle graczy. Bez trwającej sesji aplikacja startuje na Przeglądzie, w trakcie sesji na Sesji.
+- **Na tle graczy z Twoich bitew (ekran Czołg).** Dla tieru i klasy wybranego czołgu: rozkład wyników innych graczy z Twoich bitew (środkowa połowa, mediana, 90%) i Twoja mediana jako percentyl, dla obrażeń, asysty, wykryć, zniszczeń, zablokowanych i czasu życia; celność tylko jako tło. Liczone na tym komputerze z zapisanych składów, bez Ciebie i Twojego plutonu; wartości od 200 wyników, Twoja mediana od 10 bitew.
+- **Najlepsze czołgi.** Na Przeglądzie trzy czołgi o najwyższym percentylu mediany obrażeń w swojej grupie tier × klasa (od 10 bitew), np. „88. w ciężkich X”, i najczęściej grane w jednej linii.
+- **Aktualizacje za zgodą.** Przy pierwszym uruchomieniu (i raz po aktualizacji z bety) pytanie „Sprawdzać aktualizacje przy starcie?”. Po „tak” aplikacja raz przy starcie pyta GitHuba o numer najnowszej wersji i pokazuje „Dostępna wersja X” z notatkami; instaluje dopiero po kliknięciu „Zainstaluj i uruchom ponownie”, tylko z podpisem autora. Przełącznik w Ustawieniach → Prywatność i dane; adres strony wydań w „O aplikacji”. Wydania oznaczone jako pre-release (jak to RC) nie są proponowane automatycznie.
+- **Szybsza reakcja na kliknięcie:** przyciski, kafelki i wiersze reagują na wciśnięcie od razu (wcześniej po ok. 60–100 ms); ekrany wchodzą krótszym przenikaniem z przesunięciem 8 px; szkielet ładowania pojawia się tylko, gdy dane idą dłużej niż 0,3 s; stopka nie przeskakuje przy wczytaniu ekranu.
+- **Krótsze podsumowania:** karta podsumowania sesji, bitwy i tygodnia pokazuje najpierw pierwsze zdanie; reszta po kliknięciu „Pokaż więcej (N)”. Wybór jest zapamiętany dla wszystkich ekranów.
+- **Nowy układ Ustawień:** grupy Gra, Ty, Dane, Prywatność i dane, O aplikacji z listą odnośników po lewej; przy każdej opcji jedno zdanie, co robi. Język, forma zwracania się i limit bezczynności zapisują się od razu (komunikat „Zapisano.”), bez przycisku „Zapisz”. Pobieranie WN8 z XVM to przełącznik.
+- **Puste ekrany mówią, co zrobić:** Sesja, Czołgi i Historia mają jedno zdanie z następnym krokiem; pusta Historia ma przycisk „Odczytaj wszystkie powtórki”. Odstępy na wszystkich ekranach wyrównane do siatki 4 px.
+
+### In English — what changes for the player
+
+- **Overview.** A new first screen: the last session on the whole width with the best battle's map, average damage, wins, session WN8 and the first summary sentence; trends of the last 100 battles with small charts; the week's goals; the best tanks and your position among the players. Without a running session the app starts on Overview, during a session on Session.
+- **Against the players in your battles (Tank screen).** For the selected tank's tier and class: the distribution of the other players in your battles (middle half, median, 90%) and your median as a percentile, for damage, assist, spotting, kills, blocked damage and lifetime; accuracy as background only. Counted on this computer from the stored rosters, without you and your platoon; values from 200 results, your median from 10 battles.
+- **Best tanks.** On Overview, the three tanks with the highest percentile of median damage in their tier × class group (from 10 battles), and the most played in one line.
+- **Updates with consent.** The first start (and once after updating from a beta) asks whether to check for updates at start. With a yes the app asks GitHub once per start for the newest version number and shows "Version X is available" with notes; it installs only after a click, and only with the author's signature. A switch in Settings → Privacy and data; the releases page address in About. Releases marked as pre-release (like this RC) are not offered automatically.
+- **Snappier response to clicks:** buttons, tiles and rows react to a press at once (before: after about 60–100 ms); screens enter with a shorter fade and an 8 px rise; a loading skeleton shows only when data takes longer than 0.3 s; the footer no longer jumps while a screen loads.
+- **Shorter summaries:** the session, battle and week summary cards show the first sentence; the rest opens with "Pokaż więcej (N)" (Show more). The choice is remembered for every screen.
+- **New Settings layout:** the groups Game, You, Data, Privacy and data, About, with a list of links on the left; one sentence on what each option does. Language, address form and the inactivity limit save at once ("Saved."), without a Save button. WN8 from XVM is a switch.
+- **Empty screens say what to do:** Session, Tanks and History have one sentence with the next step; the empty History has "Odczytaj wszystkie powtórki" (read all battle files). Spacing on every screen follows the 4 px grid.
+
+### Internal
+
+- A-1 reference tables (`get_reference_tables`): percentiles per tier × class from the stored rosters at read time, no derived values stored, no row data or identifiers in the answer; the player's own tanks with their damage percentile for the Overview. Mutations of `baseline.rs` window and reference functions: 96.2%.
+- Updates: `tauri-plugin-updater` 2, all calls from Rust behind the consent gate (no updater or process permission in the window); the author's minisign public key in `tauri.conf.json`; `scripts/release.ps1` signs the update artifacts and writes `latest.json` only with `TAURI_SIGNING_PRIVATE_KEY` set, otherwise it refuses. PRIVACY (EN/PL) and THREAT_MODEL describe the new connection.
+- A 1.0.0-beta.4 database opens in the RC unchanged (schema 10, no migration).
+- Motion times and curves only from tokens (`tokens.css`), guarded by a test over CSS and TSX; `tools/screens/timing.mjs` measures the spec 31 §2 table (press, screen change, CLS) in a real browser.
+- `tools/screens/recap.mjs` captures the summary cards closed and open and checks that opening moves nothing above the card.
+- `tools/screens/compare.mjs` shoots every screen of any checkout at 1280 and 1920 px (before and after a change); Settings options are covered by characterization tests written before the new layout.
+- `tools/screens/review.mjs` audits the rendered screens (text contrast, focus rings, Tab reach and order, spacing grid); a test keeps spacing on the 4 px grid and radii on tokens.
+- The public snapshot tests that start PowerShell have an explicit 30 s timeout, because a cold start of pwsh on the CI runner exceeded the default 5 s.
 
 ## 1.0.0-beta.4
 

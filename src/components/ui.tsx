@@ -11,15 +11,18 @@ export function Card({
   className = "",
   labelledBy,
   label,
+  id,
 }: {
   children: ReactNode;
   hero?: boolean;
   className?: string;
   labelledBy?: string;
   label?: string;
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       className={`card${hero ? " card-hero" : ""}${className ? ` ${className}` : ""}`}
       aria-labelledby={labelledBy}
       aria-label={label}

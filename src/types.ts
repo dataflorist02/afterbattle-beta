@@ -50,6 +50,11 @@ export type { BattleFactValue } from "./api/generated/BattleFactValue";
 export type { WeekFact } from "./api/generated/WeekFact";
 export type { WeekFactValue } from "./api/generated/WeekFactValue";
 export type { WeeklyReport } from "./api/generated/WeeklyReport";
+export type { ReferenceTables } from "./api/generated/ReferenceTables";
+export type { ReferenceCell } from "./api/generated/ReferenceCell";
+export type { ReferenceMetric } from "./api/generated/ReferenceMetric";
+export type { ReferenceMetricKind } from "./api/generated/ReferenceMetricKind";
+export type { ReferenceLevel } from "./api/generated/ReferenceLevel";
 export type { WeeklyGoal } from "./api/generated/WeeklyGoal";
 export type { WeeklyIndicator } from "./api/generated/WeeklyIndicator";
 export type { WeeklyMetric } from "./api/generated/WeeklyMetric";
@@ -211,3 +216,6 @@ export interface AttemptsConversionReport {
 }
 export type { LocalImportResult } from "./api/generated/LocalImportResult";
 export type { CommandError } from "./api/generated/CommandError";
+export type { AvailableUpdate } from "./api/generated/AvailableUpdate";
+export type { UpdateConsent } from "./api/generated/UpdateConsent";
+export type { TankPosition } from "./api/generated/TankPosition";

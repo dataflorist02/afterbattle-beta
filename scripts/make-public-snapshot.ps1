@@ -47,6 +47,11 @@
 .PARAMETER NameScanOnly
   Checks this text with the excluded-name pattern (folder rules only, no ref is read), prints
   "NAME SCAN: hit (<match>)" or "NAME SCAN: clean" and stops (used by the tests).
+
+.PARAMETER NameScanTracked
+  Runs the excluded-name scan of the snapshot over the files tracked in this working tree that
+  the snapshot keeps, prints "NAME SCAN: <finding>" per hit or "NAME SCAN: clean" and stops
+  (used by the tests, so pnpm test fails before the snapshot does).
 #>
 [CmdletBinding()]
 param(
@@ -58,7 +63,8 @@ param(
   [string]$AuthorName = '',
   [string]$GhCommand = 'gh',
   [switch]$ResolveAuthorOnly,
-  [string]$NameScanOnly
+  [string]$NameScanOnly,
+  [switch]$NameScanTracked
 )
 
 Set-StrictMode -Version Latest
@@ -90,7 +96,11 @@ $KnownGitleaks = @(
   @{ Rule = 'generic-api-key'; File = 'src/app/screens.test.tsx'; Secret = 'synth-sx9_vz_60s_test' },  # gitleaks:allow
   @{ Rule = 'generic-api-key'; File = 'src/lib/presentation.test.ts'; Secret = 'usa-A179_Black_Rock' },  # gitleaks:allow
   @{ Rule = 'generic-api-key'; File = 'src/lib/presentation.test.ts'; Secret = '99_synthetic_map' },  # gitleaks:allow
-  @{ Rule = 'generic-api-key'; File = 'src-tauri/src/local_tracker.rs'; Secret = 'france-amx_13' }  # gitleaks:allow
+  @{ Rule = 'generic-api-key'; File = 'src-tauri/src/local_tracker.rs'; Secret = 'france-amx_13' },  # gitleaks:allow
+  # The minisign PUBLIC key of updates (spec 32 §5.2, plugins.updater.pubkey): public by design,
+  # the private key never enters the repository. Exactly this value in exactly this file; gitleaks
+  # 8.30.1 does not flag it (152 characters, over the rule's 150), other versions may.
+  @{ Rule = 'generic-api-key'; File = 'src-tauri/tauri.conf.json'; Secret = 'dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDExMjAxN0QyMDVEQjhCMDkKUldRSmk5c0YwaGNnRWFITzI0RHBZYzY1N2V6bkQrUStuYVlSRENBNEsxWGJoUHJrSmpzaURDMDgK' }  # gitleaks:allow
 )
 
 # Pattern searches over the snapshot's text files; any hit stops the script.
@@ -161,6 +171,25 @@ function Get-NamePattern([string[]]$ExcludedPaths) {
   "(?i)(?<![A-Za-z0-9_.-])(($nameAlternatives)(?![A-Za-z0-9_-])|($prefixAlternatives))"
 }
 
+# The excluded-name scan: text files given as paths relative to $BaseDir, without the files that
+# may name the excluded ones; one finding per line that names an excluded file or folder.
+function Find-ExcludedNames([string]$BaseDir, [string[]]$Paths, [string[]]$ExcludedPaths) {
+  $pattern = Get-NamePattern $ExcludedPaths
+  $nameLabel = 'excluded name'
+  $scanned = @($Paths | Where-Object {
+      ($BinaryExtensions -notcontains [System.IO.Path]::GetExtension($_).ToLowerInvariant()) -and
+      ($SkipFiles -notcontains $_) -and
+      ($NameScanExempt -notcontains $_)
+    } | ForEach-Object { Join-Path $BaseDir $_ })
+  if (-not $scanned) { return }
+  $hits = Select-String -LiteralPath $scanned -Pattern $pattern -AllMatches -ErrorAction SilentlyContinue
+  foreach ($hit in $hits) {
+    $found = ($hit.Matches | ForEach-Object { $_.Value } | Sort-Object -Unique) -join ', '
+    $path = $hit.Path.Substring($BaseDir.Length + 1).Replace('\', '/')
+    "$nameLabel ($found): ${path}:$($hit.LineNumber)"
+  }
+}
+
 function Find-Gitleaks {
   if ($Gitleaks) { return $Gitleaks }
   $command = Get-Command gitleaks -ErrorAction SilentlyContinue
@@ -221,6 +250,17 @@ if ($ResolveAuthorOnly) {
 if ($PSBoundParameters.ContainsKey('NameScanOnly')) {
   $match = [regex]::Match($NameScanOnly, (Get-NamePattern @()))
   if ($match.Success) { Write-Output "NAME SCAN: hit ($($match.Value))" } else { Write-Output 'NAME SCAN: clean' }
+  return
+}
+if ($NameScanTracked) {
+  Set-Location $root
+  $tracked = @(Invoke-Git @('-c', 'core.quotepath=off', 'ls-files'))
+  $trackedExcluded = @($tracked | Where-Object { Test-Excluded $_ })
+  $trackedKept = @($tracked | Where-Object {
+      -not (Test-Excluded $_) -and (Test-Path -LiteralPath (Join-Path $root $_) -PathType Leaf)
+    })
+  $findings = @(Find-ExcludedNames $root $trackedKept $trackedExcluded)
+  if ($findings.Count) { $findings | ForEach-Object { Write-Output "NAME SCAN: $_" } } else { Write-Output 'NAME SCAN: clean' }
   return
 }
 # Decided before any work, so a missing login stops the run early.
@@ -287,14 +327,8 @@ foreach ($name in $Patterns.Keys) {
 }
 
 # No public file may name an excluded file: its path, its file name, or an excluded folder.
-$namePattern = Get-NamePattern $excluded
-$nameFiles = $textFiles | Where-Object { $NameScanExempt -notcontains (& $relative $_.FullName) }
-$nameLabel = 'excluded name'
-$nameHits = $nameFiles | Select-String -Pattern $namePattern -AllMatches -ErrorAction SilentlyContinue
-foreach ($hit in $nameHits) {
-  $found = ($hit.Matches | ForEach-Object { $_.Value } | Sort-Object -Unique) -join ', '
-  $problems.Add("$nameLabel ($found): $(& $relative $hit.Path):$($hit.LineNumber)")
-}
+$textPaths = @($textFiles | ForEach-Object { & $relative $_.FullName })
+foreach ($finding in @(Find-ExcludedNames $Target $textPaths $excluded)) { $problems.Add($finding) }
 
 $gitleaksExe = Find-Gitleaks
 $report = Join-Path ([System.IO.Path]::GetTempPath()) "afterbattle-gitleaks-$commit.json"

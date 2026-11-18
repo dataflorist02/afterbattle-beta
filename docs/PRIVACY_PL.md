@@ -27,11 +27,12 @@ Menedżer poświadczeń Windows przechowuje tylko zatwierdzoną ścieżkę do Wo
 
 ## Opcjonalne połączenia sieciowe
 
-Jedyna funkcja sieciowa jest domyślnie wyłączona:
+Obie funkcje sieciowe wymagają zgody gracza; bez niej żadne żądanie nie jest wysyłane:
 
-- XVM: po osobnym włączeniu statyczny plik wartości oczekiwanych jest pobierany wyłącznie z `https://static.modxvm.com/wn8-data-exp/json/wg/wn8exp.json`, najwyżej raz dziennie. Gdy XVM jest wyłączony, żadne żądanie nie jest wysyłane. Nie jest wysyłany żaden identyfikator gracza ani bitwy.
+- XVM: po osobnym włączeniu statyczny plik wartości oczekiwanych jest pobierany wyłącznie z `https://static.modxvm.com/wn8-data-exp/json/wg/wn8exp.json`, najwyżej raz dziennie. Gdy XVM jest wyłączony, żadne żądanie nie jest wysyłane. Nie jest wysyłany żaden identyfikator gracza ani bitwy. Przekierowania są wyłączone, a rozmiary odpowiedzi i czasy oczekiwania są ograniczone.
+- Sprawdzanie aktualizacji (od 1.0.0-rc.1): aplikacja pyta raz — przy pierwszym uruchomieniu albo przy pierwszym starcie po aktualizacji z bety — czy sprawdzać aktualizacje przy starcie; odpowiedź można zmienić w Ustawieniach → Prywatność i dane. Po „tak” raz na uruchomienie pobiera plik aktualizacji `https://github.com/dataflorist02/afterbattle-beta/releases/latest/download/latest.json` (GitHub przekierowuje żądanie na swój serwer plików). To zwykłe żądanie HTTP GET z ogólnym identyfikatorem klienta aktualizatora (`tauri-plugin-updater/<wersja>`); nie jest wysyłany żaden identyfikator gracza, bitwy, instalacji ani aplikacji, ani żadne dane z aplikacji. Jak przy każdym połączeniu GitHub widzi adres IP komputera i czas. Plik zawiera tylko numer najnowszej wersji, notatki oraz podpis i adres instalatora. Nowa wersja jest pobierana i instalowana dopiero po kliknięciu „Zainstaluj i uruchom ponownie” i tylko wtedy, gdy jej podpis zgadza się z kluczem publicznym autora wbudowanym w aplikację. Po „nie” w sekcji „O aplikacji” jest adres strony wydań.
 
-Przekierowania są wyłączone, rozmiary odpowiedzi i czasy oczekiwania są ograniczone, a sam WebView nie ma uprawnień do internetu.
+Sam WebView nie ma uprawnień do internetu; oba żądania wykonuje backend.
 
 ## Eksport
 

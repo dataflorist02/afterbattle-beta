@@ -21,7 +21,7 @@
     },
     "windows": [
       {
-        "title": "Afterbattle beta 4",
+        "title": "Afterbattle 1.0 RC",
         "width": 1240,
         "height": 800,
         "minWidth": 960,
@@ -37,6 +37,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": false,
     "category": "Utility",
     "shortDescription": "Local World of Tanks session coach",
     "longDescription": "A privacy-first local session tracker and deterministic coach for World of Tanks using local replay and session statistics.",
@@ -55,6 +56,14 @@
       "nsis": {
         "installMode": "currentUser"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDExMjAxN0QyMDVEQjhCMDkKUldRSmk5c0YwaGNnRWFITzI0RHBZYzY1N2V6bkQrUStuYVlSRENBNEsxWGJoUHJrSmpzaURDMDgK",
+      "endpoints": [
+        "https://github.com/dataflorist02/afterbattle-beta/releases/latest/download/latest.json"
+      ]
     }
   }
 }

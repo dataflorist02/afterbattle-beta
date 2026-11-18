@@ -1,9 +1,10 @@
 /**
  * Mocked Tauri IPC for screenshots outside the app (spec 25 §8): synthetic data only, no game
  * graphics (images answer empty, so placeholders are drawn). The state comes from the URL:
- * `?state=ready|loading|empty|error|noxvm|few|many|firstrun` (`many`: 30 session battles and 200
- * history rows, for the render-time measurement of E5-flare §7; `firstrun`: no game folder yet,
- * detection finds one synthetic folder — hotfix 1.0.0-beta.3).
+ * `?state=ready|loading|empty|error|noxvm|few|many|firstrun|ask|update` (`many`: 30 session
+ * battles and 200 history rows, for the render-time measurement of E5-flare §7; `firstrun`: no
+ * game folder yet, detection finds one synthetic folder — hotfix 1.0.0-beta.3; `ask`: the update
+ * question; `update`: a found update — spec 32 §5).
  */
 import * as fx from "../test/fixtures";
 
@@ -28,6 +29,45 @@ function snapshot() {
   return fx.snapshot({ activeChallenge: state === "ready" ? fx.activeChallenge() : null });
 }
 
+/** The tank's cell plus a few more, so the Overview grid shows values and a collecting cell. */
+function referenceGrid() {
+  const tables = fx.referenceTables();
+  const [cell] = tables.cells;
+  const at = (
+    tier: number,
+    vehicleClass: (typeof cell)["vehicleClass"],
+    ownBattles: number,
+    position: number,
+  ) => ({
+    ...cell,
+    tier,
+    vehicleClass,
+    ownBattles,
+    metrics: cell.metrics.map((metric) =>
+      metric.metric === "damage" ? { ...metric, ownPosition: position } : metric,
+    ),
+  });
+  return {
+    ...tables,
+    cells: [
+      ...tables.cells,
+      at(10, "heavy_tank", 96, 78.2),
+      at(11, "medium_tank", 54, 71.4),
+      at(10, "light_tank", 40, 83.1),
+      at(9, "medium_tank", 22, 49.2),
+      {
+        ...cell,
+        tier: 6,
+        vehicleClass: "light_tank" as const,
+        level: "count_only" as const,
+        population: 120,
+        ownBattles: 4,
+        metrics: [],
+      },
+    ],
+  };
+}
+
 const handlers: Record<string, Handler> = {
   get_snapshot: () => snapshot(),
   get_session_summary: () =>
@@ -45,6 +85,11 @@ const handlers: Record<string, Handler> = {
           ? { ...fx.sessionRecap(), facts: fx.sessionRecap().facts.slice(0, 1) }
           : fx.sessionRecap(),
   get_map_record: () => fx.mapRecord(),
+  // A-1 (spec 32 §2): "few" shows the state with too little background.
+  get_reference_tables: () =>
+    state === "few"
+      ? fx.referenceTables({ level: "count_only", population: 120 })
+      : referenceGrid(),
   get_weekly_report: () =>
     state === "few"
       ? fx.weeklyReport({ battles: 6, confidence: "too_few", goals: [], wn8: null })
@@ -61,7 +106,13 @@ const handlers: Record<string, Handler> = {
   get_vehicle_history_overview: () => (state === "empty" ? fx.overview(0) : fx.overview()),
   get_vehicle_baseline: () => (state === "few" ? fx.vehicleBaseline(1) : fx.vehicleBaseline()),
   get_vehicle_history_report: () => fx.vehicleReport(),
-  get_performance_trends: () => (state === "few" ? fx.trends(1) : fx.trends()),
+  // Overview asks for the last 100 battles of all tanks (spec 32 §4.2).
+  get_performance_trends: (args) =>
+    args.vehicleId === null && args.range === "last100"
+      ? fx.overviewTrends(state !== "noxvm")
+      : state === "few"
+        ? fx.trends(1)
+        : fx.trends(),
   get_battle_history_page: () =>
     state === "empty"
       ? { items: [], nextCursor: null }
@@ -84,6 +135,16 @@ const handlers: Record<string, Handler> = {
   get_vehicle_names: () => ({ language: null, names: {} }),
   get_game_image: () => new ArrayBuffer(0),
   detect_wot_installations: () => [String.raw`D:\Games\World_of_Tanks_EU`],
+  // Spec 32 §5: the first run (and "ask") shows the consent question, "update" a found version.
+  get_update_consent: () =>
+    state === "firstrun" || state === "ask" ? "unasked" : state === "update" ? "on" : "off",
+  check_for_update: () =>
+    state === "update"
+      ? {
+          version: "1.0.1",
+          notes: "Poprawki odświeżania Sesji i porównania na ekranie Czołg.",
+        }
+      : null,
 };
 
 async function invoke(command: string, args: Record<string, unknown> = {}) {

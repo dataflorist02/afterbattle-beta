@@ -2368,6 +2368,62 @@ impl Database {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
+    /// A-1 (spec 32 §2): the anonymous roster rows of counted battles (D4), grouped per battle,
+    /// for the reference tables. Only the columns the tables need; no descriptor, slot or id
+    /// leaves this function.
+    pub(crate) fn reference_rows(
+        &self,
+    ) -> Result<Vec<Vec<crate::reference::ReferenceRow>>, AppError> {
+        let connection = self.open_read_only()?;
+        let mut statement = connection.prepare(&format!(
+            "SELECT r.battle_id,r.side,r.is_own_player,r.platoon_group,r.vehicle_tier,r.vehicle_class,
+                    r.damage_dealt,r.assist_radio,r.assist_track,r.spotted,r.kills,r.damage_blocked,
+                    r.life_time,r.shots,r.direct_enemy_hits,b.wg_tank_id
+             FROM battle_roster r JOIN battles b ON b.arena_id=r.battle_id
+             WHERE {STATS_ELIGIBLE_SQL}
+             ORDER BY r.battle_id,r.slot"
+        ))?;
+        let mut battles: Vec<Vec<crate::reference::ReferenceRow>> = Vec::new();
+        let mut current: Option<String> = None;
+        let mut rows = statement.query([])?;
+        while let Some(row) = rows.next()? {
+            let battle_id: String = row.get(0)?;
+            if current.as_deref() != Some(battle_id.as_str()) {
+                battles.push(Vec::new());
+                current = Some(battle_id);
+            }
+            let class: Option<String> = row.get(5)?;
+            let tier: Option<i64> = row.get(4)?;
+            let platoon: i64 = row.get(3)?;
+            battles
+                .last_mut()
+                .expect("pushed above")
+                .push(crate::reference::ReferenceRow {
+                    own_side: row.get::<_, String>(1)? == "own",
+                    is_own_player: row.get::<_, i64>(2)? == 1,
+                    platoon_group: u8::try_from(platoon).unwrap_or(0),
+                    tier: tier.and_then(|tier| u8::try_from(tier).ok()),
+                    class: class.as_deref().map(VehicleClass::parse),
+                    damage: row.get(6)?,
+                    assist_radio: row.get(7)?,
+                    assist_track: row.get(8)?,
+                    spotted: row.get(9)?,
+                    kills: row.get(10)?,
+                    blocked: row.get(11)?,
+                    life_time: row.get(12)?,
+                    shots: row.get(13)?,
+                    direct_enemy_hits: row.get(14)?,
+                    // The battle's tank is the player's: only their own row carries it.
+                    own_vehicle: if row.get::<_, i64>(2)? == 1 {
+                        row.get(15)?
+                    } else {
+                        None
+                    },
+                });
+        }
+        Ok(battles)
+    }
+
     pub fn performance_trend_battles(
         &self,
         vehicle_id: Option<i64>,
@@ -7191,5 +7247,106 @@ pub(crate) mod tests {
         assert!(!database_image.contains("WIPE_CONTENT_FINGERPRINT"));
         assert!(!database_image.contains("wipe-source-session"));
         assert!(!database_image.contains("Synthetic vehicle"));
+    }
+
+    /// A-1 (spec 32 §2): the reference rows come from counted battles only (D4), one group per
+    /// battle in slot order, with the tier and class stored at import.
+    #[test]
+    fn reference_rows_read_counted_battles_only_grouped_per_battle() {
+        let directory = tempdir().unwrap();
+        let database = Database::initialize(directory.path().join("reference.db")).unwrap();
+        let (metadata, results) = crate::foundations::tests::synthetic_battle();
+        let mut roster =
+            crate::foundations::extract_battle_roster(&metadata, &results, &|_| None).unwrap();
+        for row in &mut roster.rows {
+            row.vehicle_tier = Some(8);
+            row.vehicle_class = Some(VehicleClass::HeavyTank);
+        }
+        let extras = crate::foundations::ImportExtras {
+            roster: Some(roster),
+            ..Default::default()
+        };
+        let insert = |id: &str, quality: DataQuality, key: &str| {
+            let mut battle = full_replay_battle(id);
+            battle.data_quality = quality;
+            let file = ReplayFileState {
+                source_path_key: key.into(),
+                file_size: 100,
+                file_mtime_ms: 1,
+                content_fingerprint: key.into(),
+                block_count: 2,
+            };
+            database
+                .upsert_imported(&mut battle, &file, true, None, &extras)
+                .unwrap();
+        };
+        insert("reference-counted", DataQuality::Full, "a");
+        insert("reference-partial", DataQuality::Partial, "b");
+        let battles = database.reference_rows().unwrap();
+        assert_eq!(battles.len(), 1);
+        assert_eq!(battles[0].len(), 30);
+        assert_eq!(battles[0].iter().filter(|row| row.is_own_player).count(), 1);
+        assert!(
+            battles[0]
+                .iter()
+                .all(|row| row.tier == Some(8) && row.class == Some(VehicleClass::HeavyTank))
+        );
+        assert_eq!(battles[0].iter().filter(|row| row.own_side).count(), 15);
+    }
+
+    /// Spec 32 §2: all cells in under 200 ms at 60 thousand roster rows (2 000 battles of 30
+    /// synthetic rows). A measurement, run with `--release --ignored`; prints the time only.
+    #[test]
+    #[ignore]
+    fn reference_tables_of_sixty_thousand_rows_take_under_200_ms() {
+        let directory = tempdir().unwrap();
+        let database = Database::initialize(directory.path().join("reference-60k.db")).unwrap();
+        let (metadata, results) = crate::foundations::tests::synthetic_battle();
+        let template =
+            crate::foundations::extract_battle_roster(&metadata, &results, &|_| None).unwrap();
+        let classes = [
+            VehicleClass::LightTank,
+            VehicleClass::MediumTank,
+            VehicleClass::HeavyTank,
+            VehicleClass::TankDestroyer,
+            VehicleClass::Spg,
+        ];
+        for index in 0..2_000_usize {
+            let mut roster = template.clone();
+            for (slot, row) in roster.rows.iter_mut().enumerate() {
+                row.vehicle_tier = Some(6 + ((index + slot) % 6) as u8);
+                row.vehicle_class = Some(classes[(index * 7 + slot) % classes.len()]);
+                row.damage_dealt = Some(((index * 31 + slot * 97) % 4_000) as i64);
+            }
+            let extras = crate::foundations::ImportExtras {
+                roster: Some(roster),
+                ..Default::default()
+            };
+            let id = format!("reference-{index:04}");
+            let mut battle = full_replay_battle(&id);
+            // Distinct times: the same vehicle at the same moment would be one battle's copies.
+            battle.battle_time = 1_800_000_000_000 + index as i64 * 60_000;
+            let file = ReplayFileState {
+                source_path_key: id.clone(),
+                file_size: 100,
+                file_mtime_ms: 1,
+                content_fingerprint: id.clone(),
+                block_count: 2,
+            };
+            database
+                .upsert_imported(&mut battle, &file, true, None, &extras)
+                .unwrap();
+        }
+        let started = std::time::Instant::now();
+        let battles = database.reference_rows().unwrap();
+        let tables = crate::reference::reference_tables(battles.iter().map(Vec::as_slice));
+        let elapsed = started.elapsed();
+        assert_eq!(battles.iter().map(Vec::len).sum::<usize>(), 60_000);
+        assert_eq!(tables.battles, 2_000);
+        println!(
+            "reference tables of 60 000 rows: {} ms",
+            elapsed.as_millis()
+        );
+        assert!(elapsed.as_millis() < 200, "{} ms", elapsed.as_millis());
     }
 }

@@ -31,7 +31,12 @@ function goalValue(goal: WeeklyGoal, value: number | null, language: Language): 
   return goal.kind === "survival" ? formatPercent(value, language) : formatNumber(value, language);
 }
 
-function goalTitle(goal: WeeklyGoal, tank: string, language: Language, tr: Translate): string {
+export function goalTitle(
+  goal: WeeklyGoal,
+  tank: string,
+  language: Language,
+  tr: Translate,
+): string {
   const target = goalValue(goal, goal.target, language);
   if (goal.kind === "survival") return tr("weeklyGoalSurvival", { target });
   if (goal.kind === "xp") return tr("weeklyGoalXp", { target });

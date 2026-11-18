@@ -217,18 +217,28 @@
   --hero-shade-right: rgba(10, 16, 28, 0.45);
   --accent-glow-strong: rgba(240, 138, 60, 0.45);
 
-  /* Motion (E5-flare §7a): only transform and opacity move. */
+  /* Motion (E5-flare §7a): only transform and opacity move. Spec 31 §2: the only source of
+     times and curves; base.css and components use these names, never a literal. */
+  --motion-instant: 0ms;
   --motion-fast: 100ms;
   --motion-hover: 150ms;
   --motion-base: 200ms;
   --motion-enter: 250ms;
   --motion-count: 600ms;
   --motion-row: 320ms;
+  --motion-stagger: 25ms;
+  --motion-skeleton-delay: 300ms;
+  --motion-progress: 300ms;
+  --motion-delta: 1400ms;
+  --motion-pulse: 1600ms;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-in: cubic-bezier(0.5, 0, 0.75, 0.2);
+  --ease-in-out: ease-in-out;
+  --ease-linear: linear;
 
   --radius-card: 20px;
   --radius-row: 14px;
+  --radius-tile: 16px;
   --radius-small: 8px;
   --space-1: 4px;
   --space-2: 8px;

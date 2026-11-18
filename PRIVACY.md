@@ -25,11 +25,12 @@ Windows Credential Manager stores only the approved WoT path. Earlier versions c
 
 ## Optional network requests
 
-The only network feature is off by default:
+Both network features need the player's yes; without it no request is sent:
 
-- XVM: after separate opt-in, a static expected-values file is requested only from `https://static.modxvm.com/wn8-data-exp/json/wg/wn8exp.json`, at most once per day. No request is sent while XVM is disabled. No player or battle identifier is sent.
+- XVM: after separate opt-in, a static expected-values file is requested only from `https://static.modxvm.com/wn8-data-exp/json/wg/wn8exp.json`, at most once per day. No request is sent while XVM is disabled. No player or battle identifier is sent. Redirects are disabled and response sizes and timeouts are bounded.
+- Update check (since 1.0.0-rc.1): the app asks once — on the first start, or on the first start after updating from a beta — whether to check for updates at start; the answer can be changed in Settings → Privacy and data. With a yes, once per start it requests the update file `https://github.com/dataflorist02/afterbattle-beta/releases/latest/download/latest.json` (GitHub redirects the request to its download server). The request is a plain HTTP GET with the updater's generic user agent (`tauri-plugin-updater/<version>`); no player, battle, installation or app identifier and no app data is sent. As with any connection, GitHub sees the computer's IP address and the time. The file contains only the newest version number, its notes, and the installer's signature and address. The new version is downloaded and installed only after the player clicks "Install and restart", and only if its signature matches the author's public key built into the app. With a no, the About section shows the address of the releases page instead.
 
-Redirects are disabled, response sizes and timeouts are bounded, and the WebView itself has no internet permission.
+The WebView itself has no internet permission; both requests are made by the backend.
 
 ## Export
 

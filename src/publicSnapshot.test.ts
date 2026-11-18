@@ -13,6 +13,10 @@ const exclusions = [
   ...(/\$Exclusions = @\(([\s\S]*?)\n\)/.exec(script)?.[1] ?? "").matchAll(/'([^']+)'/g),
 ].map((match) => match[1]);
 
+// Cold start of pwsh on the CI runner can take more than the default 5 s per test.
+const POWERSHELL_TEST_TIMEOUT = 30_000;
+const itPowerShell = (name: string, test: () => void) => it(name, test, POWERSHELL_TEST_TIMEOUT);
+
 describe("public snapshot script", () => {
   it("excludes the private folders and files as whole paths", () => {
     for (const path of [
@@ -41,6 +45,32 @@ describe("public snapshot script", () => {
     expect(/\$NameScanExempt = @\(([\s\S]*?)\)/.exec(script)?.[1]).toMatch(
       /^\s*'scripts\/make-public-snapshot\.ps1',\s*'src\/publicSnapshot\.test\.ts'\s*$/,
     );
+  });
+
+  it("knows the update public key as one exact gitleaks false positive, not a pattern", () => {
+    // Author's fixup after STOP 2: the minisign public key in tauri.conf.json is public by design.
+    const config = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8")) as {
+      plugins: { updater: { pubkey: string } };
+    };
+    const known = [
+      ...(/\$KnownGitleaks = @\(([\s\S]*?)\n\)/.exec(script)?.[1] ?? "").matchAll(
+        /Rule = '([^']+)'; File = '([^']+)'; Secret = '([^']+)'/g,
+      ),
+    ].map(([, rule, file, secret]) => ({ rule, file, secret }));
+    expect(known).toHaveLength(8);
+    expect(known.filter((entry) => entry.file === "src-tauri/tauri.conf.json")).toEqual([
+      {
+        rule: "generic-api-key",
+        file: "src-tauri/tauri.conf.json",
+        secret: config.plugins.updater.pubkey,
+      },
+    ]);
+    // Key rotated before 1.0.0-rc.1 (author, 2026-11-18): the entry names the new key only.
+    const pubkeyEntry = known.find((entry) => entry.file === "src-tauri/tauri.conf.json");
+    expect(atob(pubkeyEntry?.secret ?? "").split("\n")[0]).toBe(
+      "untrusted comment: minisign public key: 112017D205DB8B09",
+    );
+    for (const entry of known) expect(entry.secret, entry.file).not.toMatch(/[*?[\]]/);
   });
 
   it("sets the author only in the public repository", () => {
@@ -84,7 +114,7 @@ describe.skipIf(process.platform !== "win32")("excluded-name scan of folders", (
     return result.stdout.trim();
   }
 
-  it("lets the word research pass and stops on a path inside research/", () => {
+  itPowerShell("lets the word research pass and stops on a path inside research/", () => {
     expect(scan("Architecture, privacy, threat model, checklists, and research")).toBe(
       "NAME SCAN: clean",
     );
@@ -92,14 +122,33 @@ describe.skipIf(process.platform !== "win32")("excluded-name scan of folders", (
     expect(scan("see research/a1-reference/x")).toBe("NAME SCAN: hit (research/)");
   });
 
-  it("lets the word .claude pass and stops on a path inside .claude/", () => {
+  itPowerShell("lets the word .claude pass and stops on a path inside .claude/", () => {
     expect(scan("settings of .claude are local")).toBe("NAME SCAN: clean");
     expect(scan("see .claude/settings.json")).toBe("NAME SCAN: hit (.claude/)");
   });
 
-  it("keeps searching a folder of more segments as a whole name", () => {
+  itPowerShell("keeps searching a folder of more segments as a whole name", () => {
     expect(scan("see docs/research for notes")).toBe("NAME SCAN: hit (docs/research)");
     expect(scan("see src-tauri/tools")).toBe("NAME SCAN: hit (src-tauri/tools)");
+  });
+
+  // rc.1 snapshot fixup (author, 2026-11-18): the snapshot stopped on excluded names in a spec and
+  // a source comment; the same scan over the tracked files the snapshot keeps runs here first.
+  itPowerShell("finds no excluded name in the tracked files the snapshot keeps", () => {
+    const result = spawnSync(
+      "powershell",
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/make-public-snapshot.ps1",
+        "-NameScanTracked",
+      ],
+      { encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout.trim()).toBe("NAME SCAN: clean");
   });
 });
 
@@ -147,7 +196,7 @@ describe.skipIf(process.platform !== "win32")("commit author from GitHub (no net
 
   const user = JSON.stringify({ id: 1234567, login: "synthetic-user", name: "Synthetic Name" });
 
-  it("builds the noreply address and the name from the logged-in account", () => {
+  itPowerShell("builds the noreply address and the name from the logged-in account", () => {
     const result = resolve(fakeGh(0, 0, user));
     expect(result.ok).toBe(true);
     expect(result.out).toContain(
@@ -155,18 +204,18 @@ describe.skipIf(process.platform !== "win32")("commit author from GitHub (no net
     );
   });
 
-  it("uses the login when the account has no name", () => {
+  itPowerShell("uses the login when the account has no name", () => {
     const result = resolve(fakeGh(0, 0, JSON.stringify({ id: 7, login: "nameless", name: null })));
     expect(result.out).toContain("AUTHOR: nameless <7+nameless@users.noreply.github.com>");
   });
 
-  it("refuses when gh is not logged in", () => {
+  itPowerShell("refuses when gh is not logged in", () => {
     const result = resolve(fakeGh(1, 0, user));
     expect(result.ok).toBe(false);
     expect(result.out).toContain("not logged in");
   });
 
-  it("refuses when reading the account fails or returns nothing usable", () => {
+  itPowerShell("refuses when reading the account fails or returns nothing usable", () => {
     for (const [code, output] of [
       [1, user],
       [0, ""],
@@ -179,7 +228,7 @@ describe.skipIf(process.platform !== "win32")("commit author from GitHub (no net
     }
   });
 
-  it("checks -AuthorEmail like the read address: only GitHub noreply addresses", () => {
+  itPowerShell("checks -AuthorEmail like the read address: only GitHub noreply addresses", () => {
     const gh = fakeGh(0, 0, user);
     const good = resolve(gh, ["-AuthorEmail", "99+other@users.noreply.github.com"]);
     expect(good.out).toContain("AUTHOR: Synthetic Name <99+other@users.noreply.github.com>");

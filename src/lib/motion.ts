@@ -51,6 +51,8 @@ export const COUNT_MS = 600;
 export const DELTA_SHOW_MS = 1_000;
 /** … then the color fades out this long (opacity only). */
 export const DELTA_FADE_MS = 400;
+/** Spec 31 §4: "Zapisano." after a setting is saved stays this long, then fades out. */
+export const SAVED_SHOW_MS = 2_000;
 
 export type Direction = "up" | "down";
 

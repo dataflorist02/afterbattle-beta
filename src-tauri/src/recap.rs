@@ -1720,4 +1720,31 @@ mod tests {
         };
         assert_eq!(week_seed, seed("1800000000000"));
     }
+
+    /// Spec 31 §6 mutations (author, 2026-11-17): a week with only failed or only abandoned
+    /// challenges still says them; the condition adds the three counts (survivors 742:33,
+    /// 742:53 of `week_recap`).
+    #[test]
+    fn a_week_with_only_failed_or_only_abandoned_challenges_says_them() {
+        for (completed, failed, abandoned) in [(1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 2, 3)] {
+            let mut week = report(30);
+            week.challenges = crate::weekly::WeekChallenges {
+                completed,
+                failed,
+                abandoned,
+            };
+            let said = week_facts(&week)
+                .into_iter()
+                .find_map(|fact| match fact.fact {
+                    WeekFactValue::Challenges {
+                        completed,
+                        failed,
+                        abandoned,
+                        ..
+                    } => Some((completed, failed, abandoned)),
+                    _ => None,
+                });
+            assert_eq!(said, Some((completed, failed, abandoned)));
+        }
+    }
 }

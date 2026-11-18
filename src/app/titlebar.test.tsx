@@ -59,7 +59,7 @@ describe("title bar (E5-maps-hd §6)", () => {
     renderBar();
     const bar = screen.getByRole("banner");
     expect(bar).toHaveAttribute("data-tauri-drag-region");
-    expect(bar).toHaveTextContent("Afterbattle beta 4");
+    expect(bar).toHaveTextContent("Afterbattle 1.0 RC");
     const buttons = screen.getAllByRole("button");
     expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
       "Minimalizuj",

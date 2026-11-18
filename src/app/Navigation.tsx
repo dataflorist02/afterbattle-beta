@@ -3,7 +3,7 @@ import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { BrandMark } from "../components/BrandMark";
 
-export type Page = "session" | "tanks" | "goals" | "history" | "maps" | "settings";
+export type Page = "overview" | "session" | "tanks" | "goals" | "history" | "maps" | "settings";
 
 const svg = (children: ReactNode) => (
   <svg
@@ -22,6 +22,14 @@ const svg = (children: ReactNode) => (
 );
 
 const icons: Record<Page, ReactNode> = {
+  overview: svg(
+    <>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </>,
+  ),
   session: svg(<polyline points="3 12 7 12 10 5 14 19 17 12 21 12" />),
   tanks: svg(
     <>
@@ -61,6 +69,7 @@ const icons: Record<Page, ReactNode> = {
 };
 
 const labels: Record<Page, UiKey> = {
+  overview: "navOverview",
   session: "navSession",
   tanks: "navTanks",
   goals: "navGoals",
@@ -96,7 +105,7 @@ export function Navigation({
       <div className="rail-logo" aria-hidden="true">
         <BrandMark variant="icon" size={40} />
       </div>
-      {(["session", "tanks", "goals", "history"] as const).map(item)}
+      {(["overview", "session", "tanks", "goals", "history"] as const).map(item)}
       {!publicBuild && (
         <button
           type="button"

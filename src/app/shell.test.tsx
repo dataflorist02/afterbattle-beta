@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   gameImage: vi.fn(),
   attemptsConversionSession: vi.fn(() => new Promise(() => {})),
   attemptsConversionRecent: vi.fn(() => new Promise(() => {})),
+  // Spec 32 §5: no consent, so no update check in these tests.
+  updateConsent: vi.fn(() => Promise.resolve("off")),
 }));
 vi.mock("../api", () => ({
   api: {

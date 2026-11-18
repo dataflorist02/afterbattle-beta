@@ -30,29 +30,21 @@ Only the newest published beta will receive security fixes. The project is curre
 - Pseudonymized exports omit nickname, account ID, fingerprints/arena IDs, exact timestamps, paths, UUIDs, and credentials.
 - Deletion stops the tracker, removes every Credential Manager entry, transactionally deletes history while preserving language/timeout preferences, truncates WAL, and vacuums the database. In recovery mode (real database cannot be opened) deletion is refused and no battles are imported.
 - XVM downloads happen only after opt-in; no request is sent while XVM is disabled.
+- The update check (since 1.0.0-rc.1) runs only after the player's yes; updates install only after a click and only with a valid signature from the author's key.
 
 ## Release requirements
 
-The public beta 1.0.0-beta.4 (author decisions 2026-11-14, 2026-11-15 and 2026-11-16; a GitHub pre-release) requires:
+The release candidate 1.0.0-rc.1 (spec 32 §7; a GitHub pre-release) and 1.0.0 (the same commit after two weeks without a serious bug) require:
 
 1. Passing Rust and TypeScript tests, lint, formatting and Clippy, and the read-only golden test on the author's replays.
 2. `cargo audit` and `pnpm audit --prod` with no high-severity findings.
 3. The installer built by the author with `scripts/release.ps1` from a clean tree of the release commit, with `SHA256SUMS.txt`; users check it with `Get-FileHash` (README).
 4. The author's manual test of the release candidate (the author's internal manual test list).
 5. A public snapshot reviewed for secrets, real player data and game files (`docs/PUBLIC_RELEASE_REVIEW.md` in the public repository).
-
-The beta is unsigned and has no updater; users see a SmartScreen warning and verify the checksum. A stable public release (1.0.0) requires:
-
-1. Passing Rust, TypeScript, UI, and migration tests.
-2. `cargo audit` and `pnpm audit` with no unaccepted high-severity findings.
-3. A generated software bill of materials and SHA-256 checksums.
-4. A protected release workflow with human approval.
-5. A Tauri updater signature whose private key is kept outside the repository.
-6. A Windows Authenticode signature from a protected code-signing identity.
+6. Tauri updater signatures: `scripts/release.ps1` signs the update artifacts and writes `latest.json` with the author's private key from `TAURI_SIGNING_PRIVATE_KEY` (and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`); the key stays outside the repository and outside the public CI, and the script refuses to build without it. The public key is in `tauri.conf.json`.
 7. Review of all changes to IPC commands, network destinations, credentials, persistence, exports, and the updater.
-8. Verification that source maps and secrets are absent from the release artifact.
 
-Updater signing and Authenticode signing are independent controls; both are required for the stable 1.0.0 release (the author decided to ship the 1.0 beta without them).
+Authenticode is outside 1.0.0 (author decision 2026-11-17): the installer is unsigned, users see a SmartScreen warning and verify `SHA256SUMS.txt`; the release notes say so in one sentence. Authenticode returns only if testers drop off at the SmartScreen warning. Updater signing and Authenticode are independent controls: the first protects automatic updates, the second the first manual install.
 
 ## Dependency policy
 

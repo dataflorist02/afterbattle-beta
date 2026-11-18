@@ -14,11 +14,11 @@ function cargoVersion(): string {
 
 describe("release identity", () => {
   it("takes the version from Cargo.toml everywhere and keeps product metadata aligned", () => {
-    // Spec 29 §8 (author decision 2026-11-15); spec 30 run 2026-11-16: "Afterbattle beta 4".
-    expect(cargoVersion()).toBe("1.0.0-beta.4");
+    // Spec 32 §7 (author decision 2026-11-17): 1.0.0-rc.1, "Afterbattle 1.0 RC".
+    expect(cargoVersion()).toBe("1.0.0-rc.1");
     expect(APP_NAME).toBe("Afterbattle");
     expect(RELEASE_CHANNEL).toBe("Public beta");
-    expect(APP_DISPLAY_NAME).toBe("Afterbattle beta 4");
+    expect(APP_DISPLAY_NAME).toBe("Afterbattle 1.0 RC");
     expect(tauriConfig.app.windows[0].title).toBe(APP_DISPLAY_NAME);
     expect(APP_VERSION).toBe(cargoVersion());
     expect(packageJson.version).toBe(cargoVersion());
@@ -47,6 +47,45 @@ describe("release identity", () => {
   });
 });
 
+describe("automatic updates (spec 32 §5.2)", () => {
+  it("has the author's minisign public key, never a private one", () => {
+    // The key is base64 of two lines: the minisign comment with the key id, then base64 of
+    // "Ed" + 8 bytes of the key id (little-endian) + 32 bytes of the Ed25519 public key.
+    const pubkey = tauriConfig.plugins.updater.pubkey;
+    expect(pubkey).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    const text = atob(pubkey);
+    const lines = text.split("\n");
+    expect(lines.at(-1)).toBe("");
+    expect(lines).toHaveLength(3);
+    const id = /^untrusted comment: minisign public key: ([0-9A-F]{16})$/.exec(lines[0])?.[1];
+    expect(id).toBeDefined();
+    expect(lines[1]).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    const key = Uint8Array.from(atob(lines[1]), (char) => char.charCodeAt(0));
+    expect(key).toHaveLength(42);
+    expect(String.fromCharCode(key[0], key[1])).toBe("Ed");
+    const keyId = [...key.slice(2, 10)]
+      .reverse()
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+    expect(keyId).toBe(id);
+    expect(text).not.toMatch(/secret|private|encrypted/iu);
+  });
+
+  it("asks only the spec endpoint; update artifacts come from release.ps1 with the key", () => {
+    expect(tauriConfig.plugins.updater.endpoints).toEqual([
+      "https://github.com/dataflorist02/afterbattle-beta/releases/latest/download/latest.json",
+    ]);
+    // The public CI builds without the key, so the config keeps them off (author decision
+    // 2026-11-18); release.ps1 turns them on with --config only when the key is set.
+    expect(tauriConfig.bundle.createUpdaterArtifacts).toBe(false);
+    const script = readFileSync("scripts/release.ps1", "utf8");
+    expect(script).toContain("TAURI_SIGNING_PRIVATE_KEY");
+    expect(script).toContain('"createUpdaterArtifacts":true');
+    expect(script).toContain("latest.json");
+  });
+});
+
 describe("display name (title bar and window title)", () => {
   it("names a pre-release by its channel and number, a final version by the version", () => {
     // Spec 29 §8: "Afterbattle beta N" with N the pre-release number; final: "Afterbattle 1.0.0".
@@ -55,7 +94,11 @@ describe("display name (title bar and window title)", () => {
     expect(displayName("1.0.0-beta.2")).toBe("Afterbattle beta 2");
     expect(displayName("1.0.0-beta.1")).toBe("Afterbattle beta 1");
     expect(displayName("1.2.3-beta.14")).toBe("Afterbattle beta 14");
-    expect(displayName("1.0.0-rc.2")).toBe("Afterbattle rc 2");
+    // Spec 32 §7: a release candidate by its version line, "Afterbattle 1.0 RC" for rc.1;
+    // the fixes after it count on ("Afterbattle 1.0 RC 2").
+    expect(displayName("1.0.0-rc.1")).toBe("Afterbattle 1.0 RC");
+    expect(displayName("1.0.0-rc.2")).toBe("Afterbattle 1.0 RC 2");
+    expect(displayName("1.1.0-rc")).toBe("Afterbattle 1.1 RC");
     expect(displayName("1.0.0-beta")).toBe("Afterbattle beta");
     expect(displayName("1.0.0")).toBe("Afterbattle 1.0.0");
     expect(displayName("2.10.3")).toBe("Afterbattle 2.10.3");

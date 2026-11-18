@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>RC-Czolg — makieta 1.0 RC (statyczna)</title>
+<!-- Makieta z płótna "Afterbattle 2.0 — redesign", rząd "1.0 RC", zaakceptowana 2026-11-17.
+     Dane syntetyczne; mapy i ikony czołgów to zamienniki (D19). Wzorzec układu, nie kod do skopiowania. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.num{font-family:'Big Shoulders',Inter,sans-serif;font-weight:300}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#9AA6B8}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#9AA6B8;text-decoration:none}
+.muted{color:#9AA6B8}.soft{color:#C9D1DC}
+.h2{margin:0;font-size:18px;font-weight:600}
+.trow{font:inherit;width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid transparent;background:transparent;color:#EEF1F6;font-size:15px;min-height:44px}
+.row{display:grid;grid-template-columns:210px 1fr 110px;gap:18px;align-items:center}
+.bar{position:relative;height:34px}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 1000px; display: flex; background: radial-gradient(900px 520px at 20% -10%, rgba(70,104,210,0.16), transparent 60%), #0A101C; overflow: hidden;">
+  <nav aria-label="Główna nawigacja" style="flex: 0 0 96px; padding: 26px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <svg aria-hidden="true" width="40" height="40" viewBox="0 0 64 64" style="margin-bottom: 12px;"><rect width="64" height="64" rx="15" fill="#16223A"></rect><g transform="translate(5.12 5.4) scale(0.84)"><polygon points="32,9 53,55 43.5,55 32,29 20.5,55 11,55" fill="none" stroke="#C9D0D9" stroke-width="4.4"></polygon><polyline points="24,47 32,40.5 40,47" fill="none" stroke="#F08A3C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline></g></svg>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg></span>Przegląd</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <a class="rail" href="#" aria-current="page" style="color: #EEF1F6;"><span class="ico" style="background: rgba(240,138,60,0.16); border-color: rgba(240,138,60,0.5); color: #F7B27A;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle></svg></span>Cele</a>
+    <a class="rail" href="#" style="margin-top: auto;"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg></span>Ustawienia</a>
+  </nav>
+  <aside aria-label="Lista czołgów" style="flex: 0 0 300px; padding: 36px 16px 36px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <h1 style="margin: 0 0 12px 14px; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 40px;">Czołgi</h1>
+    <button type="button" class="trow" aria-pressed="true" style="background: rgba(240,138,60,0.12); border-color: rgba(240,138,60,0.4);"><span style="display: flex; align-items: center; gap: 10px;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Kolos IV</span></span><span class="muted" style="font-size: 13px;">X · 64</span></button>
+    <button type="button" class="trow"><span style="display: flex; align-items: center; gap: 10px;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Bravo</span></span><span class="muted" style="font-size: 13px;">X · 58</span></button>
+    <button type="button" class="trow"><span style="display: flex; align-items: center; gap: 10px;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Synth 44 M</span></span><span class="muted" style="font-size: 13px;">IX · 51</span></button>
+    <button type="button" class="trow"><span style="display: flex; align-items: center; gap: 10px;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Alpha</span></span><span class="muted" style="font-size: 13px;">XI · 41</span></button>
+    <button type="button" class="trow"><span style="display: flex; align-items: center; gap: 10px;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Kestrel</span></span><span class="muted" style="font-size: 13px;">VI · 12</span></button>
+  </aside>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 36px 48px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+    <header style="position: relative; display: flex; align-items: center; gap: 24px; padding: 22px 26px; border-radius: 20px; overflow: hidden; background: linear-gradient(90deg, rgba(14,20,32,0.95) 0%, rgba(14,20,32,0.6) 60%, rgba(14,20,32,0.3) 100%), linear-gradient(125deg, #2D4A5E, #7A8F9A);">
+      <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="132" height="60" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <p class="soft" style="margin: 0; font-size: 14px;">Czołg ciężki X · 64 bitwy</p>
+        <h2 style="margin: 0; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 48px; line-height: 1.02;">Kolos IV</h2>
+      </div>
+      <span role="img" aria-label="Tło: grafika mapy, na której ten czołg grał najczęściej, z plików gry, tu zamiennik" style="position: absolute; right: 22px; bottom: 12px; font-size: 11px; color: #C9D1DC;">tło: najczęstsza mapa (z plików gry)</span>
+    </header>
+    <div style="display: flex; gap: 44px; align-items: flex-end;">
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 52px; line-height: 1; color: #FFF4EA;">3&nbsp;620</span><span class="soft" style="font-size: 14px;">mediana obrażeń</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 38px; line-height: 1;">55%</span><span class="soft" style="font-size: 14px;">wygranych</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 38px; line-height: 1;">31%</span><span class="soft" style="font-size: 14px;">przetrwanie</span></div>
+    </div>
+
+    <section class="card" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 14px;" aria-labelledby="h-a1">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
+        <h3 id="h-a1" class="h2">Na tle graczy z Twoich bitew: ciężkie X</h3>
+        <p class="muted" style="margin: 0; font-size: 13px;">6 507 wyników innych graczy · bez Ciebie i plutonu · liczone na tym komputerze</p>
+      </div>
+      <div style="display: flex; gap: 22px; font-size: 12px;" class="muted" aria-hidden="true">
+        <span><span style="display: inline-block; width: 22px; height: 8px; border-radius: 4px; background: rgba(139,151,171,0.35); vertical-align: 1px;"></span> środkowa połowa graczy</span>
+        <span><span style="display: inline-block; width: 2px; height: 12px; background: #C9D1DC; vertical-align: -1px;"></span> mediana graczy</span>
+        <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #F08A3C;"></span> Twoja mediana ze wszystkich ciężkich X (357 bitew)</span>
+      </div>
+      <div class="row">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px;">Obrażenia</span><span class="muted" style="font-size: 12px;">Ty 2 904 · gracze 1 684</span></div>
+        <div class="bar" role="img" aria-label="Obrażenia: Twoja mediana 2904, mediana graczy 1684, 78. percentyl">
+          <div style="position: absolute; top: 14px; left: 0; right: 0; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06);"></div>
+          <div style="position: absolute; top: 12px; left: 20%; width: 43%; height: 10px; border-radius: 5px; background: rgba(139,151,171,0.35);"></div>
+          <div style="position: absolute; top: 6px; left: 39%; width: 2px; height: 22px; background: #C9D1DC;"></div>
+          <div style="position: absolute; top: 10px; left: calc(78% - 7px); width: 14px; height: 14px; border-radius: 50%; background: #F08A3C; box-shadow: 0 0 0 4px rgba(240,138,60,0.2);"></div>
+        </div>
+        <div style="text-align: right;"><span class="num" style="font-size: 28px;">78.</span><span class="muted" style="font-size: 12px;"> percentyl</span></div>
+      </div>
+      <div class="row">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px;">Zablokowane</span><span class="muted" style="font-size: 12px;">Ty 1 200 · gracze 860</span></div>
+        <div class="bar" role="img" aria-label="Zablokowane: Twoja mediana 1200, mediana graczy 860, 60. percentyl">
+          <div style="position: absolute; top: 14px; left: 0; right: 0; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06);"></div>
+          <div style="position: absolute; top: 12px; left: 13%; width: 42%; height: 10px; border-radius: 5px; background: rgba(139,151,171,0.35);"></div>
+          <div style="position: absolute; top: 6px; left: 28%; width: 2px; height: 22px; background: #C9D1DC;"></div>
+          <div style="position: absolute; top: 10px; left: calc(60% - 7px); width: 14px; height: 14px; border-radius: 50%; background: #F08A3C; box-shadow: 0 0 0 4px rgba(240,138,60,0.2);"></div>
+        </div>
+        <div style="text-align: right;"><span class="num" style="font-size: 28px;">60.</span><span class="muted" style="font-size: 12px;"> percentyl</span></div>
+      </div>
+      <div class="row">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px;">Asysta (wykrycie, gąsienice)</span><span class="muted" style="font-size: 12px;">Ty 294 · gracze 192</span></div>
+        <div class="bar" role="img" aria-label="Asysta: Twoja mediana 294, mediana graczy 192, 56. percentyl">
+          <div style="position: absolute; top: 14px; left: 0; right: 0; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06);"></div>
+          <div style="position: absolute; top: 12px; left: 0; width: 44%; height: 10px; border-radius: 5px; background: rgba(139,151,171,0.35);"></div>
+          <div style="position: absolute; top: 6px; left: 14%; width: 2px; height: 22px; background: #C9D1DC;"></div>
+          <div style="position: absolute; top: 10px; left: calc(56% - 7px); width: 14px; height: 14px; border-radius: 50%; background: #F08A3C; box-shadow: 0 0 0 4px rgba(240,138,60,0.2);"></div>
+        </div>
+        <div style="text-align: right;"><span class="num" style="font-size: 28px;">56.</span><span class="muted" style="font-size: 12px;"> percentyl</span></div>
+      </div>
+      <div class="row">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px;">Czas życia</span><span class="muted" style="font-size: 12px;">Ty 269 s · gracze 277 s</span></div>
+        <div class="bar" role="img" aria-label="Czas życia: Twoja mediana 269 sekund, mediana graczy 277 sekund, 47. percentyl">
+          <div style="position: absolute; top: 14px; left: 0; right: 0; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06);"></div>
+          <div style="position: absolute; top: 12px; left: 40%; width: 30%; height: 10px; border-radius: 5px; background: rgba(139,151,171,0.35);"></div>
+          <div style="position: absolute; top: 6px; left: 55%; width: 2px; height: 22px; background: #C9D1DC;"></div>
+          <div style="position: absolute; top: 10px; left: calc(47% - 7px); width: 14px; height: 14px; border-radius: 50%; background: #F08A3C; box-shadow: 0 0 0 4px rgba(240,138,60,0.2);"></div>
+        </div>
+        <div style="text-align: right;"><span class="num" style="font-size: 28px;">47.</span><span class="muted" style="font-size: 12px;"> percentyl</span></div>
+      </div>
+      <div class="row">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px;">Celność</span><span class="muted" style="font-size: 12px;">tylko tło: przy kilku strzałach odsetek łatwo sięga 100%</span></div>
+        <div class="bar" role="img" aria-label="Celność graczy: środkowa połowa od 50 do 88 procent, mediana 71 procent">
+          <div style="position: absolute; top: 14px; left: 0; right: 0; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06);"></div>
+          <div style="position: absolute; top: 12px; left: 50%; width: 38%; height: 10px; border-radius: 5px; background: rgba(139,151,171,0.35);"></div>
+          <div style="position: absolute; top: 6px; left: 71%; width: 2px; height: 22px; background: #C9D1DC;"></div>
+        </div>
+        <div style="text-align: right;"><span class="muted" style="font-size: 13px;">gracze 71%</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

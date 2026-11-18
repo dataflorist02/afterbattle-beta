@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>RC-Przeglad — makieta 1.0 RC (statyczna)</title>
+<!-- Makieta z płótna "Afterbattle 2.0 — redesign", rząd "1.0 RC", zaakceptowana 2026-11-17.
+     Dane syntetyczne; mapy i ikony czołgów to zamienniki (D19). Wzorzec układu, nie kod do skopiowania. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.num{font-family:'Big Shoulders',Inter,sans-serif;font-weight:300}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#9AA6B8}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#9AA6B8;text-decoration:none}
+.muted{color:#9AA6B8}.soft{color:#C9D1DC}
+.h2{margin:0;font-size:18px;font-weight:600}
+.chip{display:inline-flex;align-items:center;font-size:11px;font-weight:600;color:#F7B27A;background:rgba(240,138,60,0.14);border:1px solid rgba(240,138,60,0.45);border-radius:6px;padding:0 6px;height:20px;margin-left:4px;vertical-align:2px}
+.link{font-size:14px;font-weight:500;text-decoration:none}
+.up{color:#F7B27A}.down{color:#8FA9D6}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 1000px; display: flex; background: radial-gradient(900px 520px at 20% -10%, rgba(70,104,210,0.16), transparent 60%), #0A101C; overflow: hidden;">
+  <nav aria-label="Główna nawigacja" style="flex: 0 0 96px; padding: 26px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <svg aria-hidden="true" width="40" height="40" viewBox="0 0 64 64" style="margin-bottom: 12px;"><rect width="64" height="64" rx="15" fill="#16223A"></rect><g transform="translate(5.12 5.4) scale(0.84)"><polygon points="32,9 53,55 43.5,55 32,29 20.5,55 11,55" fill="none" stroke="#C9D0D9" stroke-width="4.4"></polygon><polyline points="24,47 32,40.5 40,47" fill="none" stroke="#F08A3C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline></g></svg>
+    <a class="rail" href="#" aria-current="page" style="color: #EEF1F6;"><span class="ico" style="background: rgba(240,138,60,0.16); border-color: rgba(240,138,60,0.5); color: #F7B27A;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg></span>Przegląd</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle></svg></span>Cele</a>
+    <a class="rail" href="#" style="margin-top: auto;"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg></span>Ustawienia</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 36px 52px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+    <header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <p class="muted" style="margin: 0; font-size: 14px;">2 013 bitew · ostatnia wczoraj, 22:40</p>
+        <h1 style="margin: 0; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 52px; line-height: 1.02;">Przegląd</h1>
+      </div>
+    </header>
+
+    <section class="card" style="position: relative; overflow: hidden; padding: 24px 30px; display: grid; grid-template-columns: 1fr auto; gap: 18px 40px; align-items: center; background: linear-gradient(90deg, rgba(14,20,32,0.97) 0%, rgba(14,20,32,0.8) 50%, rgba(14,20,32,0.25) 100%), radial-gradient(420px 200px at 82% 40%, rgba(120,170,200,0.3), transparent 70%), linear-gradient(125deg, #2E4A3A 0%, #4F6A55 45%, #8A8A62 100%);" aria-labelledby="h-last">
+      <span role="img" aria-label="Tło: grafika mapy najlepszej bitwy z plików gry, tu zamiennik" style="position: absolute; right: 24px; bottom: 14px; font-size: 11px; color: #C9D1DC;">tło: mapa najlepszej bitwy (z plików gry)</span>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <h2 id="h-last" class="h2">Ostatnia sesja</h2>
+        <span class="muted" style="font-size: 13px;">wczoraj 20:15–22:40 · 12 bitew</span>
+      </div>
+      <a href="#" class="link">Otwórz sesję</a>
+      <div style="grid-column: 1 / -1; display: flex; gap: 48px; align-items: flex-end;">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 56px; line-height: 1; color: #FFF4EA;">3&nbsp;414</span><span class="soft" style="font-size: 14px;">średnie obrażenia</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 40px; line-height: 1;">7 z 12</span><span class="soft" style="font-size: 14px;">wygranych</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 40px; line-height: 1;">2&nbsp;311</span><span class="soft" style="font-size: 14px;">WN8 sesji</span></div>
+        <p class="soft" style="margin: 0 0 4px; font-size: 15px; line-height: 1.5; max-width: 520px;">Średnio 3 414 obrażeń, o 13% więcej niż zwykle na tych czołgach (3 021).<span class="chip">F1</span></p>
+      </div>
+    </section>
+
+    <div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px;">
+      <section class="card" style="padding: 22px 26px; display: flex; flex-direction: column; gap: 14px;" aria-labelledby="h-trend">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <h2 id="h-trend" class="h2">Trend: ostatnie 100 bitew</h2>
+          <a href="#" class="link">Historia</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span class="muted" style="font-size: 13px;">Średnie obrażenia</span>
+            <span><span class="num" style="font-size: 34px;">2&nbsp;980</span> <span class="up" style="font-size: 13px;">+6% wobec 100 wcześniejszych</span></span>
+            <svg role="img" aria-label="Obrażenia w ostatnich 100 bitwach, lekki wzrost" width="100%" height="44" viewBox="0 0 240 44" preserveAspectRatio="none"><polyline points="0,34 24,30 48,32 72,26 96,28 120,22 144,24 168,18 192,20 216,14 240,12" fill="none" stroke="#F08A3C" stroke-width="2"></polyline></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span class="muted" style="font-size: 13px;">WN8 (XVM)</span>
+            <span><span class="num" style="font-size: 34px;">2&nbsp;104</span> <span class="up" style="font-size: 13px;">+3%</span></span>
+            <svg role="img" aria-label="WN8 w ostatnich 100 bitwach, stabilnie z lekkim wzrostem" width="100%" height="44" viewBox="0 0 240 44" preserveAspectRatio="none"><polyline points="0,28 24,26 48,30 72,27 96,25 120,26 144,23 168,24 192,22 216,22 240,20" fill="none" stroke="#C9D1DC" stroke-width="2"></polyline></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span class="muted" style="font-size: 13px;">Wygrane (kontekst)</span>
+            <span><span class="num" style="font-size: 34px;">53%</span> <span class="muted" style="font-size: 13px;">bez zmian</span></span>
+            <svg role="img" aria-label="Odsetek wygranych w ostatnich 100 bitwach, bez wyraźnej zmiany" width="100%" height="44" viewBox="0 0 240 44" preserveAspectRatio="none"><polyline points="0,22 24,24 48,20 72,23 96,22 120,25 144,21 168,22 192,23 216,21 240,22" fill="none" stroke="#8B97AB" stroke-width="2"></polyline></svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="padding: 22px 26px; display: flex; flex-direction: column; gap: 12px;" aria-labelledby="h-goals">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <h2 id="h-goals" class="h2">Cele tygodnia</h2>
+          <a href="#" class="link">Cele</a>
+        </div>
+        <span><span class="num" style="font-size: 40px; color: #FFF4EA;">2 z 3</span> <span class="soft" style="font-size: 14px;">celów spełnionych</span></span>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+          <div style="display: flex; flex-direction: column; gap: 4px;"><span class="soft">Asysta na czołgach lekkich</span><div style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08);"><div style="width: 100%; height: 100%; border-radius: 3px; background: #F08A3C;"></div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 4px;"><span class="soft">Przetrwanie do końca bitwy</span><div style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08);"><div style="width: 100%; height: 100%; border-radius: 3px; background: #F08A3C;"></div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 4px;"><span class="soft">Wyzwanie: 5 bitew na Kolos IV <span class="muted">· 3 z 5</span></span><div style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08);"><div style="width: 60%; height: 100%; border-radius: 3px; background: #8B97AB;"></div></div></div>
+        </div>
+      </section>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+      <section class="card" style="padding: 22px 26px; display: flex; flex-direction: column; gap: 12px;" aria-labelledby="h-tanks">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <h2 id="h-tanks" class="h2">Czołgi</h2>
+          <a href="#" class="link">Wszystkie czołgi</a>
+        </div>
+        <p class="muted" style="margin: 0; font-size: 13px;">Najwyższy percentyl mediany obrażeń czołgu na tle graczy z Twoich bitew w tej samej grupie tier × klasa, od 10 bitew</p>
+        <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px;">
+          <li style="display: grid; grid-template-columns: 48px 1fr 70px 110px; gap: 12px; align-items: center;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Kolos IV <span class="muted" style="font-size: 13px;">· ciężki X · 64 bitwy</span></span><span class="num" style="font-size: 24px; text-align: right;">88.</span><span class="muted" style="font-size: 13px;">w ciężkich X</span></li>
+          <li style="display: grid; grid-template-columns: 48px 1fr 70px 110px; gap: 12px; align-items: center;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Alpha <span class="muted" style="font-size: 13px;">· średni XI · 41 bitew</span></span><span class="num" style="font-size: 24px; text-align: right;">81.</span><span class="muted" style="font-size: 13px;">w średnich XI</span></li>
+          <li style="display: grid; grid-template-columns: 48px 1fr 70px 110px; gap: 12px; align-items: center;"><svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20"><rect x="2" y="12" width="40" height="6" rx="3" fill="#8B97AB"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#8B97AB"></rect><rect x="27" y="8" width="15" height="2" fill="#8B97AB"></rect></svg><span>Bravo <span class="muted" style="font-size: 13px;">· lekki X · 58 bitew</span></span><span class="num" style="font-size: 24px; text-align: right;">79.</span><span class="muted" style="font-size: 13px;">w lekkich X</span></li>
+        </ol>
+        <p class="muted" style="margin: 4px 0 0; font-size: 13px;">Najczęściej grane: Kolos IV (64), Bravo (58), Synth 44 M (51)</p>
+      </section>
+
+      <section class="card" style="padding: 22px 26px; display: flex; flex-direction: column; gap: 12px;" aria-labelledby="h-ref">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <h2 id="h-ref" class="h2">Na tle graczy z Twoich bitew</h2>
+          <a href="#" class="link">Porównanie w Czołgach</a>
+        </div>
+        <p class="muted" style="margin: 0; font-size: 13px;">Percentyl Twojej mediany obrażeń w grupie tier × klasa. 50 = środek graczy.</p>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+          <div style="padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">ciężkie X</span><span class="num" style="font-size: 30px;">78.</span></div>
+          <div style="padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">średnie XI</span><span class="num" style="font-size: 30px;">71.</span></div>
+          <div style="padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">lekkie X</span><span class="num" style="font-size: 30px;">83.</span></div>
+          <div style="padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">ciężkie XI</span><span class="num" style="font-size: 30px;">64.</span></div>
+          <div style="padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">niszczyciele X</span><span class="num" style="font-size: 30px;">58.</span></div>
+          <div style="padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">średnie IX</span><span class="num" style="font-size: 30px;">49.</span></div>
+          <div style="grid-column: span 2; padding: 12px 14px; border-radius: 14px; border: 1px dashed rgba(255,255,255,0.14); display: flex; flex-direction: column; gap: 2px;"><span class="muted" style="font-size: 12px;">lekkie VI</span><span class="soft" style="font-size: 13px; line-height: 1.4;">Tło od 200 wyników, masz 120. Ok. 3 bitwy do pełnego porównania.</span></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

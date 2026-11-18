@@ -14,6 +14,10 @@
 
 Pliki to format Design Component z płótna (HTML + `<helmet>` ze stylami + blok `<script type="text/x-dc">`). Nie renderują się samodzielnie poza płótnem (brak `support.js`). Czytaj je jako specyfikację: struktura DOM, inline style, klasy w `<helmet>`, kolejność treści, teksty po polsku.
 
+## Makiety 1.0 RC (`rc/`, zaakceptowane 2026-11-17)
+
+Statyczne kopie planszy „1.0 RC” z tego samego płótna: `rc/*.png` (podgląd) i `rc/*.html` (układ do odczytania): Przegląd, Czołg z porównaniem A-1, Sesja, rozwinięte podsumowanie, Ustawienia, pierwsze uruchomienie, okienko aktualizacji. Spis i rozstrzygnięcia po makietach w `rc/README.md`; gdzie makieta i spec 31/32 się różnią, wygrywa spec.
+
 ## Zasady, które makieta ustala
 
 - Nawigacja: pionowy pasek z okrągłymi ikonami i podpisami: Sesja, Czołgi, Cele, Historia, Mapy (wyszarzone w buildzie prywatnym, ukryte w publicznym), Ustawienia na dole (prywatność w środku).

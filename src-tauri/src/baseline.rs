@@ -711,6 +711,38 @@ mod tests {
         assert_eq!(last10.candidate_battles, 10);
     }
 
+    /// Spec 32 §1: the two survivors of 2026-11-15 in `wn8_window`. Only D4 battles with
+    /// expected values count towards the limit (a battle of a tank missing from the snapshot
+    /// does not), and the window stops once the limit is reached.
+    #[test]
+    fn the_wn8_window_counts_only_battles_with_expected_values_and_stops_at_the_limit() {
+        let expected = snapshot();
+        let with_wn8 = |id: &str, time: i64| battle(id, time, 1, 1_000);
+        let selected = vec![
+            with_wn8("a", 6),
+            battle("no-expected-values", 5, 999, 1_000),
+            with_wn8("b", 4),
+            with_wn8("c", 3),
+            with_wn8("d", 2),
+        ];
+        assert!(is_reference_battle(&selected[1]));
+        assert!(!is_wn8_battle(&selected[1], Some(&expected)));
+        let ids = |window: Vec<Battle>| {
+            window
+                .into_iter()
+                .map(|battle| battle.arena_id)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            ids(wn8_window(&selected, 2, Some(&expected))),
+            ["a", "no-expected-values", "b"]
+        );
+        assert_eq!(
+            ids(wn8_window(&selected, 0, Some(&expected))),
+            Vec::<String>::new()
+        );
+    }
+
     fn database_with_history(count: usize) -> (tempfile::TempDir, Database) {
         let temp = tempdir().unwrap();
         let database = Database::initialize(temp.path().join("baseline.sqlite3")).unwrap();

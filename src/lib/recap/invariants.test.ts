@@ -4,7 +4,7 @@
  * sense, no dropped fact, no judging word, every important fact said, 3–5 sentences of at most
  * 25 words. Each sentence variant is checked, not only the chosen one, in all three forms.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   NUMBERS,
   checkCitations,
@@ -227,6 +227,10 @@ function checkText(sentences: RecapSentence[], facts: SessionFact[]) {
   if (survival?.fact.key === "przetrwanie_odsetek" && survival.fact.survived === 0)
     expect(whole).not.toMatch(/(przeży\p{L}*|przetrwał) do końca \d/u);
 }
+
+// Checking every variant in all three forms took 5 645 ms once in a full parallel run (E11,
+// 2026-11-17), over the default 5 s. An explicit limit for this file only (author's decision).
+vi.setConfig({ testTimeout: 20_000 });
 
 describe("session summary invariants (spec 30 §7)", () => {
   it("holds for every variant of every sentence in all three forms", () => {

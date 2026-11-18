@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>RC-Ustawienia — makieta 1.0 RC (statyczna)</title>
+<!-- Makieta z płótna "Afterbattle 2.0 — redesign", rząd "1.0 RC", zaakceptowana 2026-11-17.
+     Dane syntetyczne; mapy i ikony czołgów to zamienniki (D19). Wzorzec układu, nie kod do skopiowania. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#9AA6B8}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#9AA6B8;text-decoration:none}
+.muted{color:#9AA6B8}.soft{color:#C9D1DC}
+.h2{margin:0;font-size:20px;font-weight:600}
+.opt{display:grid;grid-template-columns:1fr auto;gap:6px 32px;align-items:center;padding:16px 0}
+.opt + .opt{border-top:1px solid rgba(255,255,255,0.05)}
+.lbl{font-size:15px;font-weight:500}
+.desc{grid-column:1;font-size:13px;color:#9AA6B8;line-height:1.45;margin:0}
+.ctl{grid-column:2;grid-row:1 / span 2}
+.btn{font:inherit;font-size:14px;font-weight:500;color:#EEF1F6;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 20px;min-height:44px}
+.btn-danger{color:#FFB4A0;border-color:rgba(255,140,110,0.45);background:rgba(255,120,90,0.08)}
+.sel{font:inherit;font-size:14px;color:#EEF1F6;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:0 14px;min-height:44px}
+.seg{display:inline-flex;border:1px solid rgba(255,255,255,0.18);border-radius:999px;padding:3px;gap:2px}
+.seg button{font:inherit;font-size:14px;color:#C9D1DC;background:transparent;border:0;border-radius:999px;padding:0 16px;min-height:38px}
+.seg button[aria-pressed="true"]{background:rgba(240,138,60,0.18);color:#FFE2CB}
+.sw{appearance:none;-webkit-appearance:none;width:48px;height:28px;border-radius:999px;background:rgba(255,255,255,0.12);position:relative;margin:0;border:1px solid rgba(255,255,255,0.18)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#C9D1DC}
+.sw:checked{background:#F08A3C;border-color:#F08A3C}
+.sw:checked::after{left:23px;background:#0A101C}
+.gnav{display:flex;flex-direction:column;gap:4px}
+.gnav a{display:flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;color:#C9D1DC;text-decoration:none;font-size:15px}
+.gnav a[aria-current="true"]{background:rgba(255,255,255,0.06);color:#EEF1F6}
+.saved{font-size:12.5px;color:#F7B27A}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 1500px; display: flex; background: radial-gradient(900px 520px at 20% -10%, rgba(70,104,210,0.16), transparent 60%), #0A101C; overflow: hidden;">
+  <nav aria-label="Główna nawigacja" style="flex: 0 0 96px; padding: 26px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; border-right: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; height: 1000px;">
+    <svg aria-hidden="true" width="40" height="40" viewBox="0 0 64 64" style="margin-bottom: 12px;"><rect width="64" height="64" rx="15" fill="#16223A"></rect><g transform="translate(5.12 5.4) scale(0.84)"><polygon points="32,9 53,55 43.5,55 32,29 20.5,55 11,55" fill="none" stroke="#C9D0D9" stroke-width="4.4"></polygon><polyline points="24,47 32,40.5 40,47" fill="none" stroke="#F08A3C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline></g></svg>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg></span>Przegląd</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle></svg></span>Cele</a>
+    <a class="rail" href="#" aria-current="page" style="margin-top: auto; color: #EEF1F6;"><span class="ico" style="background: rgba(240,138,60,0.16); border-color: rgba(240,138,60,0.5); color: #F7B27A;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg></span>Ustawienia</a>
+  </nav>
+  <div style="flex: 1 1 auto; display: flex; gap: 40px; padding: 36px 52px 40px; box-sizing: border-box; min-width: 0;">
+    <aside style="flex: 0 0 220px; display: flex; flex-direction: column; gap: 18px;">
+      <h1 style="margin: 0 0 6px 14px; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 44px;">Ustawienia</h1>
+      <nav aria-label="Grupy ustawień" class="gnav">
+        <a href="#g-gra" aria-current="true">Gra</a>
+        <a href="#g-ty">Ty</a>
+        <a href="#g-dane">Dane</a>
+        <a href="#g-pryw">Prywatność i dane</a>
+        <a href="#g-app">O aplikacji</a>
+      </nav>
+    </aside>
+    <main style="flex: 1 1 auto; min-width: 0; max-width: 860px; display: flex; flex-direction: column; gap: 18px;">
+
+      <section id="g-gra" class="card" style="padding: 22px 28px 8px;" aria-labelledby="h-gra">
+        <h2 id="h-gra" class="h2">Gra</h2>
+        <div class="opt">
+          <span class="lbl">Folder gry</span>
+          <p class="desc">D:\Gry\WoT · znaleziony automatycznie. Aplikacja czyta tylko folder z nagraniami bitew.</p>
+          <div class="ctl"><button type="button" class="btn">Zmień folder</button></div>
+        </div>
+        <div class="opt">
+          <label class="lbl" for="sw-track">Śledzenie nowych bitew</label>
+          <p class="desc">Wyłącz, jeśli chcesz na chwilę zatrzymać dopisywanie bitew.</p>
+          <div class="ctl"><input id="sw-track" class="sw" type="checkbox" role="switch" checked></div>
+        </div>
+      </section>
+
+      <section id="g-ty" class="card" style="padding: 22px 28px 8px;" aria-labelledby="h-ty">
+        <h2 id="h-ty" class="h2">Ty</h2>
+        <div class="opt">
+          <label class="lbl" for="sel-lang">Język</label>
+          <p class="desc">Podsumowania są tylko po polsku.</p>
+          <div class="ctl"><select id="sel-lang" class="sel"><option>Polski</option><option>English</option></select></div>
+        </div>
+        <div class="opt">
+          <span class="lbl" id="lbl-addr">Jak się do Ciebie zwracać</span>
+          <p class="desc">Dotyczy podsumowań i tekstów w 2. osobie. <span class="saved">Zapisano</span></p>
+          <div class="ctl"><div class="seg" role="group" aria-labelledby="lbl-addr"><button type="button" aria-pressed="true">On</button><button type="button" aria-pressed="false">Ona</button><button type="button" aria-pressed="false">Bez formy</button></div></div>
+        </div>
+        <div class="opt">
+          <label class="lbl" for="sel-idle">Koniec sesji po przerwie</label>
+          <p class="desc">Po tylu minutach bez bitwy sesja się zamyka.</p>
+          <div class="ctl"><select id="sel-idle" class="sel"><option>30 min</option><option selected>45 min</option><option>60 min</option></select></div>
+        </div>
+      </section>
+
+      <section id="g-dane" class="card" style="padding: 22px 28px 8px;" aria-labelledby="h-dane">
+        <h2 id="h-dane" class="h2">Dane</h2>
+        <div class="opt">
+          <span class="lbl">Import starszych bitew</span>
+          <p class="desc">2 013 bitew w bazie. Import dopisuje tylko brakujące.</p>
+          <div class="ctl"><button type="button" class="btn">Importuj</button></div>
+        </div>
+        <div class="opt">
+          <span class="lbl">Przelicz bazę</span>
+          <p class="desc">Przydatne po aktualizacji aplikacji, gdy liczby wyglądają podejrzanie.</p>
+          <div class="ctl"><button type="button" class="btn">Przelicz</button></div>
+        </div>
+        <div class="opt">
+          <label class="lbl" for="sw-xvm">WN8 z wartościami XVM</label>
+          <p class="desc">Pobiera tabelę wartości oczekiwanych raz na kilka dni. Wersja z 12.11, 1 270 pojazdów.</p>
+          <div class="ctl"><input id="sw-xvm" class="sw" type="checkbox" role="switch" checked></div>
+        </div>
+      </section>
+
+      <section id="g-pryw" class="card" style="padding: 22px 28px 8px;" aria-labelledby="h-pryw">
+        <h2 id="h-pryw" class="h2">Prywatność i dane</h2>
+        <div class="opt">
+          <label class="lbl" for="sw-upd">Sprawdzaj aktualizacje przy starcie</label>
+          <p class="desc">Jedno zapytanie do GitHuba o numer najnowszej wersji. Bez danych o Tobie i bez instalacji bez Twojej zgody.</p>
+          <div class="ctl"><input id="sw-upd" class="sw" type="checkbox" role="switch" checked></div>
+        </div>
+        <div class="opt">
+          <span class="lbl">Eksport anonimowej sesji</span>
+          <p class="desc">Plik bez nicków, ID kont i składów drużyn, np. do zgłoszenia błędu.</p>
+          <div class="ctl"><button type="button" class="btn">Eksportuj</button></div>
+        </div>
+        <div class="opt">
+          <span class="lbl">Usuń wszystkie dane</span>
+          <p class="desc">Czyści bazę na tym komputerze. Powtórek w folderze gry nie rusza.</p>
+          <div class="ctl"><button type="button" class="btn btn-danger">Usuń dane</button></div>
+        </div>
+      </section>
+
+      <section id="g-app" class="card" style="padding: 22px 28px 8px;" aria-labelledby="h-app">
+        <h2 id="h-app" class="h2">O aplikacji</h2>
+        <div class="opt">
+          <span class="lbl">Afterbattle 1.0 RC</span>
+          <p class="desc">Wersja 1.0.0-rc.1 · <a href="#">Co nowego</a> · <a href="#">Licencje</a></p>
+          <div class="ctl"><button type="button" class="btn">Diagnostyka</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</body>
+</html>

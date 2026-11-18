@@ -122,6 +122,14 @@ export const errorMessages = {
     pl: "Pobieranie danych WN8 jest wyłączone. Włącz je w Ustawieniach.",
     en: "Downloading WN8 data is turned off. Turn it on in Settings.",
   },
+  update_check_off: {
+    pl: "Sprawdzanie aktualizacji jest wyłączone. Włącz je w Ustawieniach.",
+    en: "The update check is turned off. Turn it on in Settings.",
+  },
+  update_error: {
+    pl: "Nie udało się sprawdzić ani zainstalować aktualizacji. Spróbuj później.",
+    en: "The update could not be checked or installed. Try again later.",
+  },
   database_too_new: {
     pl: "Dane pochodzą z nowszej wersji aplikacji. Zainstaluj najnowszą wersję.",
     en: "Your data comes from a newer version of the app. Install the latest version.",

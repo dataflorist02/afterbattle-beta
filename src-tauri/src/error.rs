@@ -61,6 +61,10 @@ pub enum AppError {
     RecoveryModeTrackerDisabled,
     #[error("XVM expected values are disabled")]
     XvmDisabled,
+    #[error("checking for updates is off")]
+    UpdateCheckOff,
+    #[error("the update check or installation failed: {0}")]
+    Update(String),
     #[error("the local database was created by a newer version of the application")]
     DatabaseTooNew,
     #[error(
@@ -109,6 +113,8 @@ impl From<AppError> for CommandError {
             AppError::RecoveryModeDeleteRefused => "recovery_mode_delete_refused",
             AppError::RecoveryModeTrackerDisabled => "recovery_mode_tracker_disabled",
             AppError::XvmDisabled => "xvm_disabled",
+            AppError::UpdateCheckOff => "update_check_off",
+            AppError::Update(_) => "update_error",
             AppError::DatabaseTooNew => "database_too_new",
             AppError::LegacyRebuildBlocked { .. } => "legacy_rebuild_blocked",
         };

@@ -12,6 +12,7 @@ import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { daysBetween, formatDate, formatNumber, formatPercent, formatTier } from "../lib/format";
 import { mergeRefreshedPage } from "../lib/pages";
+import { TankReference } from "../components/TankReference";
 import { WAVE_MAX_ROWS, prefersReducedMotion, rowEntranceDelay } from "../lib/motion";
 import type {
   BaselineMetric,
@@ -335,6 +336,7 @@ function TankDetail({
               );
             }}
           </Async>
+          <TankReference tier={tank.tier} vehicleClass={tank.vehicleClass.vehicleClass} />
         </div>
         <div className="tank-side">
           <Async state={battles.state} onRetry={battles.reload}>

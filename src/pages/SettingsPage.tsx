@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { api } from "../api";
 import { GameFolderActions } from "../components/GameFolderActions";
-import { Card, Dialog, ErrorState } from "../components/ui";
+import { Card, Dialog, ErrorState, SegmentedControl } from "../components/ui";
+import { RELEASES_URL, useUpdates } from "../components/Updates";
 import { clearGameImages } from "../hooks/useGameImage";
 import { useAsync } from "../hooks/useAsync";
 import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import { formatNumber } from "../lib/format";
+import { SAVED_SHOW_MS } from "../lib/motion";
 import { APP_VERSION } from "../release";
 import type { Address } from "../lib/recap/address";
 import type { AppSnapshot, Language } from "../types";
@@ -42,14 +44,59 @@ export function rebuildNumbers(diagnostics: string): RebuildNumbers | null {
   }
 }
 
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** Inactivity limits the backend accepts (minutes). */
+const MINUTES_MIN = 5;
+const MINUTES_MAX = 720;
+
+const GROUP_IDS = [
+  "settings-game",
+  "settings-you",
+  "settings-data",
+  "settings-privacy",
+  "settings-about",
+] as const;
+
+/** Spec 31 §4: a group of options, a target of the list of links. */
+function Group({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <Card labelledBy={id} className="section">
-      <h2 id={id} className="section-title">
+    <Card id={id} labelledBy={`${id}-h`} className="section settings-group">
+      <h2 id={`${id}-h`} className="section-title">
         {title}
       </h2>
       {children}
     </Card>
+  );
+}
+
+/** One option: label, one sentence about it, its state, and its control. */
+function Option({
+  label,
+  description,
+  state,
+  controlId,
+  children,
+}: {
+  label: string;
+  description: string;
+  state?: ReactNode;
+  controlId?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="setting">
+      <div className="setting-text">
+        {controlId ? (
+          <label className="setting-label" htmlFor={controlId}>
+            {label}
+          </label>
+        ) : (
+          <span className="setting-label">{label}</span>
+        )}
+        <p className="setting-desc">{description}</p>
+        {state}
+      </div>
+      {children && <div className="setting-control">{children}</div>}
+    </div>
   );
 }
 
@@ -61,9 +108,13 @@ export function SettingsPage({
   onChanged: () => void;
 }) {
   const { language, setLanguage, address, setAddress, tr } = useLanguage();
+  const updates = useUpdates();
   const [error, setError] = useState<string | undefined | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [minutes, setMinutes] = useState(String(snapshot.inactivityMinutes));
+  const [savedMinutes, setSavedMinutes] = useState(snapshot.inactivityMinutes);
+  const [saved, setSaved] = useState(0);
+  const [savedShown, setSavedShown] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [typed, setTyped] = useState("");
   const catalog = useAsync(() => api.vehicleClassCatalogStatus(), []);
@@ -71,6 +122,12 @@ export function SettingsPage({
   const diagnostics = useAsync(() => api.diagnostics(language), [language], {
     refreshKey: version,
   });
+  // "Zapisano." shows after each save and fades out (spec 31 §2 motion list).
+  useEffect(() => {
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSavedShown(false), SAVED_SHOW_MS);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
   const expected = snapshot.wn8Presentation.expectedValues;
   const xvmOn = snapshot.advancedStatus.xvmEnabled;
   const run = (action: () => Promise<unknown>, done?: string) => {
@@ -84,9 +141,72 @@ export function SettingsPage({
       (failure: { code?: string }) => setError(failure?.code),
     );
   };
+  // Spec 31 §4: language, address and the inactivity limit save at once, without "Zapisz".
+  const markSaved = () => {
+    setSaved((count) => count + 1);
+    setSavedShown(true);
+  };
+  const savePreferences = (nextLanguage: Language, nextMinutes: number) => {
+    setError(null);
+    api.updatePreferences(nextLanguage, nextMinutes).then(
+      () => {
+        setSavedMinutes(nextMinutes);
+        markSaved();
+        onChanged();
+      },
+      (failure: { code?: string }) => setError(failure?.code),
+    );
+  };
+  const chooseLanguage = (next: Language) => {
+    setLanguage(next);
+    savePreferences(next, savedMinutes);
+  };
+  const chooseAddress = (next: Address) => {
+    setAddress(next);
+    markSaved();
+  };
+  const commitMinutes = () => {
+    const value = Number(minutes);
+    if (!Number.isInteger(value) || value < MINUTES_MIN || value > MINUTES_MAX) {
+      setMinutes(String(savedMinutes));
+      return;
+    }
+    if (value !== savedMinutes) savePreferences(language, value);
+  };
   const rebuild =
     diagnostics.state.status === "ready" ? rebuildNumbers(diagnostics.state.data) : null;
   const status = snapshot.sourceStatus;
+  const groups = [
+    [GROUP_IDS[0], tr("settingsGroupGame")],
+    [GROUP_IDS[1], tr("settingsGroupYou")],
+    [GROUP_IDS[2], tr("settingsGroupData")],
+    [GROUP_IDS[3], tr("settingsGroupPrivacy")],
+    [GROUP_IDS[4], tr("settingsAbout")],
+  ] as const;
+  const title = Object.fromEntries(groups) as Record<(typeof groups)[number][0], string>;
+  const [currentGroup, setCurrentGroup] = useState<string>(groups[0][0]);
+  // The group in view is marked in the list of links (author's fixup after STOP 1): the first
+  // group crossing the band near the top of the window, in page order.
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const ids: readonly string[] = GROUP_IDS;
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries)
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        const first = ids.find((id) => visible.has(id));
+        if (first) setCurrentGroup(first);
+      },
+      { rootMargin: "-20% 0px -60% 0px" },
+    );
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    }
+    return () => observer.disconnect();
+  }, []);
   return (
     <>
       <header className="page-header">
@@ -99,181 +219,260 @@ export function SettingsPage({
         </p>
       )}
 
-      <Section id="game-h" title={tr("settingsGame")}>
-        <p className="muted">{status.gameRootDisplay ?? tr("settingsGameNone")}</p>
-        <GameFolderActions run={run} manualLabel={tr("settingsPick")}>
-          {status.configured &&
-            (status.paused ? (
-              <button type="button" className="button" onClick={() => run(() => api.resume())}>
-                {tr("settingsResume")}
-              </button>
-            ) : (
-              <button type="button" className="button" onClick={() => run(() => api.pause())}>
-                {tr("settingsPause")}
-              </button>
+      <div className="settings-layout">
+        <nav className="settings-nav" aria-label={tr("settingsNav")}>
+          <ul>
+            {groups.map(([id, name]) => (
+              <li key={id}>
+                <a href={`#${id}`} aria-current={currentGroup === id ? "true" : undefined}>
+                  {name}
+                </a>
+              </li>
             ))}
-        </GameFolderActions>
-      </Section>
+          </ul>
+        </nav>
 
-      <Section id="import-h" title={tr("settingsImport")}>
-        {rebuild && (
-          <p className="muted">
-            {tr("settingsRebuild", {
-              recalculated: formatNumber(rebuild.recalculated, language),
-              notRandom: formatNumber(rebuild.notRandom, language),
-              missing: formatNumber(rebuild.withoutReplay, language),
-              conflicts: formatNumber(rebuild.conflicts, language),
-            })}
-          </p>
-        )}
-        {rebuild && (rebuild.skippedPartial > 0 || rebuild.skippedEmptySessions > 0) && (
-          <p className="muted">
-            {tr("settingsRebuildSkipped", {
-              partial: formatNumber(rebuild.skippedPartial, language),
-              sessions: formatNumber(rebuild.skippedEmptySessions, language),
-            })}
-          </p>
-        )}
-        <div className="actions" style={{ justifyContent: "flex-start" }}>
-          <button
-            type="button"
-            className="button"
-            disabled={!status.configured}
-            onClick={() => run(() => api.startImport())}
-          >
-            {tr("settingsImportStart")}
-          </button>
-        </div>
-      </Section>
-
-      <Section id="wn8-h" title={tr("settingsWn8")}>
-        <label className="cell">
-          <input
-            type="checkbox"
-            checked={xvmOn}
-            onChange={(event) => run(() => api.setXvmEnabled(event.target.checked))}
-          />
-          {tr("settingsWn8Toggle")}
-        </label>
-        <p className="muted">{tr("settingsWn8Consent")}</p>
-        <p className="muted">
-          {expected.sourceVersion
-            ? tr("settingsWn8Version", {
-                version: expected.sourceVersion,
-                count: formatNumber(expected.vehicleCount, language),
-              })
-            : tr("settingsWn8None")}
-          {expected.skippedRowCount
-            ? ` ${tr("settingsWn8Skipped", { count: expected.skippedRowCount })}`
-            : ""}
-        </p>
-        {xvmOn && (
-          <div className="actions" style={{ justifyContent: "flex-start" }}>
-            <button
-              type="button"
-              className="button"
-              onClick={() => run(() => api.refreshExpectedValues())}
+        <div className="settings-groups">
+          <Group id="settings-game" title={title["settings-game"]}>
+            <Option
+              label={tr("settingsGame")}
+              description={tr("settingsGameDesc")}
+              state={
+                <p className="setting-state">{status.gameRootDisplay ?? tr("settingsGameNone")}</p>
+              }
             >
-              {tr("settingsWn8Refresh")}
-            </button>
-          </div>
-        )}
-      </Section>
+              <GameFolderActions run={run} manualLabel={tr("settingsPick")} />
+            </Option>
+            {status.configured && (
+              <Option label={tr("settingsSaving")} description={tr("settingsSavingDesc")}>
+                <input
+                  type="checkbox"
+                  className="switch"
+                  aria-label={tr("settingsSaving")}
+                  checked={!status.paused}
+                  onChange={(event) =>
+                    run(() => (event.target.checked ? api.resume() : api.pause()))
+                  }
+                />
+              </Option>
+            )}
+          </Group>
 
-      <Section id="catalog-h" title={tr("settingsCatalog")}>
-        <p className="muted">
-          {catalog.state.status === "ready" && catalog.state.data.vehicleCount
-            ? tr("settingsCatalogReady", {
-                version: catalog.state.data.sourceVersion ?? "—",
-                count: formatNumber(catalog.state.data.vehicleCount, language),
-              })
-            : tr("settingsCatalogMissing")}
-        </p>
-      </Section>
-
-      <Section id="prefs-h" title={tr("settingsLanguage")}>
-        <div className="filters">
-          <label className="field">
-            {tr("settingsLanguage")}
-            <select
-              value={language}
-              onChange={(event) => setLanguage(event.target.value as Language)}
+          <Group id="settings-you" title={title["settings-you"]}>
+            <Option label={tr("settingsLanguage")} description={tr("settingsLanguageDesc")}>
+              <SegmentedControl
+                label={tr("settingsLanguage")}
+                value={language}
+                options={[
+                  { value: "pl", label: "Polski" },
+                  { value: "en", label: "English" },
+                ]}
+                onChange={chooseLanguage}
+              />
+            </Option>
+            <Option label={tr("settingsAddress")} description={tr("settingsAddressDesc")}>
+              <SegmentedControl<Address>
+                label={tr("settingsAddress")}
+                value={address}
+                options={[
+                  { value: "masculine", label: tr("firstRunAddressHe") },
+                  { value: "feminine", label: tr("firstRunAddressShe") },
+                  { value: "neutral", label: tr("firstRunAddressNone") },
+                ]}
+                onChange={chooseAddress}
+              />
+            </Option>
+            <Option
+              label={tr("settingsInactivity")}
+              description={tr("settingsInactivityDesc")}
+              controlId="settings-inactivity"
             >
-              <option value="pl">Polski</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label className="field">
-            {tr("settingsAddress")}
-            <select value={address} onChange={(event) => setAddress(event.target.value as Address)}>
-              <option value="neutral">{tr("settingsAddressNeutral")}</option>
-              <option value="masculine">{tr("settingsAddressMasculine")}</option>
-              <option value="feminine">{tr("settingsAddressFeminine")}</option>
-            </select>
-          </label>
-          <label className="field">
-            {tr("settingsInactivity")}
-            <input
-              type="number"
-              min={5}
-              max={720}
-              value={minutes}
-              onChange={(event) => setMinutes(event.target.value)}
+              <input
+                id="settings-inactivity"
+                type="number"
+                min={MINUTES_MIN}
+                max={MINUTES_MAX}
+                value={minutes}
+                onChange={(event) => setMinutes(event.target.value)}
+                onBlur={commitMinutes}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") commitMinutes();
+                }}
+              />
+            </Option>
+            {saved > 0 && (
+              <p className="setting-saved" role="status" data-shown={savedShown}>
+                {tr("settingsSaved")}
+              </p>
+            )}
+          </Group>
+
+          <Group id="settings-data" title={title["settings-data"]}>
+            <Option
+              label={tr("settingsImport")}
+              description={tr("settingsImportDesc")}
+              state={
+                <>
+                  {rebuild && (
+                    <p className="setting-state">
+                      {tr("settingsRebuild", {
+                        recalculated: formatNumber(rebuild.recalculated, language),
+                        notRandom: formatNumber(rebuild.notRandom, language),
+                        missing: formatNumber(rebuild.withoutReplay, language),
+                        conflicts: formatNumber(rebuild.conflicts, language),
+                      })}
+                    </p>
+                  )}
+                  {rebuild && (rebuild.skippedPartial > 0 || rebuild.skippedEmptySessions > 0) && (
+                    <p className="setting-state">
+                      {tr("settingsRebuildSkipped", {
+                        partial: formatNumber(rebuild.skippedPartial, language),
+                        sessions: formatNumber(rebuild.skippedEmptySessions, language),
+                      })}
+                    </p>
+                  )}
+                </>
+              }
+            >
+              <button
+                type="button"
+                className="button"
+                disabled={!status.configured}
+                onClick={() => run(() => api.startImport())}
+              >
+                {tr("settingsImportStart")}
+              </button>
+            </Option>
+            <Option
+              label={tr("settingsCatalog")}
+              description={tr("settingsCatalogDesc")}
+              state={
+                <p className="setting-state">
+                  {catalog.state.status === "ready" && catalog.state.data.vehicleCount
+                    ? tr("settingsCatalogReady", {
+                        version: catalog.state.data.sourceVersion ?? "—",
+                        count: formatNumber(catalog.state.data.vehicleCount, language),
+                      })
+                    : tr("settingsCatalogMissing")}
+                </p>
+              }
             />
-          </label>
-          <button
-            type="button"
-            className="button"
-            onClick={() =>
-              run(() => api.updatePreferences(language, Number(minutes)), tr("settingsSaved"))
-            }
-          >
-            {tr("settingsSave")}
-          </button>
-        </div>
-      </Section>
+            <Option
+              label={tr("settingsWn8")}
+              description={tr("settingsWn8Desc")}
+              state={
+                <p className="setting-state">
+                  {expected.sourceVersion
+                    ? tr("settingsWn8Version", {
+                        version: expected.sourceVersion,
+                        count: formatNumber(expected.vehicleCount, language),
+                      })
+                    : tr("settingsWn8None")}
+                  {expected.skippedRowCount
+                    ? ` ${tr("settingsWn8Skipped", { count: expected.skippedRowCount })}`
+                    : ""}
+                </p>
+              }
+            >
+              <input
+                type="checkbox"
+                className="switch"
+                aria-label={tr("settingsWn8Toggle")}
+                checked={xvmOn}
+                onChange={(event) => run(() => api.setXvmEnabled(event.target.checked))}
+              />
+              {xvmOn && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => run(() => api.refreshExpectedValues())}
+                >
+                  {tr("settingsWn8Refresh")}
+                </button>
+              )}
+            </Option>
+          </Group>
 
-      <Section id="privacy-h" title={tr("settingsPrivacy")}>
-        <p className="muted">{tr("privacyLocal")}</p>
-        <p className="muted">{tr("privacyImages")}</p>
-        <p className="muted">{tr("privacyNames")}</p>
-        <p className="muted">{tr("privacyRoster")}</p>
-        <div className="actions" style={{ justifyContent: "flex-start" }}>
-          <button type="button" className="button" onClick={() => setDeleting(true)}>
-            {tr("deleteAll")}
-          </button>
-        </div>
-      </Section>
+          <Group id="settings-privacy" title={title["settings-privacy"]}>
+            <Option label={tr("settingsUpdates")} description={tr("settingsUpdatesDesc")}>
+              <input
+                type="checkbox"
+                className="switch"
+                aria-label={tr("settingsUpdates")}
+                checked={updates.consent === "on"}
+                disabled={updates.consent === null}
+                onChange={(event) => updates.answer(event.target.checked)}
+              />
+            </Option>
+            <Option
+              label={tr("settingsPrivacyStays")}
+              description={tr("settingsPrivacyStaysDesc")}
+              state={
+                <ul className="setting-state setting-list">
+                  <li>{tr("privacyLocal")}</li>
+                  <li>{tr("privacyImages")}</li>
+                  <li>{tr("privacyNames")}</li>
+                  <li>{tr("privacyRoster")}</li>
+                </ul>
+              }
+            />
+            <Option label={tr("deleteAll")} description={tr("settingsDeleteDesc")}>
+              <button
+                type="button"
+                className="button button-danger"
+                onClick={() => setDeleting(true)}
+              >
+                {tr("deleteAll")}
+              </button>
+            </Option>
+          </Group>
 
-      <Section id="diag-h" title={tr("settingsDiagnostics")}>
-        <div className="actions" style={{ justifyContent: "flex-start" }}>
-          <button
-            type="button"
-            className="button"
-            disabled={diagnostics.state.status !== "ready"}
-            onClick={() => {
-              if (diagnostics.state.status === "ready")
-                run(
-                  () =>
-                    navigator.clipboard.writeText(
-                      diagnostics.state.status === "ready" ? diagnostics.state.data : "",
-                    ),
-                  tr("diagnosticsCopied"),
-                );
-            }}
-          >
-            {tr("diagnosticsCopy")}
-          </button>
+          <Group id="settings-about" title={title["settings-about"]}>
+            <Option
+              label={tr("settingsVersion")}
+              description={tr("settingsVersionDesc")}
+              state={<p className="setting-state">Afterbattle {APP_VERSION}</p>}
+            />
+            <Option
+              label={tr("settingsReleases")}
+              description={tr("settingsReleasesDesc")}
+              state={<p className="setting-state setting-url">{RELEASES_URL}</p>}
+            >
+              <button
+                type="button"
+                className="button"
+                onClick={() =>
+                  run(
+                    () => navigator.clipboard.writeText(RELEASES_URL),
+                    tr("settingsReleasesCopied"),
+                  )
+                }
+              >
+                {tr("settingsReleasesCopy")}
+              </button>
+            </Option>
+            <Option label={tr("settingsDiagnostics")} description={tr("settingsDiagnosticsDesc")}>
+              <button
+                type="button"
+                className="button"
+                disabled={diagnostics.state.status !== "ready"}
+                onClick={() => {
+                  if (diagnostics.state.status === "ready")
+                    run(
+                      () =>
+                        navigator.clipboard.writeText(
+                          diagnostics.state.status === "ready" ? diagnostics.state.data : "",
+                        ),
+                      tr("diagnosticsCopied"),
+                    );
+                }}
+              >
+                {tr("diagnosticsCopy")}
+              </button>
+            </Option>
+          </Group>
         </div>
-      </Section>
-
-      <Section id="about-h" title={tr("settingsAbout")}>
-        <p className="muted">{tr("aboutText", { version: APP_VERSION })}</p>
-        <p className="muted">
-          {tr("footerWn8")}:{" "}
-          {expected.sourceVersion ? `XVM · ${expected.sourceVersion}` : tr("footerWn8Off")}
-        </p>
-      </Section>
+      </div>
 
       {deleting && (
         <Dialog

@@ -3,12 +3,16 @@ import { api } from "../api";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { VehicleNamesProvider } from "../components/TankName";
 import { Async } from "../components/ui";
+import { UpdateNotice, UpdatesProvider, useUpdates } from "../components/Updates";
+import { UpdateWelcome, Welcome } from "../components/Welcome";
 import { useAsync } from "../hooks/useAsync";
 import { useLanguage } from "../i18n/language";
 import { LOADING_DELAY_MS, hasSessions, importFraction, loadingNeeded } from "../lib/loading";
+import { startPage } from "../lib/start";
 import { BattlePage } from "../pages/BattlePage";
 import { GoalsPage } from "../pages/GoalsPage";
 import { HistoryPage } from "../pages/HistoryPage";
+import { OverviewPage } from "../pages/OverviewPage";
 import { SessionPage } from "../pages/SessionPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { TanksPage } from "../pages/TanksPage";
@@ -42,8 +46,21 @@ function Footer({ snapshot }: { snapshot: AppSnapshot | null }) {
   );
 }
 
+/** The first-start card (RC-Start) or the update question for players from a beta. */
+type Gate = "welcome" | "updates" | null;
+
 export function App() {
-  const [route, setRoute] = useState<Route>({ page: "session" });
+  return (
+    <UpdatesProvider>
+      <AppContent />
+    </UpdatesProvider>
+  );
+}
+
+function AppContent() {
+  // Spec 32 §4.1: the start screen is decided once, from the first snapshot; until then (and
+  // after any choice in the navigation) the route is the one set here.
+  const [chosen, setRoute] = useState<Route | null>(null);
   const [importProgress, setImportProgress] = useState<ImportProgressEvent | null>(null);
   const [endedSessionId, setEndedSessionId] = useState<string | null>(null);
   const { state, reload } = useAsync(() => api.snapshot(), []);
@@ -72,6 +89,20 @@ export function App() {
   const openMap = (mapKey: string, mapName: string | null) =>
     navigate({ page: "history", mapKey, mapName: mapName ?? undefined });
   const snapshot = state.status === "ready" ? state.data : null;
+  // RC-Start (fixup after STOP 2): decided once per start. Without a game folder the welcome
+  // card; a player coming from a beta (folder set, update question never answered) gets the
+  // update question alone. Each stays until its button, then never again in this run.
+  const { consent } = useUpdates();
+  const [gate, setGate] = useState<Gate | undefined>(undefined);
+  useEffect(() => {
+    if (gate !== undefined || !snapshot) return;
+    if (!snapshot.configured) setGate("welcome");
+    else if (consent !== null) setGate(consent === "unasked" ? "updates" : null);
+  }, [gate, snapshot, consent]);
+  const route: Route = chosen ?? { page: snapshot ? startPage(snapshot, Date.now()) : "session" };
+  useEffect(() => {
+    if (snapshot && chosen === null) setRoute({ page: startPage(snapshot, Date.now()) });
+  }, [snapshot, chosen]);
   // Spec 29 §2: each new snapshot (after a backend event or an action) is a new data version;
   // the pages reload with it in place. Derived while rendering, so pages see it with the snapshot.
   const [version, setVersion] = useState<{ of: AppSnapshot | null; value: number }>({
@@ -158,6 +189,17 @@ export function App() {
         );
       case "settings":
         return <SettingsPage snapshot={data} onChanged={reload} />;
+      case "overview":
+        return (
+          <OverviewPage
+            snapshot={data}
+            onOpenSession={(sessionId) => navigate({ page: "session", sessionId })}
+            onOpenTank={(vehicleId) => navigate({ page: "tanks", vehicleId })}
+            onOpenGoals={() => navigate({ page: "goals" })}
+            onOpenHistory={() => navigate({ page: "history" })}
+            onOpenTanks={() => navigate({ page: "tanks" })}
+          />
+        );
       default:
         return route.battleId ? (
           <BattlePage
@@ -181,6 +223,18 @@ export function App() {
         );
     }
   };
+
+  if (gate && snapshot)
+    return (
+      <VehicleNamesProvider refreshKey={snapshot}>
+        <TitleBar />
+        {gate === "welcome" ? (
+          <Welcome snapshot={snapshot} onChanged={reload} onDone={() => setGate(null)} />
+        ) : (
+          <UpdateWelcome onDone={() => setGate(null)} />
+        )}
+      </VehicleNamesProvider>
+    );
 
   return (
     <DataVersionContext.Provider value={version.value}>
@@ -211,7 +265,9 @@ export function App() {
                 )}
               </Async>
             </main>
-            <Footer snapshot={snapshot} />
+            {/* Settings show the version in "O aplikacji" and WN8 in "Dane": no repeat below. */}
+            {route.page !== "settings" && <Footer snapshot={snapshot} />}
+            <UpdateNotice />
           </div>
         </div>
       </VehicleNamesProvider>

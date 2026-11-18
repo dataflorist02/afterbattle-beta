@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/styles/tokens.css", "utf8");
@@ -177,7 +177,7 @@ describe("motion (E5-flare §7a)", () => {
     expect(tokens).toMatch(/--ease-in:\s*cubic-bezier/);
   });
 
-  it("animates only transform and opacity", () => {
+  it("animates only transform and opacity (and the height of an opening summary)", () => {
     const transitions = [...base.matchAll(/transition(?:-property)?:\s*([^;]+);/g)].map(
       (m) => m[1],
     );
@@ -185,8 +185,19 @@ describe("motion (E5-flare §7a)", () => {
     for (const value of transitions)
       for (const part of value.split(","))
         expect(part.trim().split(/\s+/)[0].replace("!important", ""), value).toMatch(
-          /^(transform|opacity)$/,
+          /^(transform|opacity|grid-template-rows)$/,
         );
+    // Spec 31 §3: the one height animation is the summary card's rest, in the enter time.
+    const heights = [...base.matchAll(/([^{}]+)\{[^}]*transition:\s*grid-template-rows[^;]*;/g)];
+    expect(heights.map((match) => match[1].trim())).toEqual([".recap-rest"]);
+    // The opened sentences carry no numbers, like the first one (author, 2026-11-17).
+    expect(base).toMatch(/\.recap-list\s*\{[^}]*list-style:\s*none;[^}]*padding-left:\s*0;/);
+    expect(base).toMatch(
+      /\.recap-rest\s*\{[^}]*transition:\s*grid-template-rows var\(--motion-enter\) var\(--ease-out\);/,
+    );
+    expect(base).toMatch(
+      /\.recap-more\[aria-expanded="true"\] svg\s*\{\s*transform:\s*rotate\(180deg\)/,
+    );
     const frames = [...base.matchAll(/@keyframes [\w-]+\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
     expect(frames.length).toBeGreaterThanOrEqual(5);
     for (const [, body] of frames)
@@ -196,10 +207,11 @@ describe("motion (E5-flare §7a)", () => {
 
   it("never loops an animation, except the pulse of a loading screen without progress", () => {
     // Spec 29 §5: with no progress to show, the ember at the base pulses calmly (opacity only).
-    const pulse = "animation: ember-pulse 1600ms ease-in-out infinite;";
+    const pulse = "animation: ember-pulse var(--motion-pulse) var(--ease-in-out) infinite;";
+    expect(tokens).toMatch(/--motion-pulse:\s*1600ms;/);
     expect(base.split("infinite")).toHaveLength(2);
     expect(base).toMatch(
-      /\.loading-pulse \.loading-hot \{\s*animation: ember-pulse 1600ms ease-in-out infinite;/,
+      /\.loading-pulse \.loading-hot \{\s*animation: ember-pulse var\(--motion-pulse\) var\(--ease-in-out\) infinite;/,
     );
     for (const [, value] of base.matchAll(/animation:\s*([^;]+);/g))
       if (`animation: ${value};` !== pulse) expect(value).not.toMatch(/infinite|alternate/);
@@ -209,9 +221,12 @@ describe("motion (E5-flare §7a)", () => {
     expect(base).toMatch(/\.loading-screen\s*\{[^}]*background:\s*var\(--bg-deep\);/);
     expect(base).toMatch(/\.loading-mark\s*\{[^}]*width:\s*clamp\(160px, 22vmin, 280px\);/);
     expect(base).toMatch(
-      /\.loading-rise\s*\{[^}]*transform-origin:\s*50% 100%;[^}]*transition:\s*transform 300ms var\(--ease-out\);/,
+      /\.loading-rise\s*\{[^}]*transform-origin:\s*50% 100%;[^}]*transition:\s*transform var\(--motion-progress\) var\(--ease-out\);/,
     );
-    expect(base).toMatch(/\.loading-out\s*\{[^}]*opacity:\s*0;[^}]*transition:\s*opacity 200ms/);
+    expect(base).toMatch(
+      /\.loading-out\s*\{[^}]*opacity:\s*0;[^}]*transition:\s*opacity var\(--motion-base\)/,
+    );
+    expect(tokens).toMatch(/--motion-progress:\s*300ms;/);
     expect(base).toMatch(
       /@keyframes ember-pulse\s*\{\s*0%,\s*100%\s*\{\s*opacity:\s*1;\s*\}\s*50%\s*\{\s*opacity:\s*0\.7;\s*\}\s*\}/,
     );
@@ -295,13 +310,203 @@ describe("changed numbers (spec 29 §6)", () => {
       /\.figure-value\s*\{[^}]*position:\s*relative;[^}]*font-variant-numeric:\s*tabular-nums;/,
     );
     expect(base).toMatch(
-      /\.figure-delta\s*\{[^}]*position:\s*absolute;[^}]*animation:\s*delta-fade 1400ms linear both;/,
+      /\.figure-delta\s*\{[^}]*position:\s*absolute;[^}]*animation:\s*delta-fade var\(--motion-delta\) var\(--ease-linear\) both;/,
     );
     expect(base).toMatch(/\.figure-up\s*\{\s*color:\s*var\(--up\);\s*\}/);
     expect(base).toMatch(/\.figure-down\s*\{\s*color:\s*var\(--down\);\s*\}/);
     // Visible for 1 s of 1.4 s, then 400 ms of fading.
     expect(base).toMatch(
       /@keyframes delta-fade\s*\{\s*0%,\s*71\.4%\s*\{\s*opacity:\s*1;\s*\}\s*100%\s*\{\s*opacity:\s*0;\s*\}\s*\}/,
+    );
+  });
+});
+
+describe("snappy motion (spec 31 §2)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const tokens = readFileSync("src/styles/tokens.css", "utf8");
+  const ms = (name: string) => {
+    const match = new RegExp(`--${name}:\\s*(\\d+)ms;`).exec(tokens);
+    if (!match) throw new Error(`missing time token --${name}`);
+    return Number(match[1]);
+  };
+
+  it("keeps the thresholds of the table in the tokens", () => {
+    expect(ms("motion-base")).toBeGreaterThanOrEqual(150);
+    expect(ms("motion-base")).toBeLessThanOrEqual(200);
+    expect(ms("motion-hover")).toBeGreaterThanOrEqual(120);
+    expect(ms("motion-hover")).toBeLessThanOrEqual(150);
+    expect(ms("motion-enter")).toBeLessThanOrEqual(250);
+    expect(ms("motion-count")).toBe(600);
+    expect(ms("motion-instant")).toBe(0);
+    expect(ms("motion-skeleton-delay")).toBe(300);
+  });
+
+  it("writes no time or curve outside the tokens, in CSS and in components", () => {
+    const declarations = [
+      ...base.matchAll(/(?:transition|animation)(?:-[a-z-]+)?:\s*([^;]+);/g),
+    ].map((match) => match[1]);
+    expect(declarations.length).toBeGreaterThan(10);
+    for (const value of declarations) {
+      const literal = value.replace(/var\(--[\w-]+(?:,\s*[^)]*)?\)/g, "");
+      expect(literal, value).not.toMatch(
+        /\d(?:ms|s)\b|cubic-bezier|steps\(|\bease\b|ease-|\blinear\b/,
+      );
+    }
+    const walk = (dir: string): string[] =>
+      readdirSync(`src/${dir}`).flatMap((name) => {
+        const path = dir ? `${dir}/${name}` : name;
+        return /\.\w+$/.test(name) ? [path] : walk(path);
+      });
+    const files = walk("").filter(
+      (file) => /\.(tsx|css)$/.test(file) && !/test|tokens\.css$/.test(file),
+    );
+    expect(files.length).toBeGreaterThan(20);
+    for (const file of files) {
+      const text = readFileSync(`src/${file}`, "utf8");
+      expect(text, file).not.toMatch(/cubic-bezier/);
+      if (file.endsWith(".tsx")) expect(text, file).not.toMatch(/\b\d+\s?ms\b|\d(?:ms|s)["'`]/);
+    }
+  });
+
+  it("moves a screen in by a fade with a rise of at most 8 px in the base time", () => {
+    const frames = /@keyframes screen-in\s*\{\s*from\s*\{([^}]*)\}/.exec(base)?.[1] ?? "";
+    const rise = Number(/translateY\((\d+)px\)/.exec(frames)?.[1]);
+    expect(frames).toMatch(/opacity:\s*0/);
+    expect(rise).toBeGreaterThan(0);
+    expect(rise).toBeLessThanOrEqual(8);
+    expect(base).toMatch(/\.screen\s*\{[^}]*animation:\s*screen-in var\(--motion-base\)/);
+  });
+
+  it("presses buttons, rows and tiles at once: no transition on :active, scale of at most 2%", () => {
+    const pressed =
+      /([^{}]*:active[^{}]*)\{([^}]*transition-duration:\s*var\(--motion-instant\)[^}]*)\}/.exec(
+        base.replace(/\/\*[\s\S]*?\*\//g, ""),
+      );
+    expect(pressed, "an :active rule without delay").not.toBeNull();
+    const selectors = (pressed?.[1] ?? "").split(",").map((part) => part.trim());
+    for (const selector of [
+      ".button:active",
+      ".segment:active",
+      ".tile:active",
+      ".hrow:active",
+      ".recap-more:active",
+    ])
+      expect(selectors, selector).toContain(selector);
+    const scale = Number(/transform:\s*scale\(([\d.]+)\)/.exec(pressed?.[2] ?? "")?.[1]);
+    expect(scale).toBeGreaterThanOrEqual(0.98);
+    expect(scale).toBeLessThan(1);
+    // Rows of tables and side lists change their background on press (no transition on it).
+    expect(base).toMatch(/\.table-row:active,\s*\.side-item:active\s*\{\s*background:/);
+  });
+
+  it("keeps the footer below the window while a screen loads (no layout shift, CLS 0)", () => {
+    // The footer would otherwise sit at the bottom of the window and jump down with the data.
+    expect(base).toMatch(/\n\.page \{[^}]*min-height:\s*calc\(100vh - var\(--titlebar-height\)\);/);
+  });
+
+  it("fades the focus ring in the hover time", () => {
+    expect(base).toMatch(
+      /:focus-visible::before\s*\{\s*opacity:\s*1;\s*transition:\s*opacity var\(--motion-hover\)/,
+    );
+  });
+
+  it("shows a loading skeleton only after 300 ms, in a box of a fixed height", () => {
+    expect(base).toMatch(/\.skeleton\s*\{[^}]*height:\s*120px;/);
+    expect(base).toMatch(
+      /\.skeleton\s*\{[^}]*animation:\s*skeleton-in var\(--motion-fast\) var\(--ease-out\) var\(--motion-skeleton-delay\) both;/,
+    );
+    expect(base).toMatch(/@keyframes skeleton-in\s*\{\s*from\s*\{\s*opacity:\s*0;/);
+  });
+});
+
+describe("settings layout (spec 31 §4)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([^}]*)\\}`, "m").exec(base)?.[1] ?? "";
+  };
+
+  it("switches move in the hover time and 'Zapisano.' fades out", () => {
+    // The knob slides (transform), the accent fill fades in (opacity): only these two move.
+    expect(rule(".switch::before")).toMatch(/transition:\s*opacity var\(--motion-hover\)/);
+    expect(rule(".switch::after")).toMatch(/transition:\s*transform var\(--motion-hover\)/);
+    expect(rule(".setting-saved")).toMatch(/transition:\s*opacity var\(--motion-hover\)/);
+    expect(rule('.setting-saved[data-shown="false"]')).toMatch(/opacity:\s*0/);
+  });
+
+  it("lists the groups on the left in a wide window and above them in a narrow one", () => {
+    expect(base).toMatch(
+      /@media \(min-width: 1100px\)\s*\{[^@]*\.settings-layout\s*\{[^}]*grid-template-columns:/,
+    );
+    expect(rule(".settings-nav")).toMatch(/position:\s*sticky/);
+    // A link to a group stops below the title bar, not under it.
+    expect(rule(".settings-group")).toMatch(/scroll-margin-top:/);
+    // Author's fixup after STOP 1 (RC-Ustawienia): no red rule or title, only the button warns.
+    expect(base).not.toMatch(/\.setting-danger/);
+    expect(rule(".button-danger")).toMatch(/color:\s*var\(--danger\)/);
+    expect(rule(".button-danger")).toMatch(/border-color:\s*var\(--danger\)/);
+    // The group in view is marked in the list of links.
+    expect(rule('.settings-nav a[aria-current="true"]')).toMatch(/color:\s*var\(--text\)/);
+  });
+});
+
+describe("spacing and radii (spec 31 §5)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const declarations = (property: RegExp) =>
+    base
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => property.test(line));
+
+  it("puts margins, paddings and gaps on the 4 px grid (hairlines up to 3 px aside)", () => {
+    for (const line of declarations(/^(margin|padding|gap|row-gap|column-gap)[\w-]*:/))
+      for (const [, value] of line.matchAll(/(-?\d+(?:\.\d+)?)px/g)) {
+        const px = Math.abs(Number(value));
+        if (px <= 3) continue;
+        expect(px % 4, line).toBe(0);
+      }
+  });
+
+  it("takes radii from the tokens, except thin bars and pills", () => {
+    for (const line of declarations(/^border-radius:/)) {
+      const value = line.replace(/^border-radius:\s*|;$/g, "");
+      if (/var\(--radius-[\w-]+\)|^inherit$|^50%$|^999px$/.test(value)) continue;
+      // A bar or a swatch a few pixels high is rounded by half its height.
+      for (const [, px] of value.matchAll(/(\d+)px/g))
+        expect(Number(px), line).toBeLessThanOrEqual(6);
+    }
+  });
+});
+
+describe("A-1 comparison (spec 32 §3)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const rules = [...base.matchAll(/([^{}]*\.ref-[^{}]*)\{([^}]*)\}/g)];
+
+  it("draws the bars, the median and the player's marker, and keeps them still", () => {
+    const selectors = rules.map((match) => match[1].trim()).join("\n");
+    for (const part of [".ref-track", ".ref-range", ".ref-median", ".ref-p90", ".ref-own"])
+      expect(selectors).toContain(part);
+    for (const [, selector, body] of rules) {
+      expect(body, selector).not.toMatch(/transition|animation/);
+    }
+    // A highlighted number and its mark are shown without motion.
+    expect(selectors).toMatch(/\.is-active/);
+  });
+});
+
+describe("Overview (spec 32 §4)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+
+  it("lays the blocks out in rows of two in a wide window, rows that press at once", () => {
+    // RC-Przeglad (fixup 2026-11-18): the session card on the whole width, then rows of two
+    // blocks stretched to the same height, so the page has no holes.
+    expect(base).toMatch(/\.overview-row\s*\{[^}]*display:\s*grid;[^}]*align-items:\s*stretch;/);
+    expect(base).toMatch(
+      /@media \(min-width: 1100px\)\s*\{[^@]*\.overview-row\s*\{[^}]*grid-template-columns:\s*repeat\(2,/,
+    );
+    expect(base).toMatch(/\.overview-cells\s*\{[^}]*grid-auto-flow:\s*dense;/);
+    expect(base).toMatch(
+      /\.overview-link:active[^{]*\{[^}]*transition-duration:\s*var\(--motion-instant\)/,
     );
   });
 });

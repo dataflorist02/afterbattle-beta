@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>RC-Sesja — makieta 1.0 RC (statyczna)</title>
+<!-- Makieta z płótna "Afterbattle 2.0 — redesign", rząd "1.0 RC", zaakceptowana 2026-11-17.
+     Dane syntetyczne; mapy i ikony czołgów to zamienniki (D19). Wzorzec układu, nie kod do skopiowania. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A101C;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.num{font-family:'Big Shoulders',Inter,sans-serif;font-weight:300}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#9AA6B8}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#9AA6B8;text-decoration:none}
+.muted{color:#9AA6B8}.soft{color:#C9D1DC}
+.fig{display:flex;flex-direction:column;gap:2px}
+.chip{display:inline-flex;align-items:center;font-size:11px;font-weight:600;color:#F7B27A;background:rgba(240,138,60,0.14);border:1px solid rgba(240,138,60,0.45);border-radius:6px;padding:0 6px;height:20px;margin-left:4px;vertical-align:2px}
+.more{font:inherit;font-size:14px;font-weight:500;color:#F3A36B;background:transparent;border:0;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 4px;white-space:nowrap}
+.tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:220px;padding:12px;border-radius:16px;overflow:hidden;text-decoration:none;color:#EEF1F6;box-sizing:border-box;border:1px solid rgba(255,255,255,0.08)}
+.tile:hover{border-color:rgba(255,255,255,0.3)}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#F08A3C;box-shadow:0 0 0 4px rgba(240,138,60,0.2);margin-right:8px;vertical-align:1px}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 1000px; display: flex; background: #0A101C; overflow: hidden;">
+  <nav aria-label="Główna nawigacja" style="flex: 0 0 96px; padding: 26px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; border-right: 1px solid rgba(255,255,255,0.05);">
+    <svg aria-hidden="true" width="40" height="40" viewBox="0 0 64 64" style="margin-bottom: 12px;"><rect width="64" height="64" rx="15" fill="#16223A"></rect><g transform="translate(5.12 5.4) scale(0.84)"><polygon points="32,9 53,55 43.5,55 32,29 20.5,55 11,55" fill="none" stroke="#C9D0D9" stroke-width="4.4"></polygon><polyline points="24,47 32,40.5 40,47" fill="none" stroke="#F08A3C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline></g></svg>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg></span>Przegląd</a>
+    <a class="rail" href="#" aria-current="page" style="color: #EEF1F6;"><span class="ico" style="background: rgba(240,138,60,0.16); border-color: rgba(240,138,60,0.5); color: #F7B27A;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"></polyline></svg></span>Sesja</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><polyline points="12 7.5 12 12 15 14"></polyline></svg></span>Historia</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="5" rx="2.5"></rect><rect x="6" y="9" width="9" height="5" rx="1.5"></rect><line x1="15" y1="11.5" x2="21" y2="11.5"></line></svg></span>Czołgi</a>
+    <a class="rail" href="#"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle></svg></span>Cele</a>
+    <a class="rail" href="#" style="margin-top: auto;"><span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg></span>Ustawienia</a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <section aria-label="Liczby sesji" style="position: relative; min-height: 300px; padding: 40px 56px 30px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 22px; background: linear-gradient(90deg, rgba(10,16,28,0.97) 0%, rgba(10,16,28,0.75) 45%, rgba(10,16,28,0.2) 100%), linear-gradient(0deg, #0A101C 0%, transparent 40%), radial-gradient(500px 260px at 78% 40%, rgba(120,170,200,0.35), transparent 70%), linear-gradient(125deg, #2E4A3A 0%, #4F6A55 45%, #8A8A62 100%);">
+      <span role="img" aria-label="Tło: grafika mapy najlepszej bitwy z plików gry, tu zamiennik" style="position: absolute; right: 32px; top: 24px; font-size: 12px; color: #C9D1DC;">tło: mapa najlepszej bitwy (z plików gry)</span>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <p style="margin: 0; font-size: 15px; color: #C9D1DC;"><span class="live" aria-hidden="true"></span>Sesja trwa · od 20:15 · 12 bitew losowych</p>
+        <h1 style="margin: 0; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 56px; line-height: 1.02;">Sesja</h1>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 44px; align-items: flex-end;">
+        <div class="fig"><span class="num" style="font-size: 66px; line-height: 1; color: #FFF4EA; text-shadow: 0 0 34px rgba(240,138,60,0.4);">3&nbsp;414</span><span style="font-size: 14px; color: #C9D1DC;">średnie obrażenia</span></div>
+        <div class="fig"><span class="num" style="font-size: 46px; line-height: 1;">7 z 12</span><span style="font-size: 14px; color: #C9D1DC;">wygranych</span></div>
+        <div class="fig"><span class="num" style="font-size: 46px; line-height: 1;">2&nbsp;311</span><span style="font-size: 14px; color: #C9D1DC;">WN8 sesji</span></div>
+        <div class="fig"><span class="num" style="font-size: 46px; line-height: 1;">5 z 12</span><span style="font-size: 14px; color: #C9D1DC;">przetrwanych</span></div>
+        <button type="button" style="margin-left: auto; font: inherit; font-size: 14px; font-weight: 500; color: #EEF1F6; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 12px 22px; min-height: 44px;">Zakończ sesję</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin: 6px 56px 0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px;" aria-labelledby="h-recap">
+      <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+        <h2 id="h-recap" class="muted" style="margin: 0; font-size: 13px; font-weight: 500;">Podsumowanie sesji</h2>
+        <p style="margin: 0; font-size: 17px; line-height: 1.5;">Zwycięstwa: 7 z 12 bitew, czyli 58%, o 7 pkt proc. więcej niż w ostatnich 100 bitwach (51%).<span class="chip">F1</span></p>
+      </div>
+      <button type="button" class="more" aria-expanded="false" aria-controls="recap-rest">Pokaż więcej (4)<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+    </section>
+
+    <section aria-labelledby="strip-h" style="padding: 22px 56px 30px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
+        <h2 id="strip-h" style="margin: 0; font-size: 18px; font-weight: 600;">Sesja bitwa po bitwie</h2>
+        <p class="muted" style="margin: 0; font-size: 13px;">Kafelki: grafiki map i ikony czołgów z plików gry (tu zamienniki). Porażki przygaszone i podpisane</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px;">
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #6A5233, #C2A26A);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Wygrana</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">2 120</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Mesa Line</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bravo</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #3D4655, #8A8A84); filter: saturate(0.35) brightness(0.72);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Porażka</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">1 630</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grey Harbor</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bravo</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #2D4A5E, #7A8F9A);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Wygrana</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">2 860</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Port Delta</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Kolos IV</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #2E4660, #A9B9C8);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Wygrana</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">3 310</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Frostfield</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Alpha</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #5C4E36, #B09A6A); filter: saturate(0.35) brightness(0.72);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Porażka</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">1 120</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Test Valley</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Synth 44 M</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #2E4A3A, #8A8A62); border: 2px solid #F08A3C; box-shadow: 0 0 28px rgba(240,138,60,0.45);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Najlepsza, wygrana</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">5 873</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Synthetic Hills</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Alpha</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #2D4A5E, #7A8F9A);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Wygrana</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">4 102</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Port Delta</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Kolos IV</span>
+            </span>
+          </a>
+        
+          <a class="tile" href="#" style="background: linear-gradient(180deg, rgba(10,16,28,0.15) 0%, rgba(10,16,28,0.05) 35%, rgba(10,16,28,0.92) 100%), radial-gradient(120px 90px at 70% 30%, rgba(255,255,255,0.18), transparent 70%), linear-gradient(140deg, #6A5233, #C2A26A); filter: saturate(0.35) brightness(0.72);">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600; text-shadow: 0 1px 6px rgba(0,0,0,0.8);">Porażka</span>
+              <svg role="img" aria-label="Ikona czołgu z plików gry, tu zamiennik" width="44" height="20" viewBox="0 0 44 20" style="opacity: 0.85;"><rect x="2" y="12" width="40" height="6" rx="3" fill="#C9D1DC"></rect><rect x="9" y="6" width="18" height="6" rx="2" fill="#C9D1DC"></rect><rect x="27" y="8" width="15" height="2" fill="#C9D1DC"></rect></svg>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 8px rgba(0,0,0,0.9);">
+              <span class="num" style="font-size: 28px; line-height: 1;">2 440</span>
+              <span style="font-size: 12px; color: #DCE2EA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Mesa Line</span>
+              <span style="font-size: 12px; color: #C9D1DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Kolos IV</span>
+            </span>
+          </a>
+        
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

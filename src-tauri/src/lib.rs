@@ -24,12 +24,14 @@ pub mod models;
 mod performance_trends;
 pub mod ratings;
 pub(crate) mod recap;
+mod reference;
 mod schema;
 mod session_insights;
 mod session_story;
 pub mod storage;
 mod team_relative;
 mod team_relative_results;
+mod updates;
 mod vehicle_catalog_probe;
 mod vehicle_class_catalog;
 mod vehicle_names;
@@ -1485,6 +1487,82 @@ async fn get_game_image(
     .await
 }
 
+/// A-1 (spec 32 §2): how the players in the player's own battles did, per vehicle tier and
+/// class. Counted at read time from the anonymous roster; the answer holds aggregates only.
+#[tauri::command]
+async fn get_reference_tables(app: AppHandle) -> CommandResult<reference::ReferenceTables> {
+    on_state(app, move |state| {
+        let battles = state.database.reference_rows()?;
+        Ok(reference::reference_tables(
+            battles.iter().map(Vec::as_slice),
+        ))
+    })
+    .await
+}
+
+/// Spec 32 §5.1: whether the player agreed to the update check ("unasked" until answered).
+#[tauri::command]
+async fn get_update_consent(app: AppHandle) -> CommandResult<updates::UpdateConsent> {
+    on_state(app, move |state| {
+        updates::consent(&state.database).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+async fn set_update_consent(
+    app: AppHandle,
+    enabled: bool,
+) -> CommandResult<updates::UpdateConsent> {
+    on_state(app, move |state| {
+        updates::set_consent(&state.database, enabled).map_err(Into::into)
+    })
+    .await
+}
+
+/// Spec 32 §5.2: one check at start, in the background, only with consent. Sends nothing but the
+/// HTTP request for the signed update file; answers with the version and its notes.
+#[tauri::command]
+async fn check_for_update(app: AppHandle) -> CommandResult<Option<updates::AvailableUpdate>> {
+    use tauri_plugin_updater::UpdaterExt;
+    updates::require_consent(&app.state::<AppState>().database)?;
+    let updater = app
+        .updater_builder()
+        .timeout(updates::CHECK_TIMEOUT)
+        .build()
+        .map_err(|error| AppError::Update(error.to_string()))?;
+    let update = updater
+        .check()
+        .await
+        .map_err(|error| AppError::Update(error.to_string()))?;
+    Ok(update.map(|update| updates::AvailableUpdate {
+        version: update.version,
+        notes: update.body,
+    }))
+}
+
+/// Installs the update the player clicked ("Zainstaluj i uruchom ponownie") and restarts. The
+/// signature is checked against the public key in `tauri.conf.json` before anything runs.
+#[tauri::command]
+async fn install_update(app: AppHandle) -> CommandResult<()> {
+    use tauri_plugin_updater::UpdaterExt;
+    updates::require_consent(&app.state::<AppState>().database)?;
+    let update = app
+        .updater_builder()
+        .timeout(updates::INSTALL_TIMEOUT)
+        .build()
+        .map_err(|error| AppError::Update(error.to_string()))?
+        .check()
+        .await
+        .map_err(|error| AppError::Update(error.to_string()))?
+        .ok_or_else(|| AppError::Update("no update".into()))?;
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|error| AppError::Update(error.to_string()))?;
+    app.restart();
+}
+
 /// The weekly report (spec 20 E7, spec 27): this ISO week in local time against the four weeks
 /// before, weekly goals and last week's result. WN8 only with XVM data.
 #[tauri::command]
@@ -1805,6 +1883,7 @@ pub fn run() {
         // Hotfix 1.0.0-beta.3: the window opens the folder picker (`dialog:allow-open` only);
         // the chosen path goes to `configure_local_source`, which checks it.
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             fs::create_dir_all(&dir)?;
@@ -1971,6 +2050,11 @@ pub fn run() {
             get_session_story,
             get_recap,
             get_weekly_report,
+            get_reference_tables,
+            get_update_consent,
+            set_update_consent,
+            check_for_update,
+            install_update,
             get_map_record,
             get_session_maps,
             get_battle_view

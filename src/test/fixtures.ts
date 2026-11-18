@@ -4,6 +4,11 @@
  */
 import type {
   AppSnapshot,
+  ReferenceCell,
+  ReferenceMetric,
+  ReferenceMetricKind,
+  ReferenceTables,
+  TankPosition,
   Battle,
   BattleDetailView,
   BattleHistoryPage,
@@ -713,4 +718,134 @@ export function weeklyReport(overrides: Partial<WeeklyReport> = {}): WeeklyRepor
     wn8: { current: 2_150, previous: [2_010, 2_080, null, 1_990] },
     ...overrides,
   };
+}
+
+/** A-1 (spec 32 §2): one metric of a reference cell (synthetic numbers). */
+/**
+ * Different numbers for every metric (author's fixup after STOP 2 preparation, 2026-11-18): with
+ * one set for all, a row showing another metric's numbers could not be seen on screen or in tests.
+ */
+const REFERENCE_VALUES: Record<
+  ReferenceMetricKind,
+  [
+    p25: number,
+    median: number,
+    p75: number,
+    p90: number,
+    own: number | null,
+    position: number | null,
+  ]
+> = {
+  damage: [1100, 1650, 2300, 3050, 1870, 58.4],
+  assist_radio_track: [180, 320, 520, 760, 410, 63.2],
+  spotted: [0, 1, 2, 3, 1.5, 61],
+  kills: [0, 1, 2, 3, 1, 52.7],
+  blocked: [300, 860, 1500, 2200, 1200, 66.1],
+  life_time: [180, 277, 380, 440, 269, 47.3],
+  accuracy: [62, 71, 80, 86, null, null],
+};
+
+export function referenceMetric(
+  metric: ReferenceMetricKind,
+  over: Partial<ReferenceMetric> = {},
+): ReferenceMetric {
+  const [p25, median, p75, p90, ownMedian, ownPosition] = REFERENCE_VALUES[metric];
+  return {
+    metric,
+    count: 5354,
+    p25,
+    median,
+    p75,
+    p90,
+    ownCount: 131,
+    ownMedian,
+    ownPosition,
+    ...over,
+  };
+}
+
+const REFERENCE_KINDS: ReferenceMetricKind[] = [
+  "damage",
+  "assist_radio_track",
+  "spotted",
+  "kills",
+  "blocked",
+  "life_time",
+  "accuracy",
+];
+
+/** Reference tables with one cell, tier X medium tanks (the tanks of `overview()`). */
+export function referenceTables(cell: Partial<ReferenceCell> = {}): ReferenceTables {
+  const level = cell.level ?? "values";
+  return {
+    battles: 2012,
+    minRows: 200,
+    minRowsApproximate: 50,
+    minOwnBattles: 10,
+    cells: [
+      {
+        tier: 10,
+        vehicleClass: "medium_tank",
+        level,
+        population: 5354,
+        ownBattles: 131,
+        metrics: level === "count_only" ? [] : REFERENCE_KINDS.map((kind) => referenceMetric(kind)),
+        ...cell,
+      },
+    ],
+    // The tanks of `overview()` in their cell (Overview, decision 2026-11-18).
+    tanks:
+      level === "values"
+        ? [
+            tankPosition(102, 3100, 88.4, 64),
+            tankPosition(101, 2900, 81.2, 131),
+            tankPosition(103, 2400, 79, 41),
+          ]
+        : [],
+  };
+}
+
+export function tankPosition(
+  vehicleId: number,
+  medianDamage: number,
+  position: number,
+  battles: number,
+): TankPosition {
+  return { vehicleId, tier: 10, vehicleClass: "medium_tank", battles, medianDamage, position };
+}
+
+/** Trends over 100 battles with current and previous values (Overview, spec 32 §4.2). */
+export function overviewTrends(wn8 = true): PerformanceTrendReport {
+  const metric = (name: string, current: number | null, previous: number | null) => ({
+    metric: name,
+    currentValue: current,
+    previousValue: previous,
+    currentSampleSize: 100,
+    previousSampleSize: 100,
+    // Ten points of a slow rise with a little wobble, for the small line charts.
+    points:
+      current === null || previous === null
+        ? []
+        : Array.from({ length: 10 }, (_, index) => ({
+            ordinal: index + 1,
+            battleTime: NOW - (10 - index) * HOUR,
+            value:
+              previous +
+              ((current - previous) * index) / 9 +
+              (index % 3 === 1 ? 1 : -1) * 0.01 * current,
+            sampleSize: 10,
+            coverage: 1,
+            vehicleId: null,
+          })),
+  });
+  return {
+    range: "last100",
+    currentBattleCount: 100,
+    previousBattleCount: 100,
+    metrics: [
+      metric("damage", 2702, 2600),
+      metric("win_rate", 52, 50),
+      metric("wn8", wn8 ? 2150 : null, wn8 ? 2050 : null),
+    ],
+  } as unknown as PerformanceTrendReport;
 }

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>RC-Start — makieta 1.0 RC (statyczna)</title>
+<!-- Makieta z płótna "Afterbattle 2.0 — redesign", rząd "1.0 RC", zaakceptowana 2026-11-17.
+     Dane syntetyczne; mapy i ikony czołgów to zamienniki (D19). Wzorzec układu, nie kod do skopiowania. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@300;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070B14;color:#EEF1F6;font-family:Inter,system-ui,sans-serif}
+a{color:#F3A36B}a:hover{color:#FFC08F}
+.card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:20px}
+.muted{color:#9AA6B8}.soft{color:#C9D1DC}
+.step{display:grid;grid-template-columns:36px 1fr;gap:6px 16px;padding:20px 0}
+.step + .step{border-top:1px solid rgba(255,255,255,0.05)}
+.dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;background:rgba(255,255,255,0.06);color:#C9D1DC;grid-row:1 / span 3}
+.dot-ok{background:rgba(240,138,60,0.18);color:#F7B27A}
+.q{margin:0;font-size:17px;font-weight:600}
+.btn{font:inherit;font-size:14px;font-weight:500;color:#EEF1F6;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:999px;padding:0 20px;min-height:44px}
+.btn-acc{background:#F08A3C;color:#0A101C;border-color:#F08A3C;font-weight:600;padding:0 28px}
+.seg{display:inline-flex;border:1px solid rgba(255,255,255,0.18);border-radius:999px;padding:3px;gap:2px}
+.seg button{font:inherit;font-size:14px;color:#C9D1DC;background:transparent;border:0;border-radius:999px;padding:0 18px;min-height:38px}
+.seg button[aria-pressed="true"]{background:rgba(240,138,60,0.18);color:#FFE2CB}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 1000px; display: flex; align-items: center; justify-content: center; background: radial-gradient(700px 420px at 50% 0%, rgba(70,104,210,0.14), transparent 65%), #070B14;">
+  <main style="width: 680px; display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <svg aria-hidden="true" width="52" height="52" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#16223A"></rect><g transform="translate(5.12 5.4) scale(0.84)"><polygon points="32,9 53,55 43.5,55 32,29 20.5,55 11,55" fill="none" stroke="#C9D0D9" stroke-width="4.4"></polygon><polyline points="24,47 32,40.5 40,47" fill="none" stroke="#F08A3C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline></g></svg>
+      <div>
+        <h1 style="margin: 0; font-family: 'Big Shoulders', sans-serif; font-weight: 500; font-size: 44px; line-height: 1;">Witaj w Afterbattle</h1>
+        <p class="muted" style="margin: 6px 0 0; font-size: 14px;">Trzy rzeczy i można grać. Wszystko zmienisz później w Ustawieniach.</p>
+      </div>
+    </div>
+    <section class="card" style="padding: 6px 28px;" aria-label="Pierwsze ustawienia">
+      <div class="step">
+        <span class="dot dot-ok" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 10 17 19 7"></polyline></svg></span>
+        <p class="q">Folder gry</p>
+        <p class="soft" style="margin: 0; font-size: 14px;">Znaleziony: D:\Gry\WoT</p>
+        <div><button type="button" class="btn">Wskaż inny folder</button></div>
+      </div>
+      <div class="step">
+        <span class="dot" aria-hidden="true">2</span>
+        <p class="q" id="q-addr">Jak się do Ciebie zwracać?</p>
+        <p class="muted" style="margin: 0; font-size: 14px;">W podsumowaniach: „zadałeś”, „zadałaś” albo bez formy.</p>
+        <div><div class="seg" role="group" aria-labelledby="q-addr"><button type="button" aria-pressed="false">On</button><button type="button" aria-pressed="false">Ona</button><button type="button" aria-pressed="true">Bez formy</button></div></div>
+      </div>
+      <div class="step">
+        <span class="dot" aria-hidden="true">3</span>
+        <p class="q" id="q-upd">Sprawdzać aktualizacje przy starcie?</p>
+        <p class="muted" style="margin: 0; font-size: 14px; line-height: 1.5;">Aplikacja raz przy starcie zapyta GitHuba o numer najnowszej wersji. Nic o Tobie nie wysyła, a nowa wersja instaluje się dopiero po Twoim kliknięciu.</p>
+        <div><div class="seg" role="group" aria-labelledby="q-upd"><button type="button" aria-pressed="true">Tak</button><button type="button" aria-pressed="false">Nie</button></div></div>
+      </div>
+    </section>
+    <div style="display: flex; justify-content: flex-end;"><button type="button" class="btn btn-acc">Zaczynamy</button></div>
+  </main>
+</div>
+</body>
+</html>

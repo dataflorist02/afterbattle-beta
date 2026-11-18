@@ -1,6 +1,6 @@
 # Threat model
 
-Last reviewed: 2026-11-16 (1.0.0-beta.4: template summaries add no permission, network access, download or stored data; 1.0.0-beta.3: the window may open the folder dialog, game folder detection reads the registry and probes fixed drives; 1.0.0-beta.2: the window may listen to the backend's own events; 1.0.0-beta.1, internally v2: window capability for the custom title bar, game pictures including DDS loading screens, CI with pinned actions and audits, release checksums; earlier in v2.0: `python.log`, Tomato.gg and Wargaming integrations removed, XVM opt-in enforced, recovery mode hardened).
+Last reviewed: 2026-11-18 (1.0.0-rc.1: opt-in update check and signed updates through `tauri-plugin-updater`, see "Updates"; 1.0.0-beta.4: template summaries add no permission, network access, download or stored data; 1.0.0-beta.3: the window may open the folder dialog, game folder detection reads the registry and probes fixed drives; 1.0.0-beta.2: the window may listen to the backend's own events; 1.0.0-beta.1, internally v2: window capability for the custom title bar, game pictures including DDS loading screens, CI with pinned actions and audits, release checksums; earlier in v2.0: `python.log`, Tomato.gg and Wargaming integrations removed, XVM opt-in enforced, recovery mode hardened).
 
 ## Security objectives and assets
 
@@ -34,7 +34,15 @@ Game pictures (v2.0): map loading screens (`map/screen/*.dds`) are decoded in Ru
 
 ### Network and response attacks
 
-Controls: network off by default and opt-in enforced before every request; one compiled-in HTTPS origin (XVM); no redirects; connect/total timeouts; streamed hard byte limits; schema validation; no player identifiers sent to XVM; daily XVM attempt limit and single-flight.
+Controls: network off by default and opt-in enforced before every request. XVM: one compiled-in HTTPS origin, no redirects, connect/total timeouts, streamed hard byte limits, schema validation, no player identifiers sent, daily attempt limit and single-flight. Update check: see "Updates".
+
+### Updates (1.0.0-rc.1)
+
+The update check is a second network connection, made by the backend with the official `tauri-plugin-updater` 2 (Tauri v2, NSIS). The WebView gets no updater or process permission: it calls four typed commands (`get_update_consent`, `set_update_consent`, `check_for_update`, `install_update`), and the last two refuse with `update_check_off` unless the stored consent is an explicit "on" (unasked or off: no request). The endpoint is compiled in (`tauri.conf.json`): `https://github.com/dataflorist02/afterbattle-beta/releases/latest/download/latest.json`, HTTPS, following GitHub's redirect to its download host; the request carries only the plugin's generic user agent, no identifier. At most one check per start (20 s timeout); download only after the player's click (300 s timeout).
+
+Threat: a replaced `latest.json` or installer (a compromised GitHub account or release, a hostile network) offering malicious code. Defense: every update package is verified against the author's minisign (Ed25519) public key embedded in `tauri.conf.json` before it runs; an unsigned or wrongly signed package is refused. The private key and its password stay outside the repository and outside the public CI; `scripts/release.ps1` reads them from `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` and refuses to build a release without the key, while the configuration keeps `createUpdaterArtifacts` off so the public CI never needs it. A test checks the public key's format (minisign header, key id matching the comment, Ed25519 length) and the endpoint.
+
+Residual risk: a stolen private key (with its password) lets an attacker who also controls the release sign a malicious update; the key is the root of trust, and after a leak a new key ships in a manual release. `latest.json` itself is not signed: a hostile network or release can hide an update (freeze) or show misleading notes in the notice, but cannot make the app install an unsigned package, and nothing installs without the player's click. The plugin does not limit the size of `latest.json`. The installer is not Authenticode-signed (author decision 2026-11-17); a manual install is still verified with `SHA256SUMS.txt`.
 
 ### Secret or identifier disclosure
 
@@ -48,7 +56,7 @@ Controls: recovery mode with one fixed recovery database next to the real one (n
 
 ### Supply chain and updates
 
-Controls: lockfiles, minimal dependencies (each new one justified: license, size, maintenance; `cargo tree` checked before and after), CI with actions pinned to commit SHAs running tests, Clippy, format, `cargo audit` and `pnpm audit --prod`, Dependabot for npm, cargo and actions in the private repository only (the public repository gets security alerts, no update pull requests), and SHA-256 checksums of the installer from `scripts/release.ps1`. Required for the stable 1.0.0: SBOM, Authenticode and Tauri updater signatures. The public beta 1.0.0-beta.1 (author decision) has no updater and remains unsigned; users verify `SHA256SUMS.txt`.
+Controls: lockfiles, minimal dependencies (each new one justified: license, size, maintenance; `cargo tree` checked before and after), CI with actions pinned to commit SHAs running tests, Clippy, format, `cargo audit` and `pnpm audit --prod`, Dependabot for npm, cargo and actions in the private repository only (the public repository gets security alerts, no update pull requests), and SHA-256 checksums of the installer from `scripts/release.ps1`. Since 1.0.0-rc.1 releases carry Tauri updater signatures (see "Updates"); Authenticode is outside 1.0.0 (author decision 2026-11-17) and returns only if testers drop off at the SmartScreen warning. The betas had no updater; users verify `SHA256SUMS.txt`.
 
 ## Out of scope
 
