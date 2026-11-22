@@ -12,7 +12,7 @@ Afterbattle is a local-first Windows desktop analytics application for World of 
 
 | | |
 |---|---|
-| Status | 1.0.0-rc.2, release candidate (pre-release) |
+| Status | 1.0.0-rc.3, release candidate (pre-release) |
 | Platform | Windows desktop (10/11) |
 | Architecture | Tauri 2 + Rust + React/TypeScript |
 | Storage | Local SQLite (schema v10) |
@@ -136,10 +136,10 @@ AI output is not treated as a source of truth; the repository’s contracts, tes
 
 ## Quality and validation
 
-The 1.0.0-rc.2 candidate has been checked locally on Windows:
+The 1.0.0-rc.3 candidate has been checked locally on Windows:
 
-- Frontend tests: 439/439 passed; ESLint and Prettier clean.
-- Rust tests: 843 passed, 0 failed; 6 ignored tests read local game data or measure speed and are run by the author only.
+- Frontend tests: 628/628 passed; ESLint and Prettier clean.
+- Rust tests: 870 passed, 0 failed; 6 ignored tests read local game data or measure speed and are run by the author only.
 - Summary invariants on synthetic data (100 sessions, 200 battles, 50 weeks, every phrase variant in all three address forms): numbers only from cited facts, no contradiction with the battle result or survival, every word in an SJP.PL word list, no judging words.
 - `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings`: pass.
 - Mutation testing, at least 85%: `cargo mutants` for the Rust parsers, rules and analytics, Stryker (`tools/mutants`) for earlier frontend logic; since 1.0.0-beta.4 mutations cover decision logic only (thresholds and selection rules), run once before a release.
@@ -149,7 +149,7 @@ GitHub Actions CI (actions pinned to commit SHAs) runs lint, frontend tests and 
 
 ## Project status and limitations
 
-1.0.0-rc.2 is the release candidate for 1.0 ("Afterbattle 1.0 RC": Overview, comparison with the players of your battles, updates with consent), marked as a pre-release. After two weeks without a serious bug the same commit becomes 1.0.0. The scope is Windows desktop usage with locally recorded random-battle replays.
+1.0.0-rc.3 is the release candidate for 1.0 ("Afterbattle 1.0 RC 3": Overview, comparison with the players of your battles, updates with consent, and since rc.3 the temperature of results (Żar) and a steel plate forged from every ended session (Damast)), marked as a pre-release. After two weeks without a serious bug the same commit becomes 1.0.0. The scope is Windows desktop usage with locally recorded random-battle replays.
 
 Known limitations include:
 
@@ -187,10 +187,10 @@ The application asks the user to approve a local World of Tanks installation bef
 
 ### Po polsku
 
-1. Pobierz `Afterbattle_1.0.0-rc.2_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-rc.2` na GitHubie (oznaczonego jako pre-release).
+1. Pobierz `Afterbattle_1.0.0-rc.3_x64-setup.exe` i `SHA256SUMS.txt` z wydania `v1.0.0-rc.3` na GitHubie (oznaczonego jako pre-release).
 2. Sprawdź, czy plik jest nienaruszony. W PowerShellu, w folderze z pobranymi plikami:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-rc.2_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-rc.3_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Oba ciągi znaków muszą być identyczne. Jeśli się różnią, nie instaluj i zgłoś to w zgłoszeniach (Issues) repozytorium.
@@ -199,10 +199,10 @@ The application asks the user to approve a local World of Tanks installation bef
 
 ### In English
 
-1. Download `Afterbattle_1.0.0-rc.2_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-rc.2` release on GitHub (marked as a pre-release).
+1. Download `Afterbattle_1.0.0-rc.3_x64-setup.exe` and `SHA256SUMS.txt` from the `v1.0.0-rc.3` release on GitHub (marked as a pre-release).
 2. Check the file is intact. In PowerShell, in the folder with the downloads:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-rc.2_x64-setup.exe).Hash.ToLower()
+   (Get-FileHash -Algorithm SHA256 .\Afterbattle_1.0.0-rc.3_x64-setup.exe).Hash.ToLower()
    Get-Content .\SHA256SUMS.txt
    ```
    Both strings must be identical. If they differ, do not install and report it in the repository's Issues.

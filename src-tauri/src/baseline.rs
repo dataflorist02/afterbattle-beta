@@ -4,18 +4,18 @@ use crate::{
     history::safe_identity_value,
     models::{
         BaselineComparisonState, BaselineConfidence, BaselineDelta, BaselineMetric, BaselineScope,
-        BaselineWindowKind, BaselineWindowResult, Battle, BattleHistoryCursor,
-        NormalizedBaselineDeltas, NormalizedBaselineMetrics, PlayerBaselinePresentation,
-        SessionBaselineComparison, SessionBaselineKind, SessionInsightUnavailableReason,
-        SessionMetricBattles, VehicleBaselinePresentation, VehicleSessionBaselineComparison,
-        Wn8Calculation, stats_eligibility,
+        BaselineWindowKind, BaselineWindowResult, Battle, BattleHistoryCursor, DamastReference,
+        DamastTierDamage, NormalizedBaselineDeltas, NormalizedBaselineMetrics,
+        PlayerBaselinePresentation, Session, SessionBaselineComparison, SessionBaselineKind,
+        SessionInsightUnavailableReason, SessionMetricBattles, VehicleBaselinePresentation,
+        VehicleSessionBaselineComparison, VehicleTemperature, Wn8Calculation, stats_eligibility,
     },
     ratings::{WN8_FORMULA_VERSION, calculate_battle_wn8, calculate_wn8},
     session_insights::{derive_session_insights, unavailable_presentation},
     session_wn8_presentation,
     storage::Database,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub const PLAYER_BASELINE_VERSION: &str = "personal-baseline-v1";
 const CANDIDATE_PAGE_SIZE: usize = 200;
@@ -407,6 +407,103 @@ pub(crate) fn vehicle_baseline(
         vehicle_id,
         expected,
     ))
+}
+
+/// Battles a tank needs (the count of the tank overview) for a temperature dot (spec 33 §3).
+pub(crate) const TEMPERATURE_MIN_BATTLES: usize = 10;
+
+/// The temperature dots of the tank list in one call (spec 33 §3, author's fixup after the E13
+/// checkpoint): every tank with at least [`TEMPERATURE_MIN_BATTLES`] battles in the history, with
+/// exactly the numbers of its [`vehicle_baseline`] (last 10 and last 100 average damage), so a
+/// dot always agrees with the tank's header. Read only; the tanks in the order of their ids.
+pub(crate) fn vehicle_temperatures(
+    database: &Database,
+    cutoff: i64,
+    excluded_session_id: Option<&str>,
+    expected: Option<&LoadedExpectedSnapshot>,
+) -> Result<Vec<VehicleTemperature>, AppError> {
+    // The same count as `vehicle_history_overview` (`total_battles`), the screen's old filter.
+    let mut counts = BTreeMap::<i64, usize>::new();
+    for battle in database.all_history_battles()? {
+        if let Some(vehicle_id) = battle.wg_tank_id {
+            *counts.entry(vehicle_id).or_default() += 1;
+        }
+    }
+    counts
+        .into_iter()
+        .filter(|&(vehicle_id, count)| vehicle_id > 0 && count >= TEMPERATURE_MIN_BATTLES)
+        .map(|(vehicle_id, _)| {
+            let baseline =
+                vehicle_baseline(database, vehicle_id, cutoff, excluded_session_id, expected)?;
+            let window = |kind: BaselineWindowKind| {
+                baseline.windows.iter().find(|window| window.window == kind)
+            };
+            let (Some(recent), Some(longer)) = (
+                window(BaselineWindowKind::Last10),
+                window(BaselineWindowKind::Last100),
+            ) else {
+                return Err(AppError::InvalidApiResponse);
+            };
+            Ok(VehicleTemperature {
+                vehicle_id,
+                recent_damage: recent.average_damage.clone(),
+                average_damage: longer.average_damage.clone(),
+                average_battles: longer.eligible_battles,
+            })
+        })
+        .collect()
+}
+
+/// Damast (spec 34 §2): the player's own averages before a session, from the last 100 counted
+/// battles before its start (the trends' window, without the session): WN8, damage over all
+/// tiers, and the same battles' damage per tier with their count. Read only.
+pub(crate) fn damast_reference(
+    database: &Database,
+    session: &Session,
+    tiers: &HashMap<i64, u8>,
+    expected: Option<&LoadedExpectedSnapshot>,
+) -> Result<DamastReference, AppError> {
+    let cutoff = session.started_at;
+    let candidates = load_candidates(database, cutoff, None, Some(&session.id), &BTreeSet::new())?;
+    let kind = BaselineWindowKind::Last100;
+    let window = baseline_window(
+        &candidates,
+        expected,
+        cutoff,
+        BaselineScope::Player,
+        None,
+        kind,
+    );
+    // The battles behind `average_damage` (`numeric_metric`): counted, with damage, newest 100.
+    let mut per_tier = BTreeMap::<u8, (usize, i64)>::new();
+    for battle in window_candidates(&candidates, kind.limit(), expected)
+        .iter()
+        .filter(|battle| stats_eligibility(battle))
+        .filter(|battle| battle.damage.is_some())
+        .take(kind.limit())
+    {
+        let tier = battle.wg_tank_id.and_then(|id| tiers.get(&id).copied());
+        if let (Some(tier), Some(damage)) = (tier, battle.damage) {
+            let entry = per_tier.entry(tier).or_default();
+            entry.0 += 1;
+            entry.1 += damage;
+        }
+    }
+    Ok(DamastReference {
+        cutoff,
+        wn8: window.wn8.value,
+        wn8_battles: window.wn8.eligible_battles,
+        average_damage: window.average_damage.value,
+        damage_battles: window.average_damage.eligible_battles,
+        tiers: per_tier
+            .into_iter()
+            .map(|(tier, (battles, sum))| DamastTierDamage {
+                tier,
+                battles,
+                average_damage: sum as f64 / battles as f64,
+            })
+            .collect(),
+    })
 }
 
 pub(crate) fn delta(current: Option<f64>, baseline: Option<f64>) -> BaselineDelta {
@@ -1315,5 +1412,110 @@ mod tests {
             window(&without, BaselineWindowKind::Last10).candidate_battles,
             10
         );
+    }
+
+    /// Spec 33 §3, author's fixup after the E13 checkpoint: the temperature dots of the tank list
+    /// come from one call that gives, for every tank with at least 10 battles, exactly the
+    /// numbers one `vehicle_baseline` per tank gave before.
+    #[test]
+    fn vehicle_temperatures_give_every_tank_with_ten_battles_the_numbers_of_its_baseline() {
+        let temp = tempdir().unwrap();
+        let database = Database::initialize(temp.path().join("temperatures.sqlite3")).unwrap();
+        // Tank 1: 130 battles (both windows full), tank 2: 15, tank 3: 10, tank 4: 9 (no dot).
+        let mut time = 0;
+        for (vehicle_id, count) in [(1, 130), (2, 15), (3, 10), (4, 9)] {
+            for index in 0..count {
+                time += 1;
+                let mut value = battle(
+                    &format!("tank-{vehicle_id}-{index:03}"),
+                    time,
+                    vehicle_id,
+                    600 + vehicle_id * 100 + index * 7,
+                );
+                database.insert_battle(&mut value, false).unwrap();
+            }
+        }
+        let expected = snapshot();
+        for cutoff in [1_000, 120] {
+            let all = vehicle_temperatures(&database, cutoff, None, Some(&expected)).unwrap();
+            assert_eq!(
+                all.iter().map(|tank| tank.vehicle_id).collect::<Vec<_>>(),
+                vec![1, 2, 3],
+                "cutoff {cutoff}"
+            );
+            for tank in &all {
+                let baseline =
+                    vehicle_baseline(&database, tank.vehicle_id, cutoff, None, Some(&expected))
+                        .unwrap();
+                let of = |kind| {
+                    baseline
+                        .windows
+                        .iter()
+                        .find(|window| window.window == kind)
+                        .unwrap()
+                };
+                let last10 = of(BaselineWindowKind::Last10);
+                let last100 = of(BaselineWindowKind::Last100);
+                assert_eq!(tank.recent_damage, last10.average_damage);
+                assert_eq!(tank.average_damage, last100.average_damage);
+                assert_eq!(tank.average_battles, last100.eligible_battles);
+            }
+        }
+        // The same tanks as the overview's count of battles (the old filter of the screen).
+        let overview = crate::history::vehicle_history_overview(&database, None, None).unwrap();
+        let mut counted = overview
+            .vehicles
+            .iter()
+            .filter(|tank| tank.total_battles >= TEMPERATURE_MIN_BATTLES)
+            .map(|tank| tank.vehicle_id)
+            .collect::<Vec<_>>();
+        counted.sort_unstable();
+        assert_eq!(counted, vec![1, 2, 3]);
+        let tank1 = &vehicle_temperatures(&database, 1_000, None, None).unwrap()[0];
+        // Damage rises with every battle: the last 10 above the average of the last 100.
+        assert!(tank1.recent_damage.value > tank1.average_damage.value);
+        assert_eq!(tank1.recent_damage.eligible_battles, 10);
+        assert_eq!(tank1.average_battles, 100);
+    }
+
+    /// rc.3 mutation (`vehicle_id > 0` → `>= 0`): a tank id of 0 is not a tank, however many
+    /// battles carry it.
+    #[test]
+    fn vehicle_temperatures_give_no_dot_to_tank_id_zero() {
+        let (_temp, database) = empty_database("temperatures-id-zero.sqlite3");
+        for (vehicle_id, count) in [(0, 12), (1, 10)] {
+            for index in 0..count {
+                let mut value = battle(
+                    &format!("id-{vehicle_id}-{index:02}"),
+                    vehicle_id * 100 + index,
+                    vehicle_id,
+                    1_000,
+                );
+                database.insert_battle(&mut value, false).unwrap();
+            }
+        }
+        let all = vehicle_temperatures(&database, 1_000, None, None).unwrap();
+        assert_eq!(
+            all.iter().map(|tank| tank.vehicle_id).collect::<Vec<_>>(),
+            vec![1]
+        );
+    }
+
+    #[test]
+    fn vehicle_temperatures_leave_out_the_running_session_like_the_baseline() {
+        let (_temp, database) = database_with_history(60);
+        let mut running = battle("running-one", 1_000, 1, 9_000);
+        database.insert_battle(&mut running, true).unwrap();
+        let session = running.session_id.clone().unwrap();
+        let all = vehicle_temperatures(&database, 2_000, Some(&session), None).unwrap();
+        let baseline = vehicle_baseline(&database, 1, 2_000, Some(&session), None).unwrap();
+        let tank1 = all.iter().find(|tank| tank.vehicle_id == 1).unwrap();
+        let last10 = baseline
+            .windows
+            .iter()
+            .find(|window| window.window == BaselineWindowKind::Last10)
+            .unwrap();
+        assert_eq!(tank1.recent_damage, last10.average_damage);
+        assert!(tank1.recent_damage.value.unwrap() < 9_000.0);
     }
 }

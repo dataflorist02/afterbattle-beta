@@ -15,11 +15,12 @@ function cargoVersion(): string {
 describe("release identity", () => {
   it("takes the version from Cargo.toml everywhere and keeps product metadata aligned", () => {
     // Spec 32 §7 (author decision 2026-11-17): 1.0.0-rc.1, "Afterbattle 1.0 RC"; rc.2 (author,
-    // 2026-11-18): security update of zip, the 1.0.0 clock runs on.
-    expect(cargoVersion()).toBe("1.0.0-rc.2");
+    // 2026-11-18): security update of zip, the 1.0.0 clock runs on; rc.3 (author, 2026-11-22):
+    // Żar and Damast.
+    expect(cargoVersion()).toBe("1.0.0-rc.3");
     expect(APP_NAME).toBe("Afterbattle");
     expect(RELEASE_CHANNEL).toBe("Public beta");
-    expect(APP_DISPLAY_NAME).toBe("Afterbattle 1.0 RC 2");
+    expect(APP_DISPLAY_NAME).toBe("Afterbattle 1.0 RC 3");
     expect(tauriConfig.app.windows[0].title).toBe(APP_DISPLAY_NAME);
     expect(APP_VERSION).toBe(cargoVersion());
     expect(packageJson.version).toBe(cargoVersion());
@@ -112,6 +113,7 @@ describe("display name (title bar and window title)", () => {
     // the fixes after it count on ("Afterbattle 1.0 RC 2").
     expect(displayName("1.0.0-rc.1")).toBe("Afterbattle 1.0 RC");
     expect(displayName("1.0.0-rc.2")).toBe("Afterbattle 1.0 RC 2");
+    expect(displayName("1.0.0-rc.3")).toBe("Afterbattle 1.0 RC 3");
     expect(displayName("1.1.0-rc")).toBe("Afterbattle 1.1 RC");
     expect(displayName("1.0.0-beta")).toBe("Afterbattle beta");
     expect(displayName("1.0.0")).toBe("Afterbattle 1.0.0");

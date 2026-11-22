@@ -16,6 +16,8 @@ import { outcomeKey } from "./BattleTable";
 import { MapBackdrop } from "./MapBackdrop";
 import { useTankLabel } from "./TankName";
 import { VehicleImage } from "./ui";
+import { heatProps, type Heat } from "../lib/ember";
+import { EmberNumber, EmberSweep } from "./Ember";
 
 type Translate = (key: UiKey, params?: Record<string, string | number>) => string;
 
@@ -46,12 +48,21 @@ export function HistoryRows({
   onOpenBattle,
   now = Date.now(),
   entering = NO_ROWS,
+  heat = () => null,
+  hotId = null,
+  swept = NO_ROWS,
 }: {
   items: BattleHistoryItem[];
   onOpenBattle: (battleId: string) => void;
   now?: number;
   /** Rows that enter with the cascade (the first rows of the first page, once). */
   entering?: ReadonlySet<string>;
+  /** Spec 33 §3: a row's damage against the player's own average on its tank. */
+  heat?: (item: BattleHistoryItem) => Heat | null;
+  /** The record of the rows shown: the screen's one hot spot. */
+  hotId?: string | null;
+  /** Rows that just arrived: one sweep each. */
+  swept?: ReadonlySet<string>;
 }) {
   const { language, tr } = useLanguage();
   const label = useTankLabel();
@@ -82,6 +93,9 @@ export function HistoryRows({
               const tank = label(item.vehicleKey, item.tankName);
               const loss = item.outcome === "defeat";
               const map = item.mapName ?? "—";
+              const temperature = heat(item);
+              const hot = item.battleId === hotId;
+              const sweep = swept.has(item.battleId);
               return (
                 <li
                   key={item.battleId}
@@ -99,9 +113,24 @@ export function HistoryRows({
                     as="button"
                     mapKey={item.mapKey}
                     width={420}
-                    className={loss ? "hrow hrow-loss" : "hrow"}
+                    className={[
+                      "hrow",
+                      loss ? "hrow-loss" : "",
+                      hot ? "ember-hot" : "",
+                      sweep ? "ember-swept" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     onClick={() => onOpenBattle(item.battleId)}
                   >
+                    {temperature && (
+                      <span
+                        className="hrow-temp temp-mark"
+                        aria-hidden="true"
+                        {...heatProps(temperature)}
+                      />
+                    )}
+                    {sweep && <EmberSweep />}
                     <span className={loss ? "hrow-result subtle" : "hrow-result"}>
                       {tr(outcomeKey(item.outcome))}
                     </span>
@@ -114,9 +143,11 @@ export function HistoryRows({
                     <span className="truncate hrow-map" title={map}>
                       {map}
                     </span>
-                    <span className="num right hrow-damage">
-                      {formatNumber(item.damage, language)}
-                    </span>
+                    <EmberNumber
+                      hot={hot}
+                      className="num right hrow-damage"
+                      text={formatNumber(item.damage, language)}
+                    />
                     <span className="num right hrow-assist">
                       {formatNumber(item.assist, language)}
                     </span>

@@ -13,6 +13,8 @@ import type {
   BattleDetailView,
   BattleHistoryPage,
   ChallengePresentation,
+  DamastSession,
+  DamastSessionPage,
   MapRecord,
   PerformanceTrendReport,
   Session,
@@ -23,6 +25,7 @@ import type {
   VehicleBaselinePresentation,
   VehicleHistoryOverview,
   VehicleHistoryReport,
+  VehicleTemperature,
   WeeklyReport,
 } from "../types";
 
@@ -179,6 +182,101 @@ export function summary(battles = 9, averageDamage: number | null = 3184): Sessi
   };
 }
 
+/**
+ * Damast (spec 34) of an ended session: the nine battles of `summary()`, tiers VIII–X, against
+ * own averages (WN8 2 000; damage 2 400 on VIII, 2 900 on IX, 3 000 on X). Damage is 1.18 times
+ * the tier's average and WN8 2 360 ± offsets that add up to zero, so the mean r is exactly 1.18:
+ * +18% warmer (intensity 0.52, 11 sparks), the same as the damage comparison of `comparison()`.
+ * The best battle is the sixth (r 1.27).
+ */
+export function damastSession(
+  id = "session-0",
+  startedAt = NOW - 24 * HOUR,
+  overrides: Partial<DamastSession> = {},
+): DamastSession {
+  const offsets = [-120, 150, -120, 150, -120, 300, -120, 150, -270];
+  const tierDamage = [2_832, 3_422, 3_540];
+  const battles = offsets.map((offset, index) => ({
+    // The battles of `summary()`: the plate and the strip name the same battles.
+    battleId: `battle-${index}`,
+    battleTime: startedAt + index * 600_000,
+    tier: 8 + (index % 3),
+    damage: tierDamage[index % 3],
+    wn8: 2_360 + offset,
+    win: index % 3 !== 1,
+  }));
+  return {
+    session: session({ id, status: "ended", startedAt, endedAt: startedAt + 3 * HOUR }),
+    wn8: 2_150,
+    averageDamage: 3_184,
+    battles,
+    reference: {
+      cutoff: startedAt,
+      wn8: 2_000,
+      wn8Battles: 100,
+      averageDamage: 2_800,
+      damageBattles: 100,
+      tiers: [
+        { tier: 8, battles: 30, averageDamage: 2_400 },
+        { tier: 9, battles: 30, averageDamage: 2_900 },
+        { tier: 10, battles: 40, averageDamage: 3_000 },
+      ],
+    },
+    ...overrides,
+  };
+}
+
+/**
+ * `damastSession` with its best battle (the highest r) at `index`: the numbers of the sixth
+ * battle and of battle `index` swap places, the ids and times stay in order.
+ */
+export function damastWithBest(index: number, id = "session-0"): DamastSession {
+  const plate = damastSession(id);
+  const battles = plate.battles.map((battle) => ({ ...battle }));
+  const numbers = ({ tier, damage, wn8, win }: (typeof battles)[number]) => ({
+    tier,
+    damage,
+    wn8,
+    win,
+  });
+  const best = numbers(battles[5]);
+  Object.assign(battles[5], numbers(battles[index]));
+  Object.assign(battles[index], best);
+  return { ...plate, battles };
+}
+
+/** The same session against a higher own WN8 (3 200): mean r 0.9145, 8.55% cooler. */
+export function coolerDamast(id = "session-0", startedAt = NOW - 24 * HOUR): DamastSession {
+  const plate = damastSession(id, startedAt);
+  return { ...plate, reference: { ...plate.reference, wn8: 3_200 } };
+}
+
+/** `count` ended sessions for History → Sessions, one day apart, newest first. */
+export function damastSessions(count: number, from = 0): DamastSession[] {
+  return Array.from({ length: count }, (_, index) => {
+    const number = from + index;
+    const plate = damastSession(`session-d${number}`, NOW - (number + 1) * 24 * HOUR);
+    // Every session a little different, so every plate (and tile key) is its own.
+    return {
+      ...plate,
+      wn8: 1_800 + ((number * 37) % 900),
+      battles: plate.battles.map((battle, battleIndex) => ({
+        ...battle,
+        damage: (battle.damage ?? 0) + ((number * 13 + battleIndex * 7) % 400) - 200,
+      })),
+    };
+  });
+}
+
+export function damastPage(items: DamastSession[], next = false): DamastSessionPage {
+  const last = items[items.length - 1];
+  return {
+    items,
+    nextCursor:
+      next && last ? { startedAt: last.session.startedAt, sessionId: last.session.id } : null,
+  };
+}
+
 export function comparison(baselineBattles = 100): SessionBaselineComparison {
   const vehicle = (vehicleId: number, tankName: string, baseline: number) => ({
     vehicleId,
@@ -269,6 +367,26 @@ export function overview(count = 3, tier: number | null = 10): VehicleHistoryOve
   } as unknown as VehicleHistoryOverview;
 }
 
+/** One dot of the tank list (`get_vehicle_temperatures`): last 10 against last 100 damage. */
+export function vehicleTemperature(
+  vehicleId: number,
+  recent: number,
+  battles = 100,
+  average = 2702,
+): VehicleTemperature {
+  const metric = (value: number, eligible: number) => ({
+    value,
+    eligibleBattles: eligible,
+    candidateBattles: eligible,
+  });
+  return {
+    vehicleId,
+    recentDamage: metric(recent, Math.min(10, battles)),
+    averageDamage: metric(average, battles),
+    averageBattles: battles,
+  };
+}
+
 export function vehicleBaseline(eligible = 100): VehicleBaselinePresentation {
   const metric = (value: number) => ({
     value,
@@ -330,6 +448,11 @@ export function trends(points = 120): PerformanceTrendReport {
           sampleSize: 10,
           coverage: 1,
           vehicleId: 101,
+          // The battle under the point (the chart's reading, E14 polish 2).
+          damage: 1_800 + ((index * 337) % 2_400),
+          mapName: index % 3 ? "Synthetic Hills" : "Test Valley",
+          vehicleKey: "synth-s01_tank",
+          tankName: "Alpha",
         })),
       },
     ],
@@ -836,6 +959,10 @@ export function overviewTrends(wn8 = true): PerformanceTrendReport {
             sampleSize: 10,
             coverage: 1,
             vehicleId: null,
+            damage: 2_000 + index * 100,
+            mapName: "Synthetic Hills",
+            vehicleKey: "synth-s01_alpha",
+            tankName: "Alpha",
           })),
   });
   return {

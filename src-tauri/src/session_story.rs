@@ -3,8 +3,6 @@
 //! of recent sessions. Plain rules with fixed thresholds (spec `docs/specs/26-e5-flare.md`); no
 //! model, no randomness. Only counted battles (D4) enter any number.
 
-use std::collections::HashMap;
-
 use serde::Serialize;
 
 use crate::models::{
@@ -23,10 +21,6 @@ pub(crate) const MIN_TREND_BATTLES: usize = 6;
 pub(crate) const TREND_THRESHOLD_PERCENT: f64 = 20.0;
 /// The best battle is named from 2 counted battles with damage.
 pub(crate) const MIN_BEST_BATTLES: usize = 2;
-/// Map thumbnails of one session card in History.
-pub(crate) const MAX_SESSION_MAPS: usize = 4;
-/// Sessions asked for at once.
-pub(crate) const MAX_SESSION_IDS: usize = 50;
 
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -381,53 +375,6 @@ pub(crate) fn map_record(map_key: &str, battles: &[Battle]) -> MapRecord {
         average_damage: (!damage.is_empty())
             .then(|| damage.iter().sum::<i64>() as f64 / damage.len() as f64),
     }
-}
-
-#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct SessionMaps {
-    pub session_id: String,
-    /// Up to 4 distinct map keys, newest battle first.
-    pub map_keys: Vec<String>,
-}
-
-/// Map keys of each session's battles (History, session collage). Order follows `session_ids`.
-pub(crate) fn session_maps(session_ids: &[String], battles: &[Battle]) -> Vec<SessionMaps> {
-    let mut by_session = HashMap::<&str, Vec<&Battle>>::new();
-    for battle in battles {
-        if let Some(session) = battle.session_id.as_deref() {
-            by_session.entry(session).or_default().push(battle);
-        }
-    }
-    session_ids
-        .iter()
-        .map(|session_id| {
-            let mut own = by_session.remove(session_id.as_str()).unwrap_or_default();
-            own.sort_by(|left, right| {
-                right
-                    .battle_time
-                    .cmp(&left.battle_time)
-                    .then_with(|| right.arena_id.cmp(&left.arena_id))
-            });
-            let mut map_keys = Vec::new();
-            for battle in own {
-                let Some(key) = battle.map_key.as_deref() else {
-                    continue;
-                };
-                if !map_keys.iter().any(|known| known == key) {
-                    map_keys.push(key.to_owned());
-                }
-                if map_keys.len() == MAX_SESSION_MAPS {
-                    break;
-                }
-            }
-            SessionMaps {
-                session_id: session_id.clone(),
-                map_keys,
-            }
-        })
-        .collect()
 }
 
 #[cfg(test)]
@@ -785,34 +732,6 @@ mod tests {
         assert_eq!(
             (none.battles, none.win_rate, none.average_damage),
             (0, None, None)
-        );
-    }
-
-    #[test]
-    fn session_maps_are_distinct_newest_first_and_at_most_four() {
-        let mut battles = (0..7)
-            .map(|index| battle(index, 1_000, 1, &format!("{:02}_m", index % 6)))
-            .collect::<Vec<_>>();
-        battles[6].map_key = None;
-        let mut other = battle(20, 1_000, 1, "50_other");
-        other.session_id = Some("session-2".into());
-        battles.push(other);
-        let mut loose = battle(21, 1_000, 1, "60_loose");
-        loose.session_id = None;
-        battles.push(loose);
-        let maps = session_maps(
-            &["session-1".into(), "session-2".into(), "session-3".into()],
-            &battles,
-        );
-        assert_eq!(maps[0].map_keys, ["05_m", "04_m", "03_m", "02_m"]);
-        assert_eq!(maps[1].map_keys, ["50_other"]);
-        assert!(maps[2].map_keys.is_empty());
-        assert_eq!(maps[2].session_id, "session-3");
-        let mut same_time = vec![battle(1, 1_000, 1, "01_a"), battle(2, 1_000, 1, "02_b")];
-        same_time[1].battle_time = same_time[0].battle_time;
-        assert_eq!(
-            session_maps(&["session-1".into()], &same_time)[0].map_keys,
-            ["02_b", "01_a"]
         );
     }
 }

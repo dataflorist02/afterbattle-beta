@@ -9,7 +9,10 @@ import { useAsync } from "../hooks/useAsync";
 import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
 import { formatNumber } from "../lib/format";
-import { SAVED_SHOW_MS } from "../lib/motion";
+import { SAVED_SHOW_MS, prefersReducedMotion } from "../lib/motion";
+import { EmberFlash } from "../components/Ember";
+import { HowItWorks } from "../components/HowItWorks";
+import type { HowId } from "../lib/howItWorks";
 import { APP_VERSION } from "../release";
 import type { Address } from "../lib/recap/address";
 import type { AppSnapshot, Language } from "../types";
@@ -103,9 +106,12 @@ function Option({
 export function SettingsPage({
   snapshot,
   onChanged,
+  openHow = null,
 }: {
   snapshot: AppSnapshot;
   onChanged: () => void;
+  /** Opened from a "?" on a screen: this "Jak to działa" entry is open (spec 33 §4). */
+  openHow?: HowId | null;
 }) {
   const { language, setLanguage, address, setAddress, tr } = useLanguage();
   const updates = useUpdates();
@@ -303,6 +309,8 @@ export function SettingsPage({
             {saved > 0 && (
               <p className="setting-saved" role="status" data-shown={savedShown}>
                 {tr("settingsSaved")}
+                {/* Spec 33 §3: Settings stay cool; a save flashes once. */}
+                {!prefersReducedMotion() && <EmberFlash key={saved} />}
               </p>
             )}
           </Group>
@@ -470,6 +478,7 @@ export function SettingsPage({
                 {tr("diagnosticsCopy")}
               </button>
             </Option>
+            <HowItWorks minutes={snapshot.inactivityMinutes} initial={openHow} />
           </Group>
         </div>
       </div>

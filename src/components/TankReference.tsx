@@ -15,6 +15,7 @@ import { useLanguage } from "../i18n/language";
 import { formatNumber, formatTier } from "../lib/format";
 import type { Language, ReferenceMetric, ReferenceMetricKind, VehicleClass } from "../types";
 import { Card } from "./ui";
+import { HelpLink } from "./HelpLink";
 
 const MIN_TIER = 6;
 
@@ -149,29 +150,28 @@ export function TankReference({
           {tr("refLead", { class: tr(classKey), tier: formatTier(tier) ?? tier, count })}
         </p>
         {cell.level === "approximate" && <p className="muted">{tr("refApproximate", { count })}</p>}
-        <p className="muted">
-          {ownShown
-            ? tr("refOwnNote", { count: cell.ownBattles })
-            : tr("refOwnTooFew", { count: cell.ownBattles })}
-        </p>
+        {!ownShown && <p className="muted">{tr("refOwnTooFew", { count: cell.ownBattles })}</p>}
+        {/* Spec 33 §4: the legend stays as signs (bar, line, dot); the words are for readers
+            and in "Jak to działa", not on the screen. */}
         <ul className="ref-legend" aria-label={tr("refLegend")}>
-          <li>
+          <li title={tr("refLegendRange")}>
             <span className="ref-legend-range" aria-hidden="true" />
-            {tr("refLegendRange")}
+            <span className="visually-hidden">{tr("refLegendRange")}</span>
           </li>
-          <li>
+          <li title={tr("refLegendMedian")}>
             <span className="ref-legend-median" aria-hidden="true" />
-            {tr("refLegendMedian")}
+            <span className="visually-hidden">{tr("refLegendMedian")}</span>
           </li>
           {ownShown && (
-            <li>
+            <li title={tr("refLegendOwn")}>
               <span className="ref-legend-own" aria-hidden="true" />
-              {tr("refLegendOwn")}
+              <span aria-hidden="true">{tr("refLegendYou")}</span>
+              <span className="visually-hidden">{tr("refLegendOwn")}</span>
             </li>
           )}
-          <li>
+          <li title={tr("refLegendP90")}>
             <span className="ref-legend-p90" aria-hidden="true" />
-            {tr("refLegendP90")}
+            <span className="visually-hidden">{tr("refLegendP90")}</span>
           </li>
         </ul>
         <div className="ref-rows">
@@ -184,9 +184,12 @@ export function TankReference({
   }
   return (
     <Card labelledBy="reference-h" className="section">
-      <h2 id="reference-h" className="section-title">
-        {tr("refTitle")}
-      </h2>
+      <div className="title-with-help">
+        <h2 id="reference-h" className="section-title">
+          {tr("refTitle")}
+        </h2>
+        <HelpLink entry="players" />
+      </div>
       {body}
     </Card>
   );

@@ -16,6 +16,11 @@ import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { formatDate, formatNumber, formatPercent, formatTier, formatTime } from "../lib/format";
 import { sessionSentences } from "../lib/recap/session";
+import { heatProps } from "../lib/ember";
+import { damastBestBattleId, damastHeat } from "../features/damast/stats";
+import { EmberNumber, TemperatureWord } from "../components/Ember";
+import { HelpLink } from "../components/HelpLink";
+import type { HowId } from "../lib/howItWorks";
 import type {
   AppSnapshot,
   Language,
@@ -64,19 +69,25 @@ function Block({
   id,
   title,
   aside,
+  help,
   children,
 }: {
   id: string;
   title: string;
   aside?: React.ReactNode;
+  /** Spec 33 §4: a "?" to the entry of "Jak to działa" instead of a sentence. */
+  help?: HowId;
   children: React.ReactNode;
 }) {
   return (
     <Card labelledBy={`${id}-h`} className="section overview-block">
       <div className="overview-head">
-        <h2 id={`${id}-h`} className="section-title">
-          {title}
-        </h2>
+        <div className="title-with-help">
+          <h2 id={`${id}-h`} className="section-title">
+            {title}
+          </h2>
+          {help && <HelpLink entry={help} />}
+        </div>
         {aside}
       </div>
       {children}
@@ -158,6 +169,18 @@ export function OverviewPage({
     [sessionId],
     options,
   );
+  // Spec 33 §3: the card has the same temperature as Session: the session's Damast temperature
+  // (author's decision after the E14 checkpoint).
+  const damast = useAsync(
+    () =>
+      sessionId
+        ? Promise.resolve()
+            .then(() => api.damastSession(sessionId))
+            .catch(() => null)
+        : Promise.resolve(null),
+    [sessionId],
+    options,
+  );
   const trends = useAsync(() => api.performanceTrends("last100"), [], options);
   const vehicles = useAsync(() => api.vehicleHistoryOverview(), [], options);
   const tables = useAsync(() => api.referenceTables(), [], options);
@@ -180,10 +203,12 @@ export function OverviewPage({
 
   const number = (value: number | null | undefined) => formatNumber(value, language);
   const lastSession = summary.state.status === "ready" ? summary.state.data : null;
-  // The map of the session's best battle (most damage) behind the card (spec 32 §4.2, D19).
-  const bestBattle = [...(lastSession?.battles ?? [])].sort(
-    (a, b) => (b.battle.damage ?? -1) - (a.battle.damage ?? -1),
-  )[0]?.battle;
+  // The session's best battle — the highest r, the same as on Session and under the plate
+  // (author's decision after E14) — its map behind the card and its damage at the card's end.
+  const bestId = damast.state.status === "ready" ? damastBestBattleId(damast.state.data) : null;
+  const bestBattle = lastSession?.battles.find((view) => view.battle.arenaId === bestId)?.battle;
+  const heat = damast.state.status === "ready" ? damastHeat(damast.state.data) : null;
+  const temperature = heatProps(heat);
   const recapData = recap.state.status === "ready" ? recap.state.data : null;
   const firstSentence =
     language === "pl" && recapData?.kind === "session"
@@ -268,8 +293,12 @@ export function OverviewPage({
             as="section"
             mapKey={bestBattle?.mapKey ?? null}
             width={1200}
-            className="flare-hero overview-session"
+            className={
+              heat ? "flare-hero overview-session ember-tinted" : "flare-hero overview-session"
+            }
             aria-labelledby="ov-session-h"
+            data-temp={temperature["data-temp"]}
+            style={temperature.style}
             label={
               bestBattle?.mapKey
                 ? tr("bestMapBackground", { map: bestBattle.mapName ?? bestBattle.mapKey })
@@ -281,7 +310,17 @@ export function OverviewPage({
                 <h2 id="ov-session-h" className="section-title">
                   {tr("ovLastSession")}
                 </h2>
-                {sessionTime && <p className="overview-session-time">{sessionTime}</p>}
+                {sessionTime && (
+                  <p className="overview-session-time">
+                    {sessionTime}
+                    {heat && (
+                      <>
+                        {" · "}
+                        <TemperatureWord heat={heat} />
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
               <button type="button" className="link" onClick={() => onOpenSession(sessionId)}>
                 {tr("ovOpenSession")}
@@ -314,6 +353,21 @@ export function OverviewPage({
                 </div>
               )}
               {firstSentence && <p className="overview-session-sentence">{firstSentence}</p>}
+              {/* Spec 33 §3: the session's best battle at the end of the card, the hot spot;
+                  E14 polish: the label above its damage, the map below. */}
+              {bestBattle && bestBattle.damage !== null && (
+                <div className="overview-best ember-hot">
+                  <span className="overview-best-label">{tr("ovBestBattle")}</span>
+                  <EmberNumber
+                    hot
+                    className="num overview-best-value"
+                    text={number(bestBattle.damage)}
+                  />
+                  {bestBattle.mapName && (
+                    <span className="overview-best-map">{bestBattle.mapName}</span>
+                  )}
+                </div>
+              )}
             </div>
           </MapBackdrop>
         )}
@@ -339,12 +393,7 @@ export function OverviewPage({
               ) : (
                 trendColumn("wn8", tr("ovWn8"), (value) => number(value))
               )}
-              {trendColumn(
-                "win_rate",
-                tr("ovWinRate"),
-                (value) => formatPercent(value, language),
-                tr("ovWinRateNote"),
-              )}
+              {trendColumn("win_rate", tr("ovWinRate"), (value) => formatPercent(value, language))}
             </div>
           </Block>
 
@@ -394,13 +443,13 @@ export function OverviewPage({
           <Block
             id="ov-tanks"
             title={tr("ovTanks")}
+            help="players"
             aside={
               <button type="button" className="link" onClick={onOpenTanks}>
                 {tr("ovAllTanks")}
               </button>
             }
           >
-            <p className="muted overview-note">{tr("ovBestRule")}</p>
             {bestRows.length === 0 ? (
               <p className="muted">{tr("ovBestNone")}</p>
             ) : (
@@ -456,13 +505,13 @@ export function OverviewPage({
           <Block
             id="ov-reference"
             title={tr("refTitle")}
+            help="players"
             aside={
               <button type="button" className="link" onClick={onOpenTanks}>
                 {tr("ovOpenTanks")}
               </button>
             }
           >
-            <p className="muted overview-note">{tr("ovCellsNote")}</p>
             {valueCells.length === 0 && progressCells.length === 0 ? (
               <p className="muted">{tr("ovBackgroundNone")}</p>
             ) : (

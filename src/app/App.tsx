@@ -18,6 +18,9 @@ import { SettingsPage } from "../pages/SettingsPage";
 import { TanksPage } from "../pages/TanksPage";
 import { APP_VERSION } from "../release";
 import type { AppSnapshot, ImportProgressEvent } from "../types";
+import { HowItWorksContext } from "../components/HelpLink";
+import { useWindowBackground } from "../components/Ember";
+import type { HowId } from "../lib/howItWorks";
 import { isPublicBuild } from "./buildFlags";
 import { DataVersionContext } from "./dataVersion";
 import { Navigation, type Page } from "./Navigation";
@@ -33,6 +36,10 @@ export interface Route {
   mapName?: string;
   /** "back": returning to a screen (from Battle); it reappears without entry motion. */
   entry?: "back";
+  /** Settings opened from a "?" (spec 33 §4): the "Jak to działa" entry to open. */
+  how?: HowId;
+  /** History opened on its Sessions tab ("Do historii" under a Damast plate, spec 34 §3). */
+  historyTab?: "battles" | "sessions";
 }
 
 function Footer({ snapshot }: { snapshot: AppSnapshot | null }) {
@@ -64,6 +71,8 @@ function AppContent() {
   const [importProgress, setImportProgress] = useState<ImportProgressEvent | null>(null);
   const [endedSessionId, setEndedSessionId] = useState<string | null>(null);
   const { state, reload } = useAsync(() => api.snapshot(), []);
+  // Spec 33 §1: with the window in the background (the game in front) the hot spot stands still.
+  useWindowBackground();
 
   useEffect(
     () =>
@@ -86,6 +95,7 @@ function AppContent() {
     setRoute(next);
     window.scrollTo?.(0, 0);
   }, []);
+  const openHow = useCallback((how: HowId) => navigate({ page: "settings", how }), [navigate]);
   const openMap = (mapKey: string, mapName: string | null) =>
     navigate({ page: "history", mapKey, mapName: mapName ?? undefined });
   const snapshot = state.status === "ready" ? state.data : null;
@@ -181,6 +191,7 @@ function AppContent() {
             entranceMotion={route.entry !== "back"}
             initialMapKey={route.mapKey ?? null}
             initialMapName={route.mapName ?? null}
+            initialTab={route.historyTab ?? "battles"}
             snapshot={data}
             progress={progress}
             onOpenBattle={(battleId) => navigate({ page: "history", battleId })}
@@ -188,7 +199,7 @@ function AppContent() {
           />
         );
       case "settings":
-        return <SettingsPage snapshot={data} onChanged={reload} />;
+        return <SettingsPage snapshot={data} onChanged={reload} openHow={route.how ?? null} />;
       case "overview":
         return (
           <OverviewPage
@@ -218,6 +229,7 @@ function AppContent() {
               navigate({ page: "session", battleId, sessionId })
             }
             onOpenHistory={() => navigate({ page: "history" })}
+            onOpenHistorySessions={() => navigate({ page: "history", historyTab: "sessions" })}
             onOpenSettings={() => navigate({ page: "settings" })}
           />
         );
@@ -238,39 +250,42 @@ function AppContent() {
 
   return (
     <DataVersionContext.Provider value={version.value}>
-      <VehicleNamesProvider refreshKey={snapshot}>
-        <TitleBar />
-        <LoadingScreen needed={loading} fraction={importFraction(progress)} />
-        <div className="shell">
-          <Navigation
-            page={route.page}
-            onNavigate={(page) => navigate({ page })}
-            publicBuild={isPublicBuild()}
-          />
-          <div className="workspace">
-            <main className="page">
-              <Async state={state} onRetry={reload}>
-                {(data) => (
-                  <div
-                    className={
-                      route.entry === "back" ||
-                      ((route.page === "history" || route.page === "tanks") && !route.battleId)
-                        ? "screen screen-still"
-                        : "screen"
-                    }
-                    key={[route.page, route.battleId, route.sessionId, route.mapKey].join("|")}
-                  >
-                    {renderPage(data)}
-                  </div>
-                )}
-              </Async>
-            </main>
-            {/* Settings show the version in "O aplikacji" and WN8 in "Dane": no repeat below. */}
-            {route.page !== "settings" && <Footer snapshot={snapshot} />}
-            <UpdateNotice />
+      <HowItWorksContext.Provider value={openHow}>
+        <VehicleNamesProvider refreshKey={snapshot}>
+          <TitleBar />
+          <LoadingScreen needed={loading} fraction={importFraction(progress)} />
+          <div className="shell">
+            <Navigation
+              page={route.page}
+              onNavigate={(page) => navigate({ page })}
+              publicBuild={isPublicBuild()}
+              sessionRunning={Boolean(snapshot?.activeSession)}
+            />
+            <div className="workspace">
+              <main className="page">
+                <Async state={state} onRetry={reload}>
+                  {(data) => (
+                    <div
+                      className={
+                        route.entry === "back" ||
+                        ((route.page === "history" || route.page === "tanks") && !route.battleId)
+                          ? "screen screen-still"
+                          : "screen"
+                      }
+                      key={[route.page, route.battleId, route.sessionId, route.mapKey].join("|")}
+                    >
+                      {renderPage(data)}
+                    </div>
+                  )}
+                </Async>
+              </main>
+              {/* Settings show the version in "O aplikacji" and WN8 in "Dane": no repeat below. */}
+              {route.page !== "settings" && <Footer snapshot={snapshot} />}
+              <UpdateNotice />
+            </div>
           </div>
-        </div>
-      </VehicleNamesProvider>
+        </VehicleNamesProvider>
+      </HowItWorksContext.Provider>
     </DataVersionContext.Provider>
   );
 }

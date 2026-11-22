@@ -84,6 +84,8 @@ export function MapBackdrop({
   "aria-label"?: string;
   title?: string;
   "data-testid"?: string;
+  /** Spec 33: the temperature of the card against the player's own average. */
+  "data-temp"?: string;
   /** Lets a summary reference highlight this element (spec 30 §8). */
   id?: string;
 }) {

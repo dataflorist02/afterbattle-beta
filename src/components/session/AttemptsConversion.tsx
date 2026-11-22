@@ -376,7 +376,6 @@ export function AttemptsConversionPanel({
           <h2 id="conversion-h" className="section-title">
             {translate(language, "attemptsConversion")}
           </h2>
-          <p className="muted">{translate(language, "attemptsConversionDescription")}</p>
         </div>
         <SegmentedControl
           label={translate(language, "attemptsConversionScope")}

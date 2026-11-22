@@ -40,11 +40,9 @@ describe("backend events", () => {
     mocks.invoke.mockResolvedValue(undefined);
     await api.startImport();
     await api.cancelImport();
-    await api.recentSessionsWn8();
     expect(mocks.invoke.mock.calls.map((call) => call[0])).toEqual([
       "start_import",
       "cancel_import",
-      "get_recent_sessions_wn8",
     ]);
     mocks.invoke.mockReset();
   });
@@ -330,5 +328,27 @@ describe("attempts conversion v2 API boundary", () => {
       parseAttemptsConversionReport(JSON.parse(JSON.stringify(valid))).facts.damageDealt
         .invalidBattles,
     ).toBe(2);
+  });
+});
+
+describe("Damast files (spec 34 §3–§4)", () => {
+  it("sends a tile and the card as raw bytes with their names in headers, nothing else", async () => {
+    mocks.invoke.mockReset();
+    mocks.invoke.mockResolvedValue(true);
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
+    await api.putDamastTile("damast-1", "0123456789abcdef", jpeg);
+    expect(mocks.invoke).toHaveBeenLastCalledWith("put_damast_tile", jpeg, {
+      headers: { "x-damast-version": "damast-1", "x-damast-key": "0123456789abcdef" },
+    });
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    await expect(api.exportDamastCard("2026-11-21", png)).resolves.toBe(true);
+    expect(mocks.invoke).toHaveBeenLastCalledWith("export_damast_card", png, {
+      headers: { "x-damast-date": "2026-11-21" },
+    });
+    await api.damastTile("damast-1", "0123456789abcdef");
+    expect(mocks.invoke).toHaveBeenLastCalledWith("get_damast_tile", {
+      version: "damast-1",
+      key: "0123456789abcdef",
+    });
   });
 });

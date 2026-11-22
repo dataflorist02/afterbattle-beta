@@ -115,6 +115,97 @@ describe("clickable rows (E5-ui §6)", () => {
   });
 });
 
+describe("Damast plates in History (spec 34 §3)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  it("press and show the keyboard focus ring like the session cards they replaced", () => {
+    const list = (suffix: string) => base.includes(`.hrow${suffix},\n.damast-tile${suffix},\n`);
+    expect(list("")).toBe(true);
+    expect(list(":active")).toBe(true);
+    expect(list(":focus-visible")).toBe(true);
+    expect(list("::before")).toBe(true);
+    expect(list(":focus-visible::before")).toBe(true);
+  });
+});
+
+describe("the spark of the Damast battle bar (E14 polish, point 3)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  /** The declarations of the rule whose selector list is exactly `selector`. */
+  const rule = (selector: string) => {
+    const start = base.indexOf(`\n${selector} {\n`);
+    expect(start, selector).toBeGreaterThan(-1);
+    return base.slice(start, base.indexOf("}", start));
+  };
+  it("is a 9 px dot in ember with a still soft glow, the tier in ember core, no frame", () => {
+    const pip = rule(".damast-best .damast-pip");
+    expect(pip).toMatch(/width: 9px;/);
+    expect(pip).toMatch(/height: 9px;/);
+    expect(pip).toMatch(/inset 0 0 0 1.5px var\(--ember-hot\)/);
+    expect(pip).toMatch(/0 0 8px var\(--ember-glow\)/);
+    expect(rule(".damast-best.damast-win .damast-pip")).toMatch(/background: var\(--ember-hot\);/);
+    expect(rule(".damast-best .damast-tier")).toMatch(/color: var\(--ember-core\);/);
+    // No frame (no hot spot has one since 22.11) and no warm floor under the small dot.
+    const dot = rule(".damast-dot.ember-hot");
+    expect(dot).toMatch(/background-image: none;/);
+    expect(dot).toMatch(/--ember-floor: none;/);
+    // The dot itself does not move; the shared breath layer inside it does (opacity only,
+    // off with reduced motion), with a glow sized for a 9 px dot.
+    expect(pip).not.toMatch(/animation|transition/);
+    expect(rule(".damast-pip")).toMatch(/position: relative;/);
+    const breath = rule(".damast-pip .ember-breath");
+    expect(breath).toMatch(/box-shadow: 0 0 10px var\(--ember-glow\);/);
+    expect(breath).not.toMatch(/animation/);
+  });
+});
+
+describe("Overview's best battle block (E14 polish, point 4)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const rule = (selector: string) => {
+    const start = base.indexOf(`\n${selector} {\n`);
+    expect(start, selector).toBeGreaterThan(-1);
+    return base.slice(start, base.indexOf("}", start));
+  };
+  it("stacks the label, the number and the map on the left, its bottom on the figures' line", () => {
+    const block = rule(".overview-best");
+    expect(block).toMatch(/display: flex;/);
+    expect(block).toMatch(/flex-direction: column;/);
+    expect(block).toMatch(/align-items: flex-start;/);
+    expect(block).toMatch(/text-align: left;/);
+    expect(block).toMatch(/padding: 12px 16px;/);
+    expect(block).not.toMatch(/margin:[^;]*\d+px\s*;/);
+    expect(rule(".overview-best-label")).toMatch(/font-size: 13px;[\s\S]*color: var\(--text-2\);/);
+    expect(rule(".overview-best-value")).toMatch(/font-size: 36px;/);
+    expect(rule(".overview-best-map")).toMatch(/font-size: 13px;/);
+    // The card's body aligns its children at the bottom: the block ends on the labels' line.
+    expect(rule(".overview-session-body")).toMatch(/align-items: flex-end;/);
+  });
+});
+
+describe("Damast: plate and numbers on Session (author, 22.11)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const rule = (selector: string) => {
+    const start = base.indexOf(`\n${selector} {\n`);
+    expect(start, selector).toBeGreaterThan(-1);
+    return base.slice(start, base.indexOf("}", start));
+  };
+  it("stacks a full-width plate, its bar and one row: numbers on the left, actions on the right", () => {
+    const card = rule(".damast-card");
+    expect(card).toMatch(/display: flex;/);
+    expect(card).toMatch(/flex-direction: column;/);
+    expect(card).not.toMatch(/grid-template-columns/);
+    expect(base).not.toMatch(/\.damast-side|\.damast-spacer|\.damast-forge/);
+    const row = rule(".damast-row");
+    expect(row).toMatch(/display: flex;/);
+    expect(row).toMatch(/justify-content: space-between;/);
+    expect(row).toMatch(/align-items: flex-end;/);
+    expect(rule(".damast-title")).toMatch(/margin: 0;/);
+    expect(rule(".damast-numbers")).toMatch(/display: flex;/);
+    expect(rule(".damast-numbers")).toMatch(/align-items: flex-end;/);
+    expect(rule(".damast-headline-value")).toMatch(/font-size: 56px;/);
+    expect(rule(".damast-figure-value")).toMatch(/font-size: 32px;/);
+    expect(rule(".damast-actions")).toMatch(/margin: 0;/);
+  });
+});
+
 describe("names (E5-ui §2)", () => {
   const base = readFileSync("src/styles/base.css", "utf8");
   it("never wrap: one line with an ellipsis", () => {
@@ -205,16 +296,22 @@ describe("motion (E5-flare §7a)", () => {
         expect(property).toMatch(/^(transform|opacity)$/);
   });
 
-  it("never loops an animation, except the pulse of a loading screen without progress", () => {
+  it("never loops an animation, except the loading pulse and the breath of the hot spot", () => {
     // Spec 29 §5: with no progress to show, the ember at the base pulses calmly (opacity only).
     const pulse = "animation: ember-pulse var(--motion-pulse) var(--ease-in-out) infinite;";
+    // Spec 33 §5: no loop but the one breath of the hot spot (opacity of its layer).
+    const breath = "animation: ember-breathe var(--ember-breathe) var(--ease-in-out) infinite;";
     expect(tokens).toMatch(/--motion-pulse:\s*1600ms;/);
-    expect(base.split("infinite")).toHaveLength(2);
+    expect(base.split("infinite")).toHaveLength(3);
     expect(base).toMatch(
       /\.loading-pulse \.loading-hot \{\s*animation: ember-pulse var\(--motion-pulse\) var\(--ease-in-out\) infinite;/,
     );
+    expect(base).toMatch(
+      /\.ember-breath \{[^}]*animation: ember-breathe var\(--ember-breathe\) var\(--ease-in-out\) infinite;/,
+    );
     for (const [, value] of base.matchAll(/animation:\s*([^;]+);/g))
-      if (`animation: ${value};` !== pulse) expect(value).not.toMatch(/infinite|alternate/);
+      if (![pulse, breath].includes(`animation: ${value};`))
+        expect(value).not.toMatch(/infinite|alternate/);
   });
 
   it("draws the loading screen as spec 29 §5 says", () => {
@@ -508,5 +605,157 @@ describe("Overview (spec 32 §4)", () => {
     expect(base).toMatch(
       /\.overview-link:active[^{]*\{[^}]*transition-duration:\s*var\(--motion-instant\)/,
     );
+  });
+});
+
+describe("Żar tokens (spec 33 §2)", () => {
+  const tokens = readFileSync("src/styles/tokens.css", "utf8");
+
+  it("names the temperature colors from the spec 29 palette, frost being today's falling color", () => {
+    expect(token("ember-hot")).toBe("var(--accent)");
+    expect(token("frost")).toBe("var(--down)");
+    expect(token("ember-core")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(token("steel")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(token("ember-glow")).toMatch(/^rgba\(/);
+    // "As usual" is a quiet steel, far from both ends of the scale.
+    expect(token("steel")).not.toBe(token("steel-line"));
+  });
+
+  it("has the four ember times", () => {
+    for (const [name, value] of [
+      ["ember-heat", "1600ms"],
+      ["ember-sweep", "520ms"],
+      ["ember-breathe", "4200ms"],
+      ["ember-flash", "1400ms"],
+    ])
+      expect(tokens).toMatch(new RegExp(`--${name}:\\s*${value};`));
+  });
+
+  it("defines the ember tokens in one place only", () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) =>
+        /\.(css|tsx?)$/.test(name)
+          ? [`${dir}/${name}`]
+          : /\.\w+$/.test(name)
+            ? []
+            : walk(`${dir}/${name}`),
+      );
+    const definitions = walk("src")
+      .filter((file) => !file.endsWith("tokens.css") && !/\.test\.tsx?$/.test(file))
+      .filter((file) =>
+        /--(ember-(hot|core|glow|heat|sweep|breathe|flash)|steel|frost)\s*:/.test(
+          readFileSync(file, "utf8"),
+        ),
+      );
+    expect(definitions).toEqual([]);
+  });
+});
+
+describe("Żar motion (spec 33 §1, §2)", () => {
+  const base = readFileSync("src/styles/base.css", "utf8");
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([^}]*)\\}`, "m").exec(base)?.[1] ?? "";
+  };
+  // The reduced-motion block itself (to its closing brace), not the rest of the file after it.
+  const reduced = (() => {
+    const start = base.indexOf("@media (prefers-reduced-motion: reduce)");
+    let depth = 0;
+    for (let index = base.indexOf("{", start); index < base.length; index++) {
+      if (base[index] === "{") depth++;
+      if (base[index] === "}" && --depth === 0) return base.slice(start, index + 1);
+    }
+    return base.slice(start);
+  })();
+  const frames = (name: string) =>
+    new RegExp(`@keyframes ${name}\\s*\\{((?:[^{}]*\\{[^}]*\\})*)\\s*\\}`).exec(base)?.[1] ?? "";
+
+  it("colors a temperature from the ember tokens, the shade mixed by the intensity", () => {
+    expect(rule('[data-temp="usual"]')).toMatch(/--temp-color:\s*var\(--steel\);/);
+    expect(rule('[data-temp="warmer"]')).toMatch(
+      /--temp-color:\s*color-mix\(in srgb, var\(--ember-hot\) calc\([^)]*var\(--heat, 0\)\), var\(--steel\)\);/,
+    );
+    expect(rule('[data-temp="cooler"]')).toMatch(
+      /--temp-color:\s*color-mix\(in srgb, var\(--frost\) calc\([^)]*var\(--heat, 0\)\), var\(--steel\)\);/,
+    );
+  });
+
+  it("lights the hot spot by its number and lets only the glow's layer breathe (author, 22.11)", () => {
+    expect(rule(".ember-hot")).not.toMatch(/animation|transition/);
+    // A tile or a row: only a warm radial gradient from the bottom, at a low opacity.
+    expect(rule(".ember-hot")).toMatch(
+      /--ember-floor:\s*radial-gradient\([^;]*at 50% 1\d\d%,\s*color-mix\(in srgb, var\(--ember-hot\) \d+%, transparent\)/,
+    );
+    expect(rule(".ember-hot")).toMatch(/background-image:\s*var\(--ember-floor\);/);
+    expect(rule(".map-backdrop.ember-hot")).toMatch(/--ember-tint:\s*var\(--ember-floor\);/);
+    // The main number in ember core; its glow has the shape of the text and is the layer
+    // that breathes (opacity only).
+    expect(rule(".ember-figure")).toMatch(/color:\s*var\(--ember-core\);/);
+    expect(rule(".ember-figure")).toMatch(/position:\s*relative;/);
+    expect(rule(".ember-breath")).toMatch(/text-shadow:[^;]*var\(--ember-glow\)/);
+    expect(rule(".ember-breath")).toMatch(/color:\s*transparent;/);
+    expect(rule(".ember-breath::after")).toMatch(/content:\s*attr\(data-text\);/);
+    expect(frames("ember-breathe")).toMatch(/opacity/);
+    expect(frames("ember-breathe")).not.toMatch(/box-shadow|text-shadow/);
+  });
+
+  it("gives the hot spot no outline anywhere but the keyboard focus ring", () => {
+    const css = base.replace(/\/\*[\s\S]*?\*\//g, "");
+    const hot = /\.ember-hot|\.ember-breath|\.ember-figure|\.tile-best/;
+    const checked: string[] = [];
+    for (const [, selectors, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g))
+      for (const selector of selectors.split(",").map((part) => part.trim())) {
+        if (!hot.test(selector) || selector.includes(":focus-visible")) continue;
+        checked.push(selector);
+        expect(body, selector).not.toMatch(/(^|[;\s])(border(-(color|width|style))?|outline)\s*:/);
+        for (const [, shadow] of body.matchAll(/box-shadow:\s*([^;]+);/g)) {
+          // A frame: an inset line or a ring with a spread ("0 0 0 1px …").
+          expect(shadow, selector).not.toMatch(/inset|\b0 0 0 \d/);
+        }
+      }
+    expect(checked).toEqual(
+      expect.arrayContaining([
+        ".ember-hot",
+        ".ember-breath",
+        ".ember-figure",
+        ".damast-dot.ember-hot",
+      ]),
+    );
+    // The best battle's tile no longer has a frame of its own (it was 2 px of accent).
+    expect(checked.filter((selector) => selector.includes(".tile-best"))).toEqual([]);
+  });
+
+  it("sweeps a new thing once with transform, cooling its edge with opacity", () => {
+    expect(rule(".ember-sweep")).toMatch(
+      /animation:\s*ember-sweep var\(--ember-sweep\) var\(--ease-out\) both;/,
+    );
+    expect(frames("ember-sweep")).toMatch(/transform:\s*translateX/);
+    expect(frames("ember-sweep")).toMatch(/opacity/);
+  });
+
+  it("heats a changed number after its count, flashes a completed goal, raises sparks once", () => {
+    expect(rule(".ember-heat")).toMatch(
+      /animation:\s*ember-heat var\(--ember-heat\) var\(--ease-out\) var\(--motion-count\) both;/,
+    );
+    expect(rule(".ember-flash")).toMatch(
+      /animation:\s*ember-flash var\(--ember-flash\) var\(--ease-out\) both;/,
+    );
+    expect(rule(".ember-spark")).toMatch(/animation:\s*ember-spark var\(--ember-heat\)/);
+    for (const name of ["ember-heat", "ember-flash", "ember-spark"])
+      expect(frames(name), name).toMatch(/opacity/);
+  });
+
+  it("keeps the breath still while the window is in the background (the game in front)", () => {
+    expect(base).toMatch(
+      /:root\[data-window="background"\] \.ember-breath\s*\{\s*animation-play-state:\s*paused;\s*\}/,
+    );
+  });
+
+  it("has no sparks and no motion with reduced motion; temperature and the still glow stay", () => {
+    expect(reduced).toMatch(/\.ember-sparks\s*\{\s*display:\s*none;\s*\}/);
+    expect(reduced).toMatch(/animation:\s*none\s*!important/);
+    expect(reduced).not.toMatch(/data-temp|\.ember-hot|\.ember-figure/);
+    // The number's glow stands still, half lit, instead of breathing.
+    expect(reduced).toMatch(/\.ember-breath\s*\{\s*opacity:\s*0\.6;\s*\}/);
   });
 });

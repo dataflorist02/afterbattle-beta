@@ -1,6 +1,8 @@
 import { useTankLabel } from "../components/TankName";
 import { Recap } from "../components/Recap";
-import { WeeklyReportView } from "../components/WeeklyReport";
+import { WeeklyReportView, closestGoal, trackStyle } from "../components/WeeklyReport";
+import { EmberNumber } from "../components/Ember";
+import { prefersReducedMotion } from "../lib/motion";
 import { useState } from "react";
 import { api } from "../api";
 import { Async, Card, Dialog, Empty, ErrorState, VehicleImage } from "../components/ui";
@@ -15,7 +17,37 @@ import type {
   ChallengePresentation,
   ChallengeSuggestion,
   ChallengeType,
+  WeeklyGoal,
 } from "../types";
+
+const NONE: ReadonlySet<string> = new Set();
+
+/**
+ * Weekly goals completed while the screen is open (spec 33 §3): none on entering it, then the
+ * kinds that turned "achieved" since the last report; kept until the report changes again.
+ */
+export function useCompletions(goals: readonly WeeklyGoal[] | null): ReadonlySet<string> {
+  const signature =
+    goals === null ? null : goals.map((goal) => `${goal.kind}:${goal.state}`).join();
+  const [state, setState] = useState<{
+    signature: string | null;
+    states: Map<string, string> | null;
+    done: ReadonlySet<string>;
+  }>({ signature: null, states: null, done: NONE });
+  if (goals === null || state.signature === signature) return state.done;
+  const states = new Map(goals.map((goal) => [goal.kind, goal.state]));
+  const done = new Set(
+    state.states === null
+      ? []
+      : goals
+          .filter(
+            (goal) => goal.state === "achieved" && state.states?.get(goal.kind) !== "achieved",
+          )
+          .map((goal) => goal.kind),
+  );
+  setState({ signature, states, done });
+  return done;
+}
 
 const titleKeys: Record<ChallengeType, UiKey> = {
   damage_consistency: "goalDamage",
@@ -72,21 +104,30 @@ function baselineValue(goal: GoalLike, language: "pl" | "en") {
     : formatNumber(goal.frozenBaselineValue, language);
 }
 
-function ActiveGoal({ goal, onChanged }: { goal: ChallengePresentation; onChanged: () => void }) {
+function ActiveGoal({
+  goal,
+  hot,
+  onChanged,
+}: {
+  goal: ChallengePresentation;
+  /** Spec 33 §3: the goal closest to completion is the screen's hot spot. */
+  hot: boolean;
+  onChanged: () => void;
+}) {
   const { language, tr } = useLanguage();
   const tankOf = useGoalTank();
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | undefined | null>(null);
   const percent = Math.round((goal.completedBattles / goal.targetBattles) * 100);
   return (
-    <Card hero className="section" labelledBy="goal-h">
+    <Card hero className={hot ? "section ember-hot" : "section"} labelledBy="goal-h">
       <p className="hero-label">{tr("goalsActive")}</p>
       <h2 id="goal-h" className="section-title goal-title">
         <GoalTank vehicleName={goal.vehicleName} />
         {goalTitle(goal, tr, (value) => formatNumber(value, language), tankOf(goal.vehicleName))}
       </h2>
       <p>
-        <span className="num stat-value">{goal.successfulBattles}</span>
+        <EmberNumber hot={hot} className="num stat-value" text={String(goal.successfulBattles)} />
         <span className="stat-suffix">
           {" "}
           {tr("goalsProgress", {
@@ -97,7 +138,8 @@ function ActiveGoal({ goal, onChanged }: { goal: ChallengePresentation; onChange
         </span>
       </p>
       <div
-        className="track"
+        className="track ember-track"
+        style={trackStyle(goal.completedBattles / goal.targetBattles)}
         role="img"
         aria-label={tr("goalTrackLabel", {
           done: goal.completedBattles,
@@ -284,11 +326,17 @@ export function GoalsPage({
     snapshot.recentSessions.find((session) => session.status !== "active") ?? null;
   const version = useDataVersion();
   const weekly = useAsync(() => api.weeklyReport(), [], { refreshKey: version });
+  const goals = weekly.state.status === "ready" ? weekly.state.data.goals : null;
+  const justCompleted = useCompletions(goals);
+  const completed = prefersReducedMotion() ? NONE : justCompleted;
+  const hotKey = closestGoal(goals ?? [], snapshot.activeChallenge);
   return (
     <>
       {weekly.state.status === "ready" ? (
         <WeeklyReportView
           summary={<WeekRecap />}
+          hotKey={hotKey}
+          completed={completed}
           report={weekly.state.data}
           xvmOn={
             snapshot.advancedStatus.xvmEnabled &&
@@ -307,7 +355,11 @@ export function GoalsPage({
       )}
       <h2 className="section-title">{tr("challengesTitle")}</h2>
       {snapshot.activeChallenge ? (
-        <ActiveGoal goal={snapshot.activeChallenge} onChanged={onChanged} />
+        <ActiveGoal
+          goal={snapshot.activeChallenge}
+          hot={hotKey === "challenge"}
+          onChanged={onChanged}
+        />
       ) : lastSession ? (
         <Suggestions sessionId={lastSession.id} onChanged={onChanged} />
       ) : (

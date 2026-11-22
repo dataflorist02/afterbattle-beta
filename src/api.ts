@@ -1,11 +1,13 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, type InvokeArgs, type InvokeOptions } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import type {
   BattleDetailView,
+  DamastSession,
+  DamastSessionCursor,
+  DamastSessionPage,
   Language,
   MapRecord,
-  SessionMaps,
   SessionStory,
   Recap,
   RecapKind,
@@ -17,7 +19,6 @@ import type {
   ExpectedValuesStatus,
   AppSnapshot,
   BackendEvent,
-  HistoricalSessionWn8Presentation,
   ImportProgressEvent,
   AttemptsConversionFactCoverage,
   AttemptsConversionRate,
@@ -45,6 +46,7 @@ import type {
   VehicleClassCatalogStatus,
   VehicleHistoryOverview,
   VehicleHistoryReport,
+  VehicleTemperature,
 } from "./types";
 
 export class AppCommandError extends Error {
@@ -80,9 +82,9 @@ function onBackendEvents(handler: (event: BackendEvent) => void): () => void {
     for (const unlisten of pending) void unlisten.then((stop) => stop()).catch(() => {});
   };
 }
-async function command<T>(name: string, args?: Record<string, unknown>): Promise<T> {
+async function command<T>(name: string, args?: InvokeArgs, options?: InvokeOptions): Promise<T> {
   try {
-    return await invoke<T>(name, args);
+    return await (options ? invoke<T>(name, args, options) : invoke<T>(name, args));
   } catch (error) {
     throw new AppCommandError(error);
   }
@@ -373,7 +375,6 @@ export const api = {
   /** Facts of a template summary (spec 30); the text is put together in `lib/recap`. */
   recap: (kind: RecapKind, id: string) => command<Recap>("get_recap", { kind, id }),
   mapRecord: (mapKey: string) => command<MapRecord>("get_map_record", { mapKey }),
-  sessionMaps: (sessionIds: string[]) => command<SessionMaps[]>("get_session_maps", { sessionIds }),
   vehicleNames: (language: Language) =>
     command<VehicleNamesView>("get_vehicle_names", { language }),
   /** A map with `width`×`height` (device pixels of its box) comes sharp at that size. */
@@ -406,7 +407,6 @@ export const api = {
   resume: () => command<SourceStatus>("resume_tracker"),
   startImport: () => command<void>("start_import"),
   cancelImport: () => command<void>("cancel_import"),
-  recentSessionsWn8: () => command<HistoricalSessionWn8Presentation[]>("get_recent_sessions_wn8"),
   onEvents: onBackendEvents,
   setXvmEnabled: (enabled: boolean) => command<number>("set_xvm_enabled", { enabled }),
   startSession: () => command<Session>("start_session"),
@@ -423,6 +423,21 @@ export const api = {
   playerBaseline: () => command<PlayerBaselinePresentation>("get_player_baseline"),
   vehicleBaseline: (vehicleId: number) =>
     command<VehicleBaselinePresentation>("get_vehicle_baseline", { vehicleId }),
+  /** Spec 33 §3: the temperature dots of the tank list, every tank with 10 battles, one call. */
+  vehicleTemperatures: () => command<VehicleTemperature[]>("get_vehicle_temperatures"),
+  damastSession: (sessionId: string) => command<DamastSession>("get_damast_session", { sessionId }),
+  damastSessions: (cursor: DamastSessionCursor | null, limit: number) =>
+    command<DamastSessionPage>("get_damast_sessions", { cursor, limit }),
+  /** Spec 34 §4: a cached plate (JPEG); an empty buffer when it is not drawn yet. */
+  damastTile: (version: string, key: string) =>
+    command<ArrayBuffer>("get_damast_tile", { version, key }),
+  putDamastTile: (version: string, key: string, jpeg: Uint8Array) =>
+    command<void>("put_damast_tile", jpeg, {
+      headers: { "x-damast-version": version, "x-damast-key": key },
+    }),
+  /** Spec 34 §3: the save dialog opens in the backend; false when the player cancelled. */
+  exportDamastCard: (date: string, png: Uint8Array) =>
+    command<boolean>("export_damast_card", png, { headers: { "x-damast-date": date } }),
   sessionBaselineComparison: (sessionId: string) =>
     command<SessionBaselineComparison>("get_session_baseline_comparison", { sessionId }),
   performanceTrends: (range: PerformanceTrendRange, vehicleId: number | null = null) =>

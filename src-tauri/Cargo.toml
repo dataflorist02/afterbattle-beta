@@ -1,6 +1,6 @@
 [package]
 name = "afterbattle"
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 description = "Privacy-first local World of Tanks session coach"
 authors = ["Afterbattle contributors"]
 edition = "2024"

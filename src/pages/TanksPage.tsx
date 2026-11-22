@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { api } from "../api";
 import { BattleTable } from "../components/BattleTable";
-import { DamageChart } from "../components/DamageChart";
+import { DamageChart, type ChartBattle } from "../components/DamageChart";
 import { TankName, useTankLabel } from "../components/TankName";
 import { MapBackdrop } from "../components/MapBackdrop";
 import { Async, Card, Empty, VehicleImage } from "../components/ui";
@@ -14,6 +14,8 @@ import { daysBetween, formatDate, formatNumber, formatPercent, formatTier } from
 import { mergeRefreshedPage } from "../lib/pages";
 import { TankReference } from "../components/TankReference";
 import { WAVE_MAX_ROWS, prefersReducedMotion, rowEntranceDelay } from "../lib/motion";
+import { heatAgainst, heatProps, type Heat } from "../lib/ember";
+import { EmberNumber } from "../components/Ember";
 import type {
   BaselineMetric,
   BattleHistoryCursor,
@@ -22,6 +24,7 @@ import type {
   VehicleClass,
   VehicleHistorySummary,
   VehicleMapSummary,
+  VehicleTemperature,
 } from "../types";
 
 const classKeys: Record<VehicleClass, UiKey> = {
@@ -36,6 +39,32 @@ export const MIN_TANK_BATTLES = 10;
 const PAGE = 50;
 
 type Translate = (key: UiKey, params?: Record<string, string | number>) => string;
+
+/**
+ * Temperature of a tank (spec 33 §3): its last 10 battles against its own average of the last
+ * 100, the two numbers of the tank's header; none under 10 counted battles.
+ */
+export function tankHeat(tank: VehicleTemperature): Heat | null {
+  if (tank.averageBattles < MIN_TANK_BATTLES) return null;
+  return heatAgainst(tank.recentDamage.value, tank.averageDamage.value);
+}
+
+/**
+ * The dots of the tank list (author's fixup after E13): one backend call gives every tank with
+ * 10 battles or more; again only after the data changed.
+ */
+function useTankDots(): Map<number, Heat | null> {
+  const version = useDataVersion();
+  const dots = useAsync(
+    async () => {
+      const tanks = await api.vehicleTemperatures().catch(() => []);
+      return new Map(tanks.map((tank) => [tank.vehicleId, tankHeat(tank)]));
+    },
+    [],
+    { keepData: true, refreshKey: version },
+  );
+  return dots.state.status === "ready" ? dots.state.data : new Map();
+}
 
 /** "last yesterday" from the overview's last battle time (mockup header). */
 export function lastBattle(
@@ -103,7 +132,6 @@ function TankMaps({
         <h2 id="maps-h" className="section-title">
           {tr("tankMapsTitle")}
         </h2>
-        <p className="muted">{tr("tankMapsNote")}</p>
       </div>
       {maps.length === 0 ? (
         <p className="muted">{tr("whereTooFew")}</p>
@@ -127,7 +155,8 @@ function TankMaps({
                   as="button"
                   mapKey={map.mapKey}
                   width={320}
-                  className={tag === "best" ? "map-tile tile-best" : "map-tile"}
+                  // Spec 33 §3: only the best map glows, the screen's one hot spot.
+                  className={index === 0 ? "map-tile tile-best ember-hot" : "map-tile"}
                   onClick={() => onOpenMap(map.mapKey)}
                   aria-label={tr("mapTileLabel", {
                     tag: tag ? tr(tag === "best" ? "mapTagBest" : "mapTagWorst") : "",
@@ -144,7 +173,11 @@ function TankMaps({
                   )}
                   <span className="map-tile-name truncate">{name}</span>
                   <span className="map-tile-damage">
-                    <span className="num">{formatNumber(map.averageDamage, language)}</span>{" "}
+                    <EmberNumber
+                      hot={index === 0}
+                      className="num"
+                      text={formatNumber(map.averageDamage, language)}
+                    />{" "}
                     <span className="map-tile-unit">{tr("mapTileDamage")}</span>
                   </span>
                   <span className="map-tile-meta">
@@ -223,7 +256,8 @@ function TankDetail({
     [id],
     { keepData: true, refreshKey: version },
   );
-  const name = useTankLabel()(tank.vehicleKey, tank.tankName).full;
+  const tankLabel = useTankLabel();
+  const name = tankLabel(tank.vehicleKey, tank.tankName).full;
   const className = tr(classKeys[tank.vehicleClass.vehicleClass] ?? "classUnknown");
   const tier = formatTier(tank.tier);
   const loadMore = (cursor: BattleHistoryCursor, items: BattleHistoryItem[]) =>
@@ -314,9 +348,18 @@ function TankDetail({
               const damageTrend = trends?.metrics.find((metric) =>
                 String(metric.metric).includes("damage"),
               );
-              const values = (damageTrend?.points ?? [])
-                .map((point) => point.value)
-                .filter((value): value is number => value !== null);
+              // The line's points and, for its reading, the battle under each (author, 22.11).
+              const drawn = (damageTrend?.points ?? []).filter(
+                (point): point is typeof point & { value: number } => point.value !== null,
+              );
+              const values = drawn.map((point) => point.value);
+              const chartBattles: ChartBattle[] = drawn.map((point) => ({
+                number: point.ordinal,
+                time: point.battleTime,
+                damage: point.damage,
+                map: point.mapName,
+                tank: tankLabel(point.vehicleKey, point.tankName).full,
+              }));
               return (
                 <>
                   <TankMaps
@@ -330,7 +373,11 @@ function TankDetail({
                       {tr("damageOverTime")}
                     </h2>
                     <p className="muted">{tr("damageOverTimeNote", { count: values.length })}</p>
-                    <DamageChart values={values} average={longer?.averageDamage.value ?? null} />
+                    <DamageChart
+                      values={values}
+                      average={longer?.averageDamage.value ?? null}
+                      battles={chartBattles}
+                    />
                   </Card>
                 </>
               );
@@ -388,6 +435,7 @@ export function TanksPage({
   const { state, reload } = useAsync(() => api.vehicleHistoryOverview(), [], {
     refreshKey: version,
   });
+  const dots = useTankDots();
   const [selected, setSelected] = useState<number | undefined>(initialVehicleId);
   const entranceLeft = useRef(entranceMotion);
   const takeEntrance = useCallback(() => {
@@ -428,6 +476,13 @@ export function TanksPage({
                   <span className="subtle nowrap">
                     {tr("tankBattles", { count: tank.totalBattles })}
                   </span>
+                  {dots.get(tank.vehicleId) && (
+                    <span
+                      className="tank-dot temp-mark"
+                      aria-hidden="true"
+                      {...heatProps(dots.get(tank.vehicleId) ?? null)}
+                    />
+                  )}
                 </button>
               ))}
             </nav>

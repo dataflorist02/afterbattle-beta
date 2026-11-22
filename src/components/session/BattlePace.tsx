@@ -139,7 +139,6 @@ export function BattlePaceSummaryPanel({
           </ul>
         </>
       )}
-      <p className="subtle">{translate(language, "paceNeutralDisclaimer")}</p>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import type { Language } from "../types";
 /** Texts of the redesigned interface (spec 25). `{name}` marks a parameter. */
 const pl = {
   navSession: "Sesja",
+  navSessionRunning: "sesja trwa",
   navTanks: "Czołgi",
   navGoals: "Cele",
   navHistory: "Historia",
@@ -35,17 +36,16 @@ const pl = {
   sessionActive: "aktywna",
   sessionEnded: "zakończona",
   sessionEnd: "Zakończ sesję",
-  sessionAutoEnd: "Sesja kończy się sama po {minutes} min bez bitwy (zmienisz to w Ustawieniach).",
+
   sessionStart: "Rozpocznij sesję",
   sessionEndConfirm: "Zakończyć sesję? Kolejna bitwa zacznie nową.",
   noSessionYet: "Zagraj bitwę losową, a wyniki sesji pojawią się tu same.",
   noBattlesInSession: "Zagraj bitwę losową, a wyniki pojawią się tutaj same.",
   averageDamage: "Średnie obrażenia",
-  damageVsBaseline:
-    "O {percent}% {direction} niż Twoja średnia na tych samych czołgach ({baseline})",
+  damageVsBaseline: "o {percent}% {direction} niż zwykle ({baseline})",
   more: "więcej",
   less: "mniej",
-  damageSameAsBaseline: "Tyle samo co Twoja średnia na tych samych czołgach ({baseline})",
+  damageSameAsBaseline: "tyle co zwykle ({baseline})",
   compareAfterThree: "Porównanie ze średnią pojawi się po 3 bitwach.",
   baselineTooSmall: "Za mało bitew na tych czołgach do porównania ({count} z 30).",
   wins: "Wygrane",
@@ -69,8 +69,7 @@ const pl = {
     "W tej sesji zadajesz o {percent}% mniej obrażeń niż zwykle na tych czołgach ({baseline}).",
   heroComparedTooFew:
     "Porównanie pojawi się po 3 bitwach na czołgach z co najmniej 30 wcześniejszymi bitwami (teraz {count}).",
-  heroComparedPart:
-    "Porównano {compared} z {total} bitew: tylko czołgi z co najmniej 30 wcześniejszymi bitwami.",
+  heroComparedPart: "porównano {compared} z {total} bitew",
   battlesInSession: "Bitwy w tej sesji",
   allBattles: "Wszystkie {count}",
   colResult: "Wynik",
@@ -109,10 +108,13 @@ const pl = {
   hits: "Trafienia",
   tankTooFew: "Za mało bitew na tym czołgu ({count} z 10).",
   damageOverTime: "Obrażenia w czasie",
-  damageOverTimeNote: "Średnia z 10 bitew, ostatnie {count} bitew",
+  damageOverTimeNote: "ostatnie {count} bitew",
   chartTooFew: "Wykres pojawi się po 2 bitwach na tym czołgu.",
   chartLabel: "Wykres obrażeń w czasie, {count} punktów",
   chartAverage: "Twoja średnia {value}",
+  chartReadingBattle: "Bitwa {number}",
+  chartReadingDamage: "obrażenia {value}",
+  chartReadingLine: "średnia krocząca {value}",
   weeklyTitle: "Cele na ten tydzień",
   weeklySubtitle: "{range}, {battles} bitew do tej pory",
   weeklyGoalsLabel: "Cele tygodnia",
@@ -129,10 +131,9 @@ const pl = {
   weeklyStateTooFewTank: "za mało bitew na tym czołgu ({battles} z 5)",
   weeklyTrackDone: "cel osiągnięty",
   weeklyTrackShare: "{share} procent celu",
-  weeklyWhySurvival: "Cel to Twoja mediana z 4 tygodni ({basis}) plus 5 punktów.",
-  weeklyWhyAverage: "Twoja średnia z 4 tygodni ({basis}) plus 10%.",
+
   weeklyVsTitle: "Ten tydzień wobec poprzednich czterech",
-  weeklyVsNote: "Wynik względem Twojej średniej na tych samych czołgach",
+
   weeklyTooFew: "Za mało bitew na trend ({battles} z 15).",
   weeklyPreliminary: "Wstępnie: {battles} bitew, pewniej od 30.",
   weeklyMetricDamage: "Obrażenia z asystą",
@@ -142,7 +143,7 @@ const pl = {
   weeklyBefore: "poprzednio {range}",
   weeklyBeforeNone: "poprzednio za mało bitew",
   weeklyWins: "Wygrane",
-  weeklyWinsContext: "tylko kontekst, nie cel",
+
   weeklyLastTitle: "Poprzedni tydzień",
   weeklyLastLine: "{achieved} z {goals} celów osiągnięte w {battles} bitwach.",
   weeklyLastNone: "Bez celów: za mało wcześniejszych bitew ({battles} bitew w tamtym tygodniu).",
@@ -150,7 +151,7 @@ const pl = {
     "Wyzwania na 5 bitew w tym tygodniu: ukończone {completed}, nieudane {failed}, porzucone {abandoned}.",
   challengesTitle: "Wyzwania na 5 bitew",
   mapRecordTitle: "Ty na mapie {map}",
-  mapRecordNote: "Wszystkie Twoje bitwy na tej mapie, każdym czołgiem",
+  mapRecordNote: "każdym czołgiem",
   mapRecordBattles: "bitew",
   mapRecordWins: "wygranych",
   mapRecordDamage: "śr. obrażeń",
@@ -159,6 +160,7 @@ const pl = {
   damageLineTop: "obrażeń, najwięcej w drużynie, {share}% jej obrażeń",
   damageLineShare: "obrażeń, {share}% obrażeń drużyny",
   damageWord: "obrażeń",
+  battleUsual: "zwykle {value}",
   yourBattle: "Twoja bitwa",
   statHits: "trafień",
   statPenetrations: "przebić",
@@ -178,13 +180,17 @@ const pl = {
   tankFigureAssist: "asysta",
   tankFigureSurvival: "przetrwanie",
   tankMapsTitle: "Twoje mapy na tym czołgu",
-  tankMapsNote: "Od najlepszej do najsłabszej, mapy z co najmniej 4 bitwami",
+
   mapTileLabel: "{tag} {map}: średnio {damage} obrażeń, przetrwanie {survival}, {battles} bitew",
   mapTagBest: "Najlepiej",
   mapTagWorst: "Najsłabiej",
   mapTileDamage: "śr. obrażeń",
   mapTileMeta: "przetrwanie {survival}, {battles} bitew",
   sessionMetaLine: "{title}: {meta}",
+  // Żar (spec 33 §1): a direction against the own average, never a judgement (D20).
+  tempWarmer: "cieplej niż zwykle",
+  tempUsual: "jak zwykle",
+  tempCooler: "chłodniej niż zwykle",
   headlineStrong: "Mocna sesja: obrażenia {percent} niż zwykle",
   headlineTough: "Trudna sesja: obrażenia {percent} niż zwykle",
   headlineHigher: "o {percent}% wyżej",
@@ -259,7 +265,7 @@ const pl = {
   goalsActive: "Aktywny cel",
   goalsProgress: "{done} z {target} bitew, {successes} udanych",
   goalsNeed: "Potrzeba {required} udanych bitew z {target}.",
-  goalsFrozen: "Cel wynika z Twojej średniej na tym czołgu ({value}).",
+  goalsFrozen: "Twoja średnia {value}",
   goalsAbandon: "Porzuć cel",
   goalsAbandonConfirm: "Porzucić ten cel? Postęp nie zostanie zapisany jako ukończony.",
   goalsSuggestions: "Propozycje po ostatniej sesji",
@@ -279,6 +285,14 @@ const pl = {
   historyTitle: "Historia",
   historyBattles: "Bitwy",
   historySessions: "Sesje",
+  historyThermogram: "Termogram: temperatura ostatnich {count} sesji",
+  historyThermogramCell: "{date}: {temperature}",
+  // The axis of the thermogram counts sessions, not days (one cell per session).
+  historyThermogramAgoOne: "{count} sesję temu",
+  historyThermogramAgoFew: "{count} sesje temu",
+  historyThermogramAgoMany: "{count} sesji temu",
+  historyThermogramLatest: "ostatnia sesja",
+  tempNone: "bez porównania",
   filterTank: "Czołg",
   filterMap: "Mapa",
   filterAll: "Wszystkie",
@@ -363,30 +377,130 @@ const pl = {
   settingsAbout: "O aplikacji",
   aboutText:
     "Afterbattle {version}. Nieoficjalne narzędzie, niezwiązane z Wargaming. Dane WN8: XVM.",
+  // "Jak to działa" (spec 33 §4): the explanations moved here from the screens; the numbers come
+  // from the constants of the code (lib/howItWorks.ts).
+  howTitle: "Jak to działa",
+  howOpen: "Jak to działa: {entry}",
+  howBattlesTitle: "Które bitwy się liczą",
+  howBattlesText:
+    "Bitwy losowe z pełnymi wynikami; bez bitew treningowych, specjalnych i powtórek bez bloku wyników. Pluton się liczy. Jednostronny przebieg to tylko kontekst i nie zmienia analizy wyników.",
+  howBattlesSession:
+    "Sesja zaczyna się z pierwszą bitwą i kończy sama po {minutes} min bez bitwy (Ustawienia → Ty).",
+  howAverageTitle: "Twoja średnia",
+  howAverageText:
+    "Wszystko porównujemy z Twoimi własnymi wcześniejszymi bitwami, nigdy z innymi graczami.",
+  howAverageSession:
+    "Sesja: obrażenia na tych samych czołgach wobec Twojej średniej na nich; porównanie od {session} bitew w sesji, tylko czołgi z co najmniej {baseline} wcześniejszymi bitwami. Wnioski od {threshold}% różnicy.",
+  howAverageTank:
+    "Czołg: ostatnie 10 bitew wobec średniej ze 100 ostatnich, od {tank} bitew. Wykres obrażeń w czasie: średnia z 10 kolejnych bitew. Mapy czołgu od 4 bitew na mapie, od najlepszej.",
+  howAverageTrends:
+    "Trendy na Przeglądzie: ostatnie 100 bitew wobec 100 wcześniejszych. Wygrane: tylko kontekst, nigdy cel.",
+  howAverageGoals:
+    "Cele tygodnia: przetrwanie — Twoja mediana z 4 tygodni plus 5 punktów; obrażenia z asystą i XP — Twoja średnia z 4 tygodni plus 10%.",
+  howAverageAttempts:
+    "Próby i konwersja: jak często strzały kończyły się bezpośrednim trafieniem i penetracją.",
+  howWn8Title: "WN8 i XVM",
+  howWn8Text:
+    "WN8 liczymy na tym komputerze z publicznych wartości oczekiwanych XVM. Po włączeniu w Ustawieniach → Dane aplikacja pobiera je raz na dobę i nie wysyła żadnych Twoich danych.",
+  howPlayersTitle: "Na tle graczy",
+  howPlayersText:
+    "Wyniki innych graczy z Twoich bitew w tym samym poziomie i klasie, bez Ciebie i Twojego plutonu, liczone na tym komputerze z zapisanych składów.",
+  howPlayersLimits:
+    "Wartości od {rows} wyników (od {approximate} orientacyjnie), Twoja mediana od {own} Twoich bitew w grupie, od {tier} poziomu.",
+  howPlayersPercentile:
+    "Percentyl: jaka część graczy ma niższy wynik niż Twoja mediana; 50 = środek graczy. Najlepsze czołgi: najwyższy percentyl mediany obrażeń w grupie poziom × klasa.",
+  howPlayersLegend:
+    "Pasek: środkowa połowa graczy. Kreska: mediana graczy. Kropka: Twoja mediana. Prawa kreska: 90% graczy.",
+  howSummariesTitle: "Podsumowania",
+  howSummariesText:
+    "Złożone z Twoich liczb według stałych reguł i szablonów. Każde zdanie ma odnośnik do liczby (F1, F2…); najechanie podświetla ją wyżej. Tylko po polsku; formę zwracania się zmienisz w Ustawieniach → Ty.",
+  howTemperatureTitle: "Temperatura (żar i chłód)",
+  howTemperatureText:
+    "Kolor mówi, jak wynik ma się do Twojej własnej średniej w tym miejscu, nigdy do innych graczy: żar — cieplej, stal — jak zwykle, błękit — chłodniej. To kierunek, nie ocena.",
+  howTemperatureLimits:
+    "Jak zwykle: mniej niż ±{usual}% od średniej. Od ±{usual}% kolor się nasyca, pełny przy ±{full}%. Iskry tylko na karcie sesji: od {sparksMin} przy +{usual}% do {sparksMax} przy +{full}%.",
+  howTemperatureMotion:
+    "Na ekranie żarzy się najwyżej jedno miejsce. Nic nie rusza się w trakcie bitwy; przy ograniczonym ruchu w systemie zostają same kolory.",
+  howDamastTitle: "Damast",
+  howDamastText:
+    "Każda zakończona sesja dostaje płytkę stali damasceńskiej, wykutą z jej bitew, od lewej bitwa po bitwie. Nalot strefy pokazuje wynik bitwy wobec Twojej średniej (ciepły wyżej, błękitny niżej), oczko we wzorze to wygrana, drobniejsze warstwy to wyższy tier, wyższa fala to więcej obrażeń. Pod płytką pełna kropka to wygrana, a iskra stoi przy najlepszej bitwie.",
+  howDamastResult:
+    "Wynik bitwy: {wn8}% WN8 wobec Twojej średniej WN8 i {damage}% obrażeń wobec Twojej średniej na tym samym tierze, z ostatnich {window} bitew przed sesją; przy mniej niż {tier} bitwach na tierze liczy się średnia ze wszystkich tierów. Sam tier nie podnosi wyniku. Najlepsza bitwa sesji — wszędzie w aplikacji — to ta z najwyższym wynikiem. Temperatura sesji — na karcie Sesji, w Przeglądzie, w termogramie i na płytce — to średni wynik wobec Twojej średniej, z tą samą granicą ±{usual}%.",
+  howDamastForge:
+    "Płytka wykuwa się raz, po zamknięciu sesji, nigdy w jej trakcie; przy ograniczonym ruchu jest od razu gotowa. Karta {width}×{height} zapisuje się jako PNG tylko tam, gdzie wskażesz, bez nicku i ID konta; nic nie jest wysyłane.",
+  howPrivacyTitle: "Prywatność i aktualizacje",
+  howPrivacyLocal:
+    "Bitwy, ustawienia i kopie zapasowe zostają na tym komputerze, bez telemetrii; grafiki i nazwy z plików gry tylko w pamięci. Szczegóły i usuwanie danych: Ustawienia → Prywatność i dane.",
+  howPrivacyUpdates:
+    "Aktualizacje: tylko po Twojej zgodzie aplikacja raz przy starcie pyta GitHuba o numer najnowszej wersji; instaluje dopiero po kliknięciu, nigdy w trakcie bitwy.",
+  // Damast (spec 34): labels and numbers only, explanations in "Jak to działa".
+  damastTitle: "Damast",
+  damastWarmer: "cieplej",
+  damastUsual: "jak zwykle",
+  damastCooler: "chłodniej",
+  damastPlate: "Płytka damastu sesji",
+  damastStrip: "Bitwy na płytce",
+  damastDotWin: "wygrana, tier {tier}",
+  damastDotLoss: "bez wygranej, tier {tier}",
+  damastDotBest: "{battle}, najlepsza",
+  damastSaveCard: "Zapisz kartę",
+  damastSaved: "Zapisano kartę.",
+  damastToHistory: "Do historii",
+  // "Jak czytać tę płytkę" (author, 22.11): this session's plate, from its own numbers.
+  damastInfoOpen: "Jak czytać tę płytkę",
+  damastInfoOrder: "Bitwy idą od lewej do prawej: {battles}.",
+  damastInfoBattleOne: "bitwie {number}",
+  damastInfoBattleRange: "bitwach {from}–{to}",
+  damastInfoWarmCold: "Najcieplej przy {warm}, najchłodniej przy {cold}.",
+  damastInfoWarmOnly: "Najcieplej przy {warm}; żadna bitwa nie jest chłodniejsza niż zwykle.",
+  damastInfoColdOnly: "Najchłodniej przy {cold}; żadna bitwa nie jest cieplejsza niż zwykle.",
+  damastInfoAllUsual: "Wszystkie bitwy jak zwykle, więc nalot bez barwy.",
+  damastInfoNoReference: "Nalot bez barwy: brak Twojej średniej do porównania.",
+  damastInfoTintBoth: "Ciepło i chłód: wobec Twojej średniej WN8 i obrażeń na tym samym tierze.",
+  damastInfoTintNoWn8:
+    "Ciepło i chłód: tylko obrażenia wobec Twojej średniej na tym samym tierze, bez WN8.",
+  damastInfoTintNoDamage:
+    "Ciepło i chłód: tylko WN8 wobec Twojej średniej WN8, bez średniej obrażeń.",
+  damastInfoEyes: "Oczka: {wins}, jedno za każdą wygraną.",
+  damastInfoTiers: "Gęstsze warstwy to wyższy tier (średnio {tier}).",
+  damastInfoTiersUnknown: "Gęstsze warstwy to wyższy tier; tier tej sesji nieznany.",
+  damastInfoWaves: "Wyższe fale to więcej obrażeń.",
+  damastInfoWavesFlat: "Fale bez różnic: brak Twojej średniej obrażeń do porównania.",
+  damastInfoSpark: "Iskra pod płytką: najlepsza bitwa (nr {number}, {map}).",
+  damastInfoSparkNoMap: "Iskra pod płytką: najlepsza bitwa (nr {number}).",
+  damastInfoSparkNoReference: "Iskry brak: brak Twojej średniej do porównania.",
+  damastInfoSparkFew: "Iskry brak: najlepszą bitwę wskazujemy od {min} bitew.",
+  damastInfoMore: "Więcej w „Jak to działa”",
+  damastCardTitle: "Sesja {date} · {battles}",
+  damastBattlesOne: "{count} bitwa",
+  damastBattlesFew: "{count} bitwy",
+  damastBattlesMany: "{count} bitew",
+  damastDamage: "obrażenia",
+  damastTier: "średni tier",
   // Overview (spec 32 §4): only numbers the app already counts; no judging words (D20).
   navOverview: "Przegląd",
   ovTitle: "Przegląd",
   ovEmpty: "Zagraj bitwę losową, a przegląd wypełni się sam.",
   ovLastSession: "Ostatnia sesja",
   ovOpenSession: "Otwórz sesję",
+  ovBestBattle: "najlepsza bitwa",
   ovTrends: "Trendy",
-  ovTrendsNote: "ostatnie 100 bitew wobec 100 wcześniejszych",
+  ovTrendsNote: "ostatnie 100 bitew",
   ovDamage: "Obrażenia",
   ovWinRate: "Wygrane",
-  ovWinRateNote: "tylko kontekst, nie cel",
+
   ovWn8: "WN8",
   ovWn8Off: "WN8: wyłączone (Ustawienia, grupa Dane).",
   ovPrevious: "poprzednio {value}",
   ovTanks: "Czołgi",
-  ovBestRule:
-    "Najwyższy percentyl mediany obrażeń czołgu na tle graczy z Twoich bitew w tej samej grupie tier × klasa, od 10 bitew.",
+
   ovSessionTime: "{date}, {from}–{to} · {battles}",
   ovSparkline: "{metric} w {count} punktach ostatnich 100 bitew: od {from} do {to}",
   ovGoalsAchieved: "celów spełnionych",
   ovGoalShare: "{share} celu",
   ovAllTanks: "Wszystkie czołgi",
   ovMostPlayedLine: "Najczęściej grane: {tanks}",
-  ovCellsNote: "Percentyl Twojej mediany obrażeń w grupie tier × klasa. 50 = środek graczy.",
+
   refTooFewShort: "Tło od 200 wyników, masz {count}.",
   ovGroupLight: "lekkie {tier}",
   ovGroupMedium: "średnie {tier}",
@@ -416,7 +530,7 @@ const pl = {
   // A-1 on the Tank screen (spec 32 §3): percentiles only, no judging words (D20).
   refTitle: "Na tle graczy z Twoich bitew",
   refLead: "{class} {tier} poziomu: {count} wyników innych graczy.",
-  refOwnNote: "Znacznik: Twoja mediana ze wszystkich {count} Twoich bitew w tej komórce.",
+
   refOwnTooFew: "Twoja mediana od 10 bitew w tej komórce (masz {count}).",
   refApproximate: "Orientacyjnie: mniej niż 200 wyników ({count}).",
   refTooFew: "Za mało danych: tło od 200 wyników, masz {count}.",
@@ -427,6 +541,7 @@ const pl = {
   refLegendRange: "pasek: środkowa połowa graczy",
   refLegendMedian: "kreska: mediana graczy",
   refLegendOwn: "kropka: Twoja mediana",
+  refLegendYou: "Ty",
   refLegendP90: "prawa kreska: 90% graczy",
   refRowPlayers: "gracze {value}",
   refPercentile: "percentyl",
@@ -510,6 +625,7 @@ export type UiKey = keyof typeof pl;
 
 const en: Record<UiKey, string> = {
   navSession: "Session",
+  navSessionRunning: "a session is running",
   navTanks: "Tanks",
   navGoals: "Goals",
   navHistory: "History",
@@ -541,17 +657,16 @@ const en: Record<UiKey, string> = {
   sessionActive: "active",
   sessionEnded: "ended",
   sessionEnd: "End session",
-  sessionAutoEnd:
-    "The session ends on its own after {minutes} min without a battle (change it in Settings).",
+
   sessionStart: "Start session",
   sessionEndConfirm: "End this session? Your next battle starts a new one.",
   noSessionYet: "Play a random battle and the session results appear here on their own.",
   noBattlesInSession: "Play a random battle and the results appear here on their own.",
   averageDamage: "Average damage",
-  damageVsBaseline: "{percent}% {direction} than your average on the same tanks ({baseline})",
+  damageVsBaseline: "{percent}% {direction} than usual ({baseline})",
   more: "more",
   less: "less",
-  damageSameAsBaseline: "The same as your average on the same tanks ({baseline})",
+  damageSameAsBaseline: "the same as usual ({baseline})",
   compareAfterThree: "The comparison with your average appears after 3 battles.",
   baselineTooSmall: "Too few battles on these tanks to compare ({count} of 30).",
   wins: "Wins",
@@ -574,8 +689,7 @@ const en: Record<UiKey, string> = {
     "In this session you deal {percent}% less damage than usual on these tanks ({baseline}).",
   heroComparedTooFew:
     "The comparison appears after 3 battles on tanks with at least 30 earlier battles (now {count}).",
-  heroComparedPart:
-    "Compared {compared} of {total} battles: only tanks with at least 30 earlier battles.",
+  heroComparedPart: "compared {compared} of {total} battles",
   battlesInSession: "Battles in this session",
   allBattles: "All {count}",
   colResult: "Result",
@@ -614,10 +728,13 @@ const en: Record<UiKey, string> = {
   hits: "Hits",
   tankTooFew: "Too few battles on this tank ({count} of 10).",
   damageOverTime: "Damage over time",
-  damageOverTimeNote: "Average of 10 battles, last {count} battles",
+  damageOverTimeNote: "last {count} battles",
   chartTooFew: "The chart appears after 2 battles on this tank.",
   chartLabel: "Damage over time chart, {count} points",
   chartAverage: "Your average {value}",
+  chartReadingBattle: "Battle {number}",
+  chartReadingDamage: "damage {value}",
+  chartReadingLine: "rolling average {value}",
   weeklyTitle: "Goals for this week",
   weeklySubtitle: "{range}, {battles} battles so far",
   weeklyGoalsLabel: "Weekly goals",
@@ -633,10 +750,9 @@ const en: Record<UiKey, string> = {
   weeklyStateTooFewTank: "too few battles on this tank ({battles} of 5)",
   weeklyTrackDone: "goal achieved",
   weeklyTrackShare: "{share} percent of the goal",
-  weeklyWhySurvival: "The goal is your median of 4 weeks ({basis}) plus 5 points.",
-  weeklyWhyAverage: "Your average of 4 weeks ({basis}) plus 10%.",
+
   weeklyVsTitle: "This week against the previous four",
-  weeklyVsNote: "Result against your average on the same tanks",
+
   weeklyTooFew: "Too few battles for a trend ({battles} of 15).",
   weeklyPreliminary: "Preliminary: {battles} battles, firmer from 30.",
   weeklyMetricDamage: "Damage with assist",
@@ -646,7 +762,7 @@ const en: Record<UiKey, string> = {
   weeklyBefore: "before {range}",
   weeklyBeforeNone: "before: too few battles",
   weeklyWins: "Wins",
-  weeklyWinsContext: "context only, not a goal",
+
   weeklyLastTitle: "Last week",
   weeklyLastLine: "{achieved} of {goals} goals achieved in {battles} battles.",
   weeklyLastNone: "No goals: too few earlier battles ({battles} battles that week).",
@@ -654,7 +770,7 @@ const en: Record<UiKey, string> = {
     "5-battle challenges this week: completed {completed}, failed {failed}, abandoned {abandoned}.",
   challengesTitle: "5-battle challenges",
   mapRecordTitle: "You on {map}",
-  mapRecordNote: "All your battles on this map, with every tank",
+  mapRecordNote: "with every tank",
   mapRecordBattles: "battles",
   mapRecordWins: "wins",
   mapRecordDamage: "avg damage",
@@ -663,6 +779,7 @@ const en: Record<UiKey, string> = {
   damageLineTop: "damage, the most in your team, {share}% of its damage",
   damageLineShare: "damage, {share}% of your team's damage",
   damageWord: "damage",
+  battleUsual: "usually {value}",
   yourBattle: "Your battle",
   statHits: "hits",
   statPenetrations: "penetrations",
@@ -682,13 +799,16 @@ const en: Record<UiKey, string> = {
   tankFigureAssist: "assist",
   tankFigureSurvival: "survival",
   tankMapsTitle: "Your maps on this tank",
-  tankMapsNote: "From the best to the weakest, maps with at least 4 battles",
+
   mapTileLabel: "{tag} {map}: {damage} damage on average, survival {survival}, {battles} battles",
   mapTagBest: "Best",
   mapTagWorst: "Weakest",
   mapTileDamage: "avg damage",
   mapTileMeta: "survival {survival}, {battles} battles",
   sessionMetaLine: "{title}: {meta}",
+  tempWarmer: "warmer than usual",
+  tempUsual: "as usual",
+  tempCooler: "cooler than usual",
   headlineStrong: "Strong session: damage {percent} your usual",
   headlineTough: "Tough session: damage {percent} your usual",
   headlineHigher: "{percent}% above",
@@ -764,7 +884,7 @@ const en: Record<UiKey, string> = {
   goalsActive: "Active goal",
   goalsProgress: "{done} of {target} battles, {successes} successful",
   goalsNeed: "You need {required} successful battles out of {target}.",
-  goalsFrozen: "The goal comes from your average on this tank ({value}).",
+  goalsFrozen: "Your average {value}",
   goalsAbandon: "Abandon goal",
   goalsAbandonConfirm: "Abandon this goal? It will not count as completed.",
   goalsSuggestions: "Suggestions after your last session",
@@ -784,6 +904,13 @@ const en: Record<UiKey, string> = {
   historyTitle: "History",
   historyBattles: "Battles",
   historySessions: "Sessions",
+  historyThermogram: "Thermogram: temperature of the last {count} sessions",
+  historyThermogramCell: "{date}: {temperature}",
+  historyThermogramAgoOne: "{count} session ago",
+  historyThermogramAgoFew: "{count} sessions ago",
+  historyThermogramAgoMany: "{count} sessions ago",
+  historyThermogramLatest: "latest session",
+  tempNone: "no comparison",
   filterTank: "Tank",
   filterMap: "Map",
   filterAll: "All",
@@ -868,30 +995,123 @@ const en: Record<UiKey, string> = {
   settingsAbout: "About",
   aboutText:
     "Afterbattle {version}. An unofficial tool, not affiliated with Wargaming. WN8 data: XVM.",
+  howTitle: "How it works",
+  howOpen: "How it works: {entry}",
+  howBattlesTitle: "Which battles count",
+  howBattlesText:
+    "Random battles with full results; no training or special battles and no replays without the results block. Platoons count. A one-sided pace is context only and does not change the analysis.",
+  howBattlesSession:
+    "A session starts with the first battle and ends by itself after {minutes} min without a battle (Settings → You).",
+  howAverageTitle: "Your average",
+  howAverageText: "Everything is compared with your own earlier battles, never with other players.",
+  howAverageSession:
+    "Session: damage on the same tanks against your average on them; compared from {session} battles in the session, only tanks with at least {baseline} earlier battles. Insights from a {threshold}% difference.",
+  howAverageTank:
+    "Tank: the last 10 battles against the average of the last 100, from {tank} battles. Damage over time: the average of 10 battles in a row. The tank's maps from 4 battles on a map, best first.",
+  howAverageTrends:
+    "Trends on Overview: the last 100 battles against the 100 before. Wins: context only, never a goal.",
+  howAverageGoals:
+    "Weekly goals: survival — your median of 4 weeks plus 5 points; damage with assist and XP — your average of 4 weeks plus 10%.",
+  howAverageAttempts:
+    "Attempts and conversion: how often shots ended in a direct hit and a penetration.",
+  howWn8Title: "WN8 and XVM",
+  howWn8Text:
+    "WN8 is counted on this computer from XVM's public expected values. Once turned on in Settings → Data, the app downloads them once a day and sends none of your data.",
+  howPlayersTitle: "Against the players",
+  howPlayersText:
+    "Results of the other players in your battles at the same tier and class, without you and your platoon, counted on this computer from the stored rosters.",
+  howPlayersLimits:
+    "Values from {rows} results (from {approximate} approximate), your median from {own} of your battles in the group, from tier {tier}.",
+  howPlayersPercentile:
+    "Percentile: the share of players with a lower result than your median; 50 = the middle of the players. Best tanks: the highest percentile of median damage in the tier × class group.",
+  howPlayersLegend:
+    "Bar: the middle half of the players. Line: the players' median. Dot: your median. Right line: 90% of the players.",
+  howSummariesTitle: "Summaries",
+  howSummariesText:
+    "Put together from your numbers by fixed rules and templates. Every sentence has a reference to its number (F1, F2…); hovering highlights it above. Polish only; the form of address is in Settings → You.",
+  howTemperatureTitle: "Temperature (ember and frost)",
+  howTemperatureText:
+    "The color tells how a result compares with your own average in that place, never with other players: ember is warmer, steel as usual, blue cooler. A direction, not a judgement.",
+  howTemperatureLimits:
+    "As usual: less than ±{usual}% from the average. From ±{usual}% the color grows, full at ±{full}%. Sparks on the session card only: from {sparksMin} at +{usual}% to {sparksMax} at +{full}%.",
+  howTemperatureMotion:
+    "At most one place glows on a screen. Nothing moves during a battle; with reduced motion in the system only the colors stay.",
+  howDamastTitle: "Damast",
+  howDamastText:
+    "Every ended session gets a plate of Damascus steel forged from its battles, battle by battle from the left. A zone's tint shows the battle's result against your own average (warm above, blue below), an eye in the pattern is a win, finer layers are a higher tier, a higher wave is more damage. Under the plate a full dot is a win, and a spark marks the best battle.",
+  howDamastResult:
+    "A battle's result: {wn8}% WN8 against your own average WN8 and {damage}% damage against your own average on the same tier, from the last {window} battles before the session; with fewer than {tier} battles on a tier the average of all tiers counts. The tier alone never raises a result. The best battle of a session, everywhere in the app, is the one with the highest result. The session's temperature (on the Session card, in Overview, in the thermogram and on the plate) is the average result against your own average, with the same ±{usual}% boundary.",
+  howDamastForge:
+    "The plate is forged once, after the session has ended, never during it; with reduced motion it is ready at once. The {width}×{height} card is saved as PNG only where you choose, without a nickname or account ID; nothing is sent.",
+  howPrivacyTitle: "Privacy and updates",
+  howPrivacyLocal:
+    "Battles, settings and backups stay on this computer, with no telemetry; pictures and names from the game files only in memory. Details and deleting the data: Settings → Privacy and data.",
+  howPrivacyUpdates:
+    "Updates: only with your consent the app asks GitHub once at start for the newest version number; it installs only after your click, never during a battle.",
+  damastTitle: "Damast",
+  damastWarmer: "warmer",
+  damastUsual: "as usual",
+  damastCooler: "cooler",
+  damastPlate: "The session's Damast plate",
+  damastStrip: "Battles on the plate",
+  damastDotWin: "win, tier {tier}",
+  damastDotLoss: "no win, tier {tier}",
+  damastDotBest: "{battle}, best",
+  damastSaveCard: "Save card",
+  damastSaved: "Card saved.",
+  damastToHistory: "To history",
+  damastInfoOpen: "How to read this plate",
+  damastInfoOrder: "Battles run from left to right: {battles}.",
+  damastInfoBattleOne: "battle {number}",
+  damastInfoBattleRange: "battles {from}–{to}",
+  damastInfoWarmCold: "Warmest at {warm}, coolest at {cold}.",
+  damastInfoWarmOnly: "Warmest at {warm}; no battle is cooler than usual.",
+  damastInfoColdOnly: "Coolest at {cold}; no battle is warmer than usual.",
+  damastInfoAllUsual: "Every battle as usual, so the tint has no colour.",
+  damastInfoNoReference: "No tint: there is no average of yours to compare with.",
+  damastInfoTintBoth: "Warm and cool: against your average WN8 and damage on the same tier.",
+  damastInfoTintNoWn8:
+    "Warm and cool: damage only, against your average on the same tier, without WN8.",
+  damastInfoTintNoDamage: "Warm and cool: WN8 only, against your average WN8, without damage.",
+  damastInfoEyes: "Eyes: {wins}, one for each win.",
+  damastInfoTiers: "Denser layers mean a higher tier (on average {tier}).",
+  damastInfoTiersUnknown: "Denser layers mean a higher tier; this session's tier is unknown.",
+  damastInfoWaves: "Higher waves mean more damage.",
+  damastInfoWavesFlat: "Waves without differences: no average damage of yours to compare with.",
+  damastInfoSpark: "The spark under the plate: the best battle (no. {number}, {map}).",
+  damastInfoSparkNoMap: "The spark under the plate: the best battle (no. {number}).",
+  damastInfoSparkNoReference: "No spark: there is no average of yours to compare with.",
+  damastInfoSparkFew: "No spark: the best battle is named from {min} battles.",
+  damastInfoMore: "More in “How it works”",
+  damastCardTitle: "Session {date} · {battles}",
+  damastBattlesOne: "{count} battle",
+  damastBattlesFew: "{count} battles",
+  damastBattlesMany: "{count} battles",
+  damastDamage: "damage",
+  damastTier: "average tier",
   navOverview: "Overview",
   ovTitle: "Overview",
   ovEmpty: "Play a random battle and the overview fills itself.",
   ovLastSession: "Last session",
   ovOpenSession: "Open the session",
+  ovBestBattle: "best battle",
   ovTrends: "Trends",
-  ovTrendsNote: "last 100 battles against the 100 before them",
+  ovTrendsNote: "last 100 battles",
   ovDamage: "Damage",
   ovWinRate: "Wins",
-  ovWinRateNote: "context only, not a goal",
+
   ovWn8: "WN8",
   ovWn8Off: "WN8: off (Settings, Data group).",
   ovPrevious: "before {value}",
   ovTanks: "Tanks",
-  ovBestRule:
-    "Highest percentile of the tank's median damage among the players of your battles in the same tier × class group, from 10 battles.",
+
   ovSessionTime: "{date}, {from}–{to} · {battles}",
   ovSparkline: "{metric} in {count} points of the last 100 battles: from {from} to {to}",
   ovGoalsAchieved: "goals met",
   ovGoalShare: "{share} of the goal",
   ovAllTanks: "All tanks",
   ovMostPlayedLine: "Most played: {tanks}",
-  ovCellsNote:
-    "Percentile of your median damage in the tier × class group. 50 = the middle of the players.",
+
   refTooFewShort: "Background from 200 results, you have {count}.",
   ovGroupLight: "light {tier}",
   ovGroupMedium: "medium {tier}",
@@ -920,7 +1140,7 @@ const en: Record<UiKey, string> = {
   ovOpenTanks: "Open the tanks",
   refTitle: "Against the players in your battles",
   refLead: "{class}, tier {tier}: {count} results of other players.",
-  refOwnNote: "Marker: your median over all {count} of your battles in this cell.",
+
   refOwnTooFew: "Your median from 10 battles in this cell (you have {count}).",
   refApproximate: "Approximate: fewer than 200 results ({count}).",
   refTooFew: "Not enough data: the background starts at 200 results, you have {count}.",
@@ -931,6 +1151,7 @@ const en: Record<UiKey, string> = {
   refLegendRange: "bar: the middle half of the players",
   refLegendMedian: "line: the players' median",
   refLegendOwn: "dot: your median",
+  refLegendYou: "You",
   refLegendP90: "right line: 90% of the players",
   refRowPlayers: "players {value}",
   refPercentile: "percentile",

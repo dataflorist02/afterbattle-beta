@@ -87,6 +87,11 @@ export function sessionDamageReference(
   return { ...result, change, state: "ready" };
 }
 
+/**
+ * Temperature of a session (spec 33 §3): its damage against the player's own average on the same
+ * tanks, the reference of the hero note; none until that comparison is ready. Session, Overview
+ * and the History thermogram all read it here.
+ */
 export type InsightLine =
   | {
       kind: "session_damage";

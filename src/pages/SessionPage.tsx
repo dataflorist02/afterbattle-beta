@@ -14,6 +14,8 @@ import {
   SessionMoments,
 } from "../components/session/SessionStory";
 import { useTankLabel } from "../components/TankName";
+import { SessionDamast } from "../features/damast/SessionDamast";
+import { damastBestBattleId, damastHeat, damastStats } from "../features/damast/stats";
 import { Async, Dialog, Empty, ErrorState } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { useDataVersion } from "../app/dataVersion";
@@ -33,12 +35,16 @@ import {
 } from "../lib/sessionReference";
 import type {
   AppSnapshot,
+  Battle,
+  BattleRef,
+  DamastSession,
   ImportProgressEvent,
   Language,
   Recap as RecapFacts,
   Session,
   SessionBaselineComparison,
   SessionInsight,
+  SessionMoment,
   SessionStory,
   SessionSummary,
 } from "../types";
@@ -159,11 +165,13 @@ function SessionBody({
   comparison,
   story,
   recap,
+  damast,
   snapshot,
   meta,
   action,
   onOpenBattle,
   onOpenHistory,
+  onOpenHistorySessions,
   onOpenSettings,
 }: {
   session: Session;
@@ -171,11 +179,14 @@ function SessionBody({
   comparison: SessionBaselineComparison | null;
   story: SessionStory | null;
   recap: RecapFacts | null;
+  /** The plate's data: the session's temperature, and the plate once it has ended. */
+  damast: DamastSession | null;
   snapshot: AppSnapshot;
   meta: ReactNode;
   action: ReactNode;
   onOpenBattle: (battleId: string) => void;
   onOpenHistory: () => void;
+  onOpenHistorySessions: () => void;
   onOpenSettings: () => void;
 }) {
   const { language, tr } = useLanguage();
@@ -213,7 +224,18 @@ function SessionBody({
     );
   const reference = sessionDamageReference(comparison);
   const notes = heroNote(reference, metrics.analyzedBattles, language, tr);
-  const best = story?.bestBattle ?? null;
+  // The battle the summary's "najwięcej obrażeń" sentence names (spec 30, chosen by damage).
+  const mostDamage = story?.bestBattle ?? null;
+  // Spec 34 §3: an ended session gets its Damast plate; its spark is then the one hot spot.
+  const plated = !active && damast !== null && damastStats(damast).count > 0;
+  // Author's decision after E14: the best battle is the highest r everywhere — the strip's mark,
+  // the card's map, the moment and (on an ended session) the spark under the plate.
+  const bestBattleId = damastBestBattleId(damast);
+  const best = battles.find((battle) => battle.arenaId === bestBattleId) ?? null;
+  const moments = (story?.moments ?? []).flatMap((moment): SessionMoment[] => {
+    if (moment.kind !== "best_battle") return [moment];
+    return best ? [{ ...moment, battle: battleRef(best) }] : [];
+  });
   return (
     <>
       <SessionHero
@@ -225,6 +247,8 @@ function SessionBody({
         notes={notes}
         notesId="recap-target-damage"
         action={action}
+        // One session temperature in the app: the Damast one (mean r − 1, spec 34 §2).
+        heat={damastHeat(damast)}
         figures={
           <>
             <CountedFigure
@@ -272,14 +296,25 @@ function SessionBody({
           </button>
         </p>
       )}
+      {plated && damast && (
+        <SessionDamast
+          damast={damast}
+          onOpenHistory={onOpenHistorySessions}
+          mapOf={(battleId) =>
+            battles.find((battle) => battle.arenaId === battleId)?.mapName ?? null
+          }
+        />
+      )}
       <SessionRecap recap={recap} />
       <BattleStrip
         battles={battles}
-        bestBattleId={best?.battleId ?? null}
+        bestBattleId={bestBattleId}
+        referenceBattleId={mostDamage?.battleId ?? null}
         newBattleIds={fresh}
         onOpenBattle={onOpenBattle}
+        hot={!plated}
       />
-      <SessionMoments moments={story?.moments ?? []} onOpenBattle={onOpenBattle} />
+      <SessionMoments moments={moments} onOpenBattle={onOpenBattle} />
       <div className="session-layout">
         <div className="session-main">
           <Highlights comparison={comparison} />
@@ -301,6 +336,18 @@ function SessionBody({
       </div>
     </>
   );
+}
+
+/** A battle of the session as the moments show it. */
+function battleRef(battle: Battle): BattleRef {
+  return {
+    battleId: battle.arenaId,
+    damage: battle.damage ?? 0,
+    mapKey: battle.mapKey,
+    mapName: battle.mapName,
+    vehicleKey: battle.vehicleKey,
+    tankName: battle.tankName,
+  };
 }
 
 /**
@@ -417,6 +464,7 @@ export function SessionPage({
   onChanged,
   onOpenBattle,
   onOpenHistory,
+  onOpenHistorySessions = onOpenHistory,
   onOpenSettings,
 }: {
   snapshot: AppSnapshot;
@@ -426,34 +474,48 @@ export function SessionPage({
   onChanged: () => void;
   onOpenBattle: (battleId: string, sessionId: string) => void;
   onOpenHistory: () => void;
+  onOpenHistorySessions?: () => void;
   onOpenSettings: () => void;
 }) {
   const { language, tr } = useLanguage();
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [actionError, setActionError] = useState<string | undefined | null>(null);
-  const session =
-    (sessionId ? snapshot.recentSessions.find((item) => item.id === sessionId) : null) ??
-    snapshot.activeSession ??
-    snapshot.recentSessions[0] ??
-    null;
-  const id = session?.id ?? null;
+  const listed = sessionId
+    ? (snapshot.recentSessions.find((item) => item.id === sessionId) ?? null)
+    : null;
+  // Spec 34 §3: a session older than the recent ones (opened from its Damast plate in History)
+  // comes with its own summary; it has ended, as only the newest session can run.
+  const older = sessionId !== null && listed === null;
+  const known = listed ?? snapshot.activeSession ?? snapshot.recentSessions[0] ?? null;
+  const id = older ? sessionId : (known?.id ?? null);
+  const ended = older || (known !== null && known.status !== "active");
   const version = useDataVersion();
   const data = useAsync(
     async () => {
       if (!id) return null;
-      const [summary, comparison, story, recap] = await Promise.all([
+      const [summary, comparison, story, recap, damast] = await Promise.all([
         api.sessionSummary(id),
         api.sessionBaselineComparison(id).catch(() => null),
         api.sessionStory(id).catch(() => null),
         api.recap("session", id).catch(() => null),
+        // The session's temperature (spec 34 §2); the plate itself only once it has ended.
+        Promise.resolve()
+          .then(() => api.damastSession(id))
+          .catch(() => null),
       ]);
-      return { summary, comparison, story, recap };
+      return { summary, comparison, story, recap, damast };
     },
-    [id],
+    [id, ended],
     { refreshKey: version },
   );
 
   if (!snapshot.configured) return <FirstRun onChanged={onChanged} />;
+
+  const session = older
+    ? data.state.status === "ready"
+      ? (data.state.data?.summary.session ?? null)
+      : null
+    : known;
 
   const act = (run: () => Promise<unknown>) => {
     setActionError(null);
@@ -481,7 +543,6 @@ export function SessionPage({
           }),
         })}
       </p>
-      {active && <p>{tr("sessionAutoEnd", { minutes: snapshot.inactivityMinutes })}</p>}
     </>
   );
   const plainHeader = (
@@ -497,12 +558,12 @@ export function SessionPage({
     <>
       {progress && <ImportBar progress={progress} />}
       {actionError !== null && <ErrorState code={actionError} />}
-      {!session ? (
+      {!session && !older ? (
         <>
           {plainHeader}
           <Empty text={tr("noSessionYet")} />
         </>
-      ) : data.state.status !== "ready" || !data.state.data ? (
+      ) : data.state.status !== "ready" || !data.state.data || !session ? (
         <>
           {plainHeader}
           <Async state={data.state} onRetry={data.reload}>
@@ -516,11 +577,13 @@ export function SessionPage({
           comparison={data.state.data.comparison}
           story={data.state.data.story}
           recap={data.state.data.recap}
+          damast={data.state.data.damast}
           snapshot={snapshot}
           meta={meta}
           action={action}
           onOpenBattle={(battleId) => onOpenBattle(battleId, session.id)}
           onOpenHistory={onOpenHistory}
+          onOpenHistorySessions={onOpenHistorySessions}
           onOpenSettings={onOpenSettings}
         />
       )}

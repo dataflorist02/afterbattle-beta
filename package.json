@@ -1,6 +1,6 @@
 {
   "name": "afterbattle",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "private": true,
   "description": "Local, privacy-first World of Tanks session tracker and deterministic coach.",
   "type": "module",

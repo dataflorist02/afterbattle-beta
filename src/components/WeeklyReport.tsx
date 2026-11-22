@@ -3,17 +3,55 @@
  * week, this week against the four before, last week's result. Rules come from Rust
  * (`get_weekly_report`); win rate is context only, never a goal (D12).
  */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
 import { formatNumber, formatPercent } from "../lib/format";
 import type { Language, WeeklyGoal, WeeklyIndicator, WeeklyReport } from "../types";
 import { useTankLabel } from "./TankName";
 import { VehicleImage } from "./ui";
+import { EmberFlash, EmberNumber, EmberSweep } from "./Ember";
+import { HelpLink } from "./HelpLink";
 
 type Translate = (key: UiKey, params?: Record<string, string | number>) => string;
 
+/** How far a weekly goal is, 0–1 (an achieved goal is full). */
+export function goalProgress(goal: WeeklyGoal): number {
+  if (goal.state === "achieved") return 1;
+  return goal.current === null || goal.target <= 0
+    ? 0
+    : Math.min(1, Math.max(0, goal.current / goal.target));
+}
+
+/** Spec 33 §3: a bar from steel to ember by the progress (`--progress`, 0–1). */
+export function trackStyle(progress: number): CSSProperties {
+  return { "--progress": String(Math.round(progress * 1000) / 1000) } as CSSProperties;
+}
+
+/**
+ * The goal closest to completion (spec 33 §3), the hot spot of Goals: a weekly goal still open
+ * (not achieved, not too few battles) or the running 5-battle challenge, by the larger share;
+ * `goal:<kind>` or `challenge`.
+ */
+export function closestGoal(
+  goals: readonly WeeklyGoal[],
+  challenge: { completedBattles: number; targetBattles: number } | null,
+): string | null {
+  let best: { key: string; share: number } | null = null;
+  for (const goal of goals) {
+    if (goal.state === "achieved" || goal.state === "too_few") continue;
+    const share = goalProgress(goal);
+    if (!best || share > best.share) best = { key: `goal:${goal.kind}`, share };
+  }
+  if (challenge && challenge.targetBattles > 0) {
+    const share = challenge.completedBattles / challenge.targetBattles;
+    if (!best || share > best.share) best = { key: "challenge", share };
+  }
+  return best?.key ?? null;
+}
+
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const NO_GOALS: ReadonlySet<string> = new Set();
 
 /** "9–15 listopada" / "9–15 November" (the end is the Sunday before the exclusive week end). */
 export function weekRange(start: number, end: number, language: Language): string {
@@ -65,13 +103,17 @@ function goalStatus(goal: WeeklyGoal, language: Language, tr: Translate): string
   }
 }
 
-function goalExplanation(goal: WeeklyGoal, language: Language, tr: Translate): string {
-  return goal.kind === "survival"
-    ? tr("weeklyWhySurvival", { basis: formatPercent(goal.basis, language) })
-    : tr("weeklyWhyAverage", { basis: formatNumber(goal.basis, language) });
-}
-
-function GoalCard({ goal }: { goal: WeeklyGoal }) {
+function GoalCard({
+  goal,
+  hot,
+  completed,
+}: {
+  goal: WeeklyGoal;
+  /** The goal closest to completion: the screen's hot spot. */
+  hot: boolean;
+  /** Completed while the screen is open: one flash and one sweep. */
+  completed: boolean;
+}) {
   const { language, tr } = useLanguage();
   const label = useTankLabel();
   const tank = label(goal.vehicleKey, goal.tankName);
@@ -79,9 +121,21 @@ function GoalCard({ goal }: { goal: WeeklyGoal }) {
   return (
     <div
       id={`recap-target-goal-${goal.kind}`}
-      className="card section weekly-goal"
+      className={[
+        "card section weekly-goal",
+        hot ? "ember-hot" : "",
+        completed ? "ember-swept" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-state={goal.state}
     >
+      {completed && (
+        <>
+          <EmberFlash />
+          <EmberSweep />
+        </>
+      )}
       <h3 className="section-title goal-title">
         {goal.kind === "tank_damage_assist" && (
           <VehicleImage vehicleKey={goal.vehicleKey} label={tank.full} width={40} height={22} />
@@ -89,11 +143,12 @@ function GoalCard({ goal }: { goal: WeeklyGoal }) {
         {goalTitle(goal, tank.short, language, tr)}
       </h3>
       <p className="weekly-goal-value">
-        <span className="num">{goalValue(goal, goal.current, language)}</span>{" "}
+        <EmberNumber hot={hot} className="num" text={goalValue(goal, goal.current, language)} />{" "}
         <span className="muted">{goalStatus(goal, language, tr)}</span>
       </p>
       <div
-        className="track"
+        className="track ember-track"
+        style={trackStyle(goalProgress(goal))}
         role="img"
         aria-label={
           goal.state === "achieved"
@@ -103,7 +158,6 @@ function GoalCard({ goal }: { goal: WeeklyGoal }) {
       >
         <div style={{ width: `${share * 100}%` }} />
       </div>
-      <p className="muted">{goalExplanation(goal, language, tr)}</p>
     </div>
   );
 }
@@ -126,11 +180,17 @@ export function WeeklyReportView({
   report,
   xvmOn,
   summary = null,
+  hotKey = null,
+  completed = NO_GOALS,
 }: {
   report: WeeklyReport;
   xvmOn: boolean;
   /** The week's summary card (spec 30 §2), right under the header. */
   summary?: ReactNode;
+  /** Spec 33 §3: `goal:<kind>` of the goal closest to completion, if it is a weekly goal. */
+  hotKey?: string | null;
+  /** Kinds of the goals completed while the screen is open. */
+  completed?: ReadonlySet<string>;
 }) {
   const { language, tr } = useLanguage();
   const percent = (value: number) => formatPercent(value, language);
@@ -159,17 +219,23 @@ export function WeeklyReportView({
       ) : (
         <section className="weekly-goals" aria-label={tr("weeklyGoalsLabel")}>
           {report.goals.map((goal) => (
-            <GoalCard key={goal.kind} goal={goal} />
+            <GoalCard
+              key={goal.kind}
+              goal={goal}
+              hot={hotKey === `goal:${goal.kind}`}
+              completed={completed.has(goal.kind)}
+            />
           ))}
         </section>
       )}
       <section className="card section" aria-labelledby="week-h">
         <div className="card-head">
-          <div>
+          <div className="title-with-help">
             <h2 id="week-h" className="section-title">
               {tr("weeklyVsTitle")}
             </h2>
-            <p className="muted">{tr("weeklyVsNote")}</p>
+            {/* Spec 33 §4: how the week is compared and where goals come from. */}
+            <HelpLink entry="average" />
           </div>
         </div>
         {report.confidence === "too_few" && (
@@ -214,8 +280,7 @@ export function WeeklyReportView({
           )}
           <div id="recap-target-week-wins" className="weekly-row">
             <span>{tr("weeklyWins")}</span>{" "}
-            <span className="num weekly-value">{formatPercent(report.winRate, language)}</span>{" "}
-            <span className="muted">{tr("weeklyWinsContext")}</span>
+            <span className="num weekly-value">{formatPercent(report.winRate, language)}</span>
           </div>
         </div>
       </section>

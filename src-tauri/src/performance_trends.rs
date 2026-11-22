@@ -127,6 +127,10 @@ fn points(
                 sample_size: window.sample_size,
                 coverage: window.coverage,
                 vehicle_id,
+                damage: battles[index].damage,
+                map_name: battles[index].map_name.clone(),
+                vehicle_key: battles[index].vehicle_key.clone(),
+                tank_name: battles[index].tank_name.clone(),
             }
         })
         .collect()
@@ -626,6 +630,50 @@ mod tests {
             metric(&report, PerformanceTrendMetric::WinRate).points[2].value,
             Some(100.0)
         );
+    }
+
+    #[test]
+    fn points_carry_their_own_battle_for_the_chart_reading() {
+        // E14 polish 2: the chart's reading names the battle at each point (its damage, map
+        // and tank), next to the rolling value the line draws.
+        let directory = tempdir().unwrap();
+        let database = Database::initialize(directory.path().join("reading.sqlite3")).unwrap();
+        for index in 1..=4 {
+            let mut value = battle(&format!("battle-{index}"), index, 7, index * 100);
+            value.map_name = Some(format!("Synthetic Map {index}"));
+            value.tank_name = (index != 2).then(|| "Synthetic Tank".to_owned());
+            if index == 3 {
+                value.damage = None;
+            }
+            database.insert_battle(&mut value, false).unwrap();
+        }
+        let report = performance_trends(
+            &database,
+            PerformanceTrendRange::Last10,
+            Some(7),
+            Some(&expected()),
+            1,
+        )
+        .unwrap();
+        for kind in [
+            PerformanceTrendMetric::Damage,
+            PerformanceTrendMetric::Wn8,
+            PerformanceTrendMetric::Survival,
+        ] {
+            let points = &metric(&report, kind).points;
+            assert_eq!(
+                points.iter().map(|point| point.damage).collect::<Vec<_>>(),
+                vec![Some(100), Some(200), None, Some(400)]
+            );
+            assert_eq!(points[0].map_name.as_deref(), Some("Synthetic Map 1"));
+            assert_eq!(points[3].map_name.as_deref(), Some("Synthetic Map 4"));
+            assert_eq!(points[0].tank_name.as_deref(), Some("Synthetic Tank"));
+            assert_eq!(points[1].tank_name, None);
+            assert!(points.iter().all(|point| point.vehicle_key == "vehicle-7"));
+        }
+        // The line's own value stays the rolling one.
+        let damage = metric(&report, PerformanceTrendMetric::Damage);
+        assert_eq!(damage.points[3].value, Some((100.0 + 200.0 + 400.0) / 3.0));
     }
 
     #[test]

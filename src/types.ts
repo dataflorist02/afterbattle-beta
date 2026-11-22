@@ -37,7 +37,6 @@ export type { BattleRef } from "./api/generated/BattleRef";
 export type { HeadlineKind } from "./api/generated/HeadlineKind";
 export type { MapRecord } from "./api/generated/MapRecord";
 export type { SessionHeadline } from "./api/generated/SessionHeadline";
-export type { SessionMaps } from "./api/generated/SessionMaps";
 export type { SessionMoment } from "./api/generated/SessionMoment";
 export type { SessionStory } from "./api/generated/SessionStory";
 export type { Recap } from "./api/generated/Recap";
@@ -75,6 +74,7 @@ export type { NormalizedBaselineMetrics } from "./api/generated/NormalizedBaseli
 export type { BaselineWindowResult } from "./api/generated/BaselineWindowResult";
 export type { PlayerBaselinePresentation } from "./api/generated/PlayerBaselinePresentation";
 export type { VehicleBaselinePresentation } from "./api/generated/VehicleBaselinePresentation";
+export type { VehicleTemperature } from "./api/generated/VehicleTemperature";
 export type { BaselineComparisonState } from "./api/generated/BaselineComparisonState";
 export type { BaselineDelta } from "./api/generated/BaselineDelta";
 export type { NormalizedBaselineDeltas } from "./api/generated/NormalizedBaselineDeltas";
@@ -127,7 +127,6 @@ export interface Wn8Exclusions {
 }
 export type { SessionWn8Presentation } from "./api/generated/SessionWn8Presentation";
 export type { BattleWn8Presentation } from "./api/generated/BattleWn8Presentation";
-export type { HistoricalSessionWn8Presentation } from "./api/generated/HistoricalSessionWn8Presentation";
 export type { Wn8Presentation } from "./api/generated/Wn8Presentation";
 export type { ChallengeType } from "./api/generated/ChallengeType";
 export type { ChallengeStatus } from "./api/generated/ChallengeStatus";
@@ -219,3 +218,9 @@ export type { CommandError } from "./api/generated/CommandError";
 export type { AvailableUpdate } from "./api/generated/AvailableUpdate";
 export type { UpdateConsent } from "./api/generated/UpdateConsent";
 export type { TankPosition } from "./api/generated/TankPosition";
+export type { DamastBattle } from "./api/generated/DamastBattle";
+export type { DamastTierDamage } from "./api/generated/DamastTierDamage";
+export type { DamastReference } from "./api/generated/DamastReference";
+export type { DamastSession } from "./api/generated/DamastSession";
+export type { DamastSessionCursor } from "./api/generated/DamastSessionCursor";
+export type { DamastSessionPage } from "./api/generated/DamastSessionPage";

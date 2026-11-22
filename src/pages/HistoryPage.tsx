@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { HistoryRows } from "../components/HistoryRows";
-import { MapBackdrop } from "../components/MapBackdrop";
+import { DamastSessions } from "../features/damast/DamastSessions";
 import { ImportBar } from "../components/ImportBar";
 import { useTankLabel } from "../components/TankName";
 import { Async, Empty, ErrorState, SegmentedControl } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { useDataVersion } from "../app/dataVersion";
 import { useLanguage } from "../i18n/language";
-import { formatDate, formatNumber } from "../lib/format";
+import { formatDate } from "../lib/format";
 import { mergeRefreshedPage } from "../lib/pages";
 import {
   afterFontsAndLayout,
@@ -18,15 +18,113 @@ import {
   useArrivals,
   useFlip,
 } from "../lib/motion";
+import { heatAgainst, heatProps, type Heat } from "../lib/ember";
+import { damastHeat } from "../features/damast/stats";
+import { TEMPERATURE_KEYS } from "../components/Ember";
+import type { UiKey } from "../i18n/ui";
 import type {
+  Language,
   AppSnapshot,
   BattleHistoryCursor,
   BattleHistoryFilter,
   BattleHistoryItem,
   ImportProgressEvent,
+  Session,
 } from "../types";
 
+/**
+ * Spec 33 §3: the temperature of each recent session, the same as on the Session screen and on
+ * its plate: the Damast temperature (one request per session, again only after the data changed).
+ */
+function useSessionHeats(sessions: readonly Session[]): Map<string, Heat | null> {
+  const version = useDataVersion();
+  const ids = sessions.map((session) => session.id);
+  const heats = useAsync(
+    async () => {
+      const plates = await Promise.all(
+        ids.map((id) =>
+          Promise.resolve()
+            .then(() => api.damastSession(id))
+            .catch(() => null),
+        ),
+      );
+      return new Map(ids.map((id, index) => [id, damastHeat(plates[index])]));
+    },
+    [ids.join("|")],
+    { keepData: true, refreshKey: version },
+  );
+  return heats.state.status === "ready" ? heats.state.data : new Map();
+}
+
+/** "1 sesję temu", "2 sesje temu", "30 sesji temu" (Polish plural forms; English one/other). */
+export function sessionsAgo(
+  count: number,
+  language: Language,
+  tr: (key: UiKey, params?: Record<string, string | number>) => string,
+): string {
+  const form = new Intl.PluralRules(language === "pl" ? "pl-PL" : "en-GB").select(count);
+  const key: UiKey =
+    form === "one"
+      ? "historyThermogramAgoOne"
+      : form === "few"
+        ? "historyThermogramAgoFew"
+        : "historyThermogramAgoMany";
+  return tr(key, { count });
+}
+
+/** The thermogram (spec 33 §3): one cell per recent session, oldest on the left. */
+function Thermogram({
+  sessions,
+  heats,
+}: {
+  sessions: readonly Session[];
+  heats: Map<string, Heat | null>;
+}) {
+  const { language, tr } = useLanguage();
+  if (sessions.length === 0) return null;
+  const oldestFirst = [...sessions].sort((a, b) => a.startedAt - b.startedAt);
+  return (
+    <div className="thermogram-wrap">
+      <ol
+        className="thermogram"
+        aria-label={tr("historyThermogram", { count: oldestFirst.length })}
+      >
+        {oldestFirst.map((session) => {
+          const heat = heats.get(session.id) ?? null;
+          const label = tr("historyThermogramCell", {
+            date: formatDate(session.startedAt, language),
+            temperature: heat ? tr(TEMPERATURE_KEYS[heat.temperature]) : tr("tempNone"),
+          });
+          return (
+            <li
+              key={session.id}
+              className="thermogram-cell temp-mark"
+              aria-label={label}
+              title={label}
+              {...heatProps(heat)}
+            />
+          );
+        })}
+      </ol>
+      {/* The axis counts sessions, not days: "30 sesji temu" … "ostatnia sesja". */}
+      <p className="thermogram-ends">
+        <span>{sessionsAgo(oldestFirst.length, language, tr)}</span>
+        <span>{tr("historyThermogramLatest")}</span>
+      </p>
+    </div>
+  );
+}
+
 const PAGE = 50;
+const NO_SWEEP: ReadonlySet<string> = new Set();
+
+/** The record of the rows shown (most damage, the newest of equal ones): the hot spot. */
+export function recordId(items: readonly BattleHistoryItem[]): string | null {
+  let best: BattleHistoryItem | null = null;
+  for (const item of items)
+    if (item.damage !== null && (best === null || item.damage > (best.damage ?? -1))) best = item;
+  return best?.battleId ?? null;
+}
 
 function filterFor(
   vehicleId: number | null,
@@ -128,6 +226,17 @@ function Battles({
   const moving = arrivals.length > 0 && !prefersReducedMotion();
   useFlip(rowsRef, firstIds?.join(","), moving);
   const shownEntering = moving ? new Set([...entering, ...arrivals]) : entering;
+  // Spec 33 §3: a new row gets one sweep (none with reduced motion).
+  const swept = moving ? new Set(arrivals) : NO_SWEEP;
+  // Spec 33 §3: each row against the player's own average damage on its tank.
+  const averages = new Map(
+    (tanks.state.status === "ready" ? tanks.state.data.vehicles : []).map((tank) => [
+      tank.vehicleId,
+      tank.averageDamage,
+    ]),
+  );
+  const rowHeat = (item: BattleHistoryItem) =>
+    item.vehicleId === null ? null : heatAgainst(item.damage, averages.get(item.vehicleId));
   // The cascade lasts about a second; afterwards no row carries the entrance class.
   useEffect(() => {
     if (entering.size === 0) return;
@@ -233,7 +342,14 @@ function Battles({
           return (
             <>
               <div ref={rowsRef} className={wavePending ? "contents wave-pending" : "contents"}>
-                <HistoryRows items={items} onOpenBattle={onOpenBattle} entering={shownEntering} />
+                <HistoryRows
+                  items={items}
+                  onOpenBattle={onOpenBattle}
+                  entering={shownEntering}
+                  heat={rowHeat}
+                  hotId={recordId(items)}
+                  swept={swept}
+                />
               </div>
               {moreError !== null && <ErrorState code={moreError} />}
               {next && (
@@ -266,67 +382,6 @@ function Battles({
   );
 }
 
-function Sessions({
-  snapshot,
-  onOpenSession,
-}: {
-  snapshot: AppSnapshot;
-  onOpenSession: (sessionId: string) => void;
-}) {
-  const { language, tr } = useLanguage();
-  const version = useDataVersion();
-  const wn8 = useAsync(() => api.recentSessionsWn8(), [], { refreshKey: version });
-  const ids = snapshot.recentSessions.map((session) => session.id);
-  const maps = useAsync(() => api.sessionMaps(ids), [ids.join("|")], { refreshKey: version });
-  if (snapshot.recentSessions.length === 0) return <Empty text={tr("sessionsEmpty")} />;
-  const xvmOn = snapshot.advancedStatus.xvmEnabled;
-  return (
-    <ul className="session-cards">
-      {snapshot.recentSessions.map((session) => {
-        const value =
-          wn8.state.status === "ready"
-            ? (wn8.state.data.find((item) => item.sessionId === session.id)?.wn8.value ?? null)
-            : null;
-        const keys =
-          maps.state.status === "ready"
-            ? (maps.state.data.find((item) => item.sessionId === session.id)?.mapKeys ?? [])
-            : [];
-        return (
-          <li key={session.id}>
-            <button
-              type="button"
-              className="card session-card"
-              onClick={() => onOpenSession(session.id)}
-            >
-              <span className="session-collage" aria-hidden="true">
-                {(keys.length > 0 ? keys : [null]).map((key, index) => (
-                  <MapBackdrop
-                    key={key ?? index}
-                    mapKey={key}
-                    width={120}
-                    className="collage-tile"
-                  />
-                ))}
-              </span>
-              <span className="session-card-text">
-                <span>
-                  {tr("sessionRow", {
-                    date: formatDate(session.startedAt, language),
-                    battles: session.analyzedBattleCount,
-                  })}
-                </span>
-                {xvmOn && value !== null && (
-                  <span className="num">WN8 {formatNumber(value, language)}</span>
-                )}
-              </span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 export function HistoryPage({
   snapshot,
   progress,
@@ -334,6 +389,7 @@ export function HistoryPage({
   onOpenSession,
   initialMapKey = null,
   initialMapName = null,
+  initialTab = "battles",
   entranceMotion = true,
 }: {
   snapshot: AppSnapshot;
@@ -342,6 +398,8 @@ export function HistoryPage({
   onOpenSession: (sessionId: string) => void;
   initialMapKey?: string | null;
   initialMapName?: string | null;
+  /** The tab shown first (Sessions after "Do historii" under a Damast plate). */
+  initialTab?: "battles" | "sessions";
   /** False when returning from a Battle: the list reappears without motion. */
   entranceMotion?: boolean;
 }) {
@@ -354,7 +412,8 @@ export function HistoryPage({
     cascadeLeft.current = false;
     return result;
   }, []);
-  const [tab, setTab] = useState<"battles" | "sessions">("battles");
+  const [tab, setTab] = useState<"battles" | "sessions">(initialTab);
+  const heats = useSessionHeats(snapshot.recentSessions);
   return (
     <>
       <header className="page-header">
@@ -369,6 +428,7 @@ export function HistoryPage({
           onChange={setTab}
         />
       </header>
+      <Thermogram sessions={snapshot.recentSessions} heats={heats} />
       {tab === "battles" ? (
         <Battles
           progress={progress}
@@ -379,7 +439,8 @@ export function HistoryPage({
           canImport={snapshot.sourceStatus.configured}
         />
       ) : (
-        <Sessions snapshot={snapshot} onOpenSession={onOpenSession} />
+        // Spec 34 §3: the sessions as Damast plates (ended sessions only).
+        <DamastSessions xvmOn={snapshot.advancedStatus.xvmEnabled} onOpenSession={onOpenSession} />
       )}
     </>
   );

@@ -7,6 +7,8 @@ mod bigworld_packed;
 mod challenges;
 mod clock;
 mod compact_descriptor;
+mod damast;
+mod damast_files;
 mod diagnostics;
 pub mod error;
 mod events;
@@ -55,7 +57,7 @@ const _: fn(
 use chrono::Utc;
 use serde_json::{Value, json};
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     fs,
     future::Future,
     path::PathBuf,
@@ -77,6 +79,7 @@ use attempts_conversion_api::{
 };
 use baseline::{
     player_baseline, session_baseline_comparison, session_baseline_context, vehicle_baseline,
+    vehicle_temperatures,
 };
 use battle_pace::summarize_battle_pace;
 use challenges::{build_vehicle_inputs, generate_suggestions};
@@ -93,11 +96,11 @@ use models::{
     AdvancedStatus, AppSnapshot, Battle, BattleHistoryFilter, BattleHistoryPage, BattleView,
     BattleWn8Presentation, ChallengeHistoryPage, ChallengePresentation,
     ChallengeSuggestionResponse, ExpectedValuesAvailability, ExpectedValuesRefreshResult,
-    ExpectedValuesStatus, ExpectedValuesUpdateOutcome, HistoricalSessionWn8Presentation,
-    PerformanceTrendRange, PerformanceTrendReport, PlayerBaselinePresentation, Session,
-    SessionBaselineComparison, SessionSummary, SessionWn8Presentation, SourceStatus,
-    VehicleBaselinePresentation, VehicleClassCatalogRefreshResult, VehicleClassCatalogStatus,
-    VehicleClassResolutionState, VehicleHistoryOverview, VehicleHistoryReport, Wn8Calculation,
+    ExpectedValuesStatus, ExpectedValuesUpdateOutcome, PerformanceTrendRange,
+    PerformanceTrendReport, PlayerBaselinePresentation, Session, SessionBaselineComparison,
+    SessionSummary, SessionWn8Presentation, SourceStatus, VehicleBaselinePresentation,
+    VehicleClassCatalogRefreshResult, VehicleClassCatalogStatus, VehicleClassResolutionState,
+    VehicleHistoryOverview, VehicleHistoryReport, VehicleTemperature, Wn8Calculation,
     Wn8ExclusionCounts, Wn8Presentation, Wn8PresentationState, Wn8UnavailableReason,
 };
 use performance_trends::performance_trends;
@@ -622,55 +625,6 @@ fn wn8_presentation(
     }
 }
 
-/// WN8 of each of `sessions`, read only when the history asks for it (E3: the snapshot no
-/// longer loads the battles of 30 sessions on every refresh).
-fn sessions_wn8(
-    sessions: &[Session],
-    historical_battles: Vec<Battle>,
-    expected: Option<&LoadedExpectedSnapshot>,
-) -> Vec<HistoricalSessionWn8Presentation> {
-    let mut grouped = HashMap::<String, Vec<Battle>>::new();
-    for battle in historical_battles {
-        if let Some(session_id) = &battle.session_id {
-            grouped.entry(session_id.clone()).or_default().push(battle);
-        }
-    }
-    sessions
-        .iter()
-        .map(|session| HistoricalSessionWn8Presentation {
-            session_id: session.id.clone(),
-            wn8: session_wn8_presentation(
-                grouped.get(&session.id).map(Vec::as_slice).unwrap_or(&[]),
-                expected,
-            ),
-        })
-        .collect()
-}
-
-fn recent_sessions_wn8(
-    state: &AppState,
-) -> Result<Vec<HistoricalSessionWn8Presentation>, AppError> {
-    let (expected, _) = state.expected_values.snapshot_and_status();
-    let sessions = state.database.recent_sessions(30)?;
-    let battles = state.database.battles_for_sessions(
-        &sessions
-            .iter()
-            .map(|session| session.id.clone())
-            .collect::<Vec<_>>(),
-    )?;
-    Ok(sessions_wn8(&sessions, battles, expected.as_ref()))
-}
-
-#[tauri::command]
-async fn get_recent_sessions_wn8(
-    app: AppHandle,
-) -> CommandResult<Vec<HistoricalSessionWn8Presentation>> {
-    on_state(app, move |state| {
-        recent_sessions_wn8(state).map_err(Into::into)
-    })
-    .await
-}
-
 fn snapshot(state: &AppState) -> Result<AppSnapshot, AppError> {
     if state.startup_error_code.is_some() {
         return Err(AppError::DatabaseIntegrity);
@@ -1100,6 +1054,140 @@ async fn get_vehicle_baseline(
     })
     .await
 }
+/// Spec 33 §3: the temperature dots of the tank list in one call (was: one baseline per tank).
+#[tauri::command]
+async fn get_vehicle_temperatures(app: AppHandle) -> CommandResult<Vec<VehicleTemperature>> {
+    on_state(app, move |state| {
+        let (expected, _) = state.expected_values.snapshot_and_status();
+        let active = state
+            .database
+            .active_session()
+            .map_err(CommandError::from)?;
+        let cutoff = active.as_ref().map_or_else(
+            || Utc::now().timestamp_millis(),
+            |session| session.started_at,
+        );
+        vehicle_temperatures(
+            &state.database,
+            cutoff,
+            active.as_ref().map(|session| session.id.as_str()),
+            expected.as_ref(),
+        )
+        .map_err(Into::into)
+    })
+    .await
+}
+/// Damast (spec 34): what the plate of one session is made of. Read only.
+#[tauri::command]
+async fn get_damast_session(
+    session_id: String,
+    app: AppHandle,
+) -> CommandResult<models::DamastSession> {
+    on_state(app, move |state| {
+        let (expected, _) = state.expected_values.snapshot_and_status();
+        let session = state
+            .database
+            .session(&session_id)
+            .map_err(CommandError::from)?;
+        let tiers = state.database.vehicle_tiers().map_err(CommandError::from)?;
+        damast::damast_session(&state.database, session, &tiers, expected.as_ref())
+            .map_err(Into::into)
+    })
+    .await
+}
+
+/// Raw bytes of an IPC request (a tile or the card drawn by the window) and one of its headers.
+fn raw_request(request: &tauri::ipc::Request<'_>, header: &str) -> Option<(Vec<u8>, String)> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return None;
+    };
+    let value = request.headers().get(header)?.to_str().ok()?.to_owned();
+    Some((bytes.clone(), value))
+}
+
+/// A cached Damast plate (spec 34 §4); an empty response means "not drawn yet".
+#[tauri::command]
+async fn get_damast_tile(
+    version: String,
+    key: String,
+    app: AppHandle,
+) -> CommandResult<tauri::ipc::Response> {
+    on_state(app, move |state| {
+        let root = state.data_dir.join(damast_files::DAMAST_DIR);
+        let bytes = damast_files::read_tile(&root, &version, &key).map_err(CommandError::from)?;
+        Ok(tauri::ipc::Response::new(bytes.unwrap_or_default()))
+    })
+    .await
+}
+
+/// Keeps a plate the window drew (JPEG, raw body; `x-damast-version` and `x-damast-key`).
+#[tauri::command]
+async fn put_damast_tile(app: AppHandle, request: tauri::ipc::Request<'_>) -> CommandResult<()> {
+    let (bytes, version) = raw_request(&request, "x-damast-version")
+        .ok_or_else(|| CommandError::from(AppError::InvalidApiResponse))?;
+    let (_, key) = raw_request(&request, "x-damast-key")
+        .ok_or_else(|| CommandError::from(AppError::InvalidApiResponse))?;
+    on_state(app, move |state| {
+        let root = state.data_dir.join(damast_files::DAMAST_DIR);
+        damast_files::write_tile(&root, &version, &key, &bytes).map_err(Into::into)
+    })
+    .await
+}
+
+/// "Zapisz kartę" (spec 34 §3): the card PNG the window drew (raw body, the session's date in
+/// `x-damast-date`). The save dialog opens here, so the window needs no file or save permission;
+/// the card is written only to the path the player chose, as a bare PNG (`clean_card_png`).
+/// Returns false when the player cancelled. Nothing is sent anywhere.
+#[tauri::command]
+async fn export_damast_card(
+    app: AppHandle,
+    request: tauri::ipc::Request<'_>,
+) -> CommandResult<bool> {
+    let (bytes, date) = raw_request(&request, "x-damast-date")
+        .ok_or_else(|| CommandError::from(AppError::InvalidApiResponse))?;
+    let card = damast_files::clean_card_png(&bytes).map_err(CommandError::from)?;
+    let dialog_app = app.clone();
+    off_thread(move || {
+        use tauri_plugin_dialog::DialogExt;
+        let chosen = dialog_app
+            .dialog()
+            .file()
+            .set_file_name(damast_files::card_file_name(&date))
+            .add_filter("PNG", &["png"])
+            .blocking_save_file();
+        let Some(chosen) = chosen else {
+            return Ok(false);
+        };
+        let path = chosen
+            .into_path()
+            .map_err(|_| CommandError::from(AppError::InvalidApiResponse))?;
+        fs::write(damast_files::card_path(path), card)
+            .map_err(|error| CommandError::from(AppError::from(error)))?;
+        Ok(true)
+    })
+    .await
+}
+
+/// Damast (spec 34 §3): a page of ended sessions with their plates' data, newest first.
+#[tauri::command]
+async fn get_damast_sessions(
+    cursor: Option<models::DamastSessionCursor>,
+    limit: u32,
+    app: AppHandle,
+) -> CommandResult<models::DamastSessionPage> {
+    on_state(app, move |state| {
+        let (expected, _) = state.expected_values.snapshot_and_status();
+        damast::damast_sessions_page(
+            &state.database,
+            cursor.as_ref(),
+            limit as usize,
+            expected.as_ref(),
+        )
+        .map_err(Into::into)
+    })
+    .await
+}
+
 #[tauri::command]
 async fn get_session_baseline_comparison(
     session_id: String,
@@ -1427,7 +1515,10 @@ async fn delete_all_data(app: AppHandle) -> CommandResult<()> {
         state.database.wipe().map_err(CommandError::from)?;
         state.game_images.clear();
         state.vehicle_names.clear();
-        remove_backups_and_corrupt_copies(&state.data_dir).map_err(Into::into)
+        remove_backups_and_corrupt_copies(&state.data_dir).map_err(CommandError::from)?;
+        // Spec 34 §4: the cached Damast plates are local data too.
+        damast_files::clear_tiles(&state.data_dir.join(damast_files::DAMAST_DIR))
+            .map_err(Into::into)
     })
     .await
 }
@@ -1782,27 +1873,6 @@ fn map_record_view(
     Ok(session_story::map_record(map_key, &battles))
 }
 
-/// Up to four map keys per session for the session cards in History (E5-flare §5).
-#[tauri::command]
-async fn get_session_maps(
-    app: AppHandle,
-    session_ids: Vec<String>,
-) -> CommandResult<Vec<session_story::SessionMaps>> {
-    on_state(app, move |state| {
-        session_maps_view(&state.database, session_ids).map_err(Into::into)
-    })
-    .await
-}
-
-fn session_maps_view(
-    database: &Database,
-    mut session_ids: Vec<String>,
-) -> Result<Vec<session_story::SessionMaps>, AppError> {
-    session_ids.truncate(session_story::MAX_SESSION_IDS);
-    let battles = database.battles_for_sessions(&session_ids)?;
-    Ok(session_story::session_maps(&session_ids, &battles))
-}
-
 /// Vehicle names from the game's translation files, in the window language or English (E5-ui
 /// §2). Held only in RAM; without a game folder or a usable language the list is empty and the
 /// window shows the readable code.
@@ -2020,7 +2090,6 @@ pub fn run() {
             resume_tracker,
             start_import,
             cancel_import,
-            get_recent_sessions_wn8,
             set_xvm_enabled,
             start_session,
             end_session,
@@ -2032,7 +2101,13 @@ pub fn run() {
             get_vehicle_history_report,
             get_player_baseline,
             get_vehicle_baseline,
+            get_vehicle_temperatures,
             get_session_baseline_comparison,
+            get_damast_session,
+            get_damast_sessions,
+            get_damast_tile,
+            put_damast_tile,
+            export_damast_card,
             get_performance_trends,
             get_challenge_suggestions,
             start_vehicle_challenge,
@@ -2056,7 +2131,6 @@ pub fn run() {
             check_for_update,
             install_update,
             get_map_record,
-            get_session_maps,
             get_battle_view
         ])
         .run(tauri::generate_context!())
@@ -2708,7 +2782,7 @@ mod tests {
     }
 
     #[test]
-    fn session_story_map_record_and_session_maps_read_the_database() {
+    fn session_story_and_map_record_read_the_database() {
         let folder = tempdir().unwrap();
         let database = Database::initialize(folder.path().join("story.db")).unwrap();
         let mut first = crate::storage::tests::full_replay_battle("synthetic-story-1");
@@ -2735,9 +2809,6 @@ mod tests {
             assert_eq!(map_record_view(&database, bad).unwrap().battles, 0, "{bad}");
         }
         assert!(valid_map_key(&"a".repeat(128)) && !valid_map_key(&"a".repeat(129)));
-        let maps = session_maps_view(&database, vec![session.id.clone(); 60]).unwrap();
-        assert_eq!(maps.len(), session_story::MAX_SESSION_IDS);
-        assert_eq!(maps[0].map_keys, ["01_synth"]);
     }
 
     #[test]
@@ -3206,7 +3277,7 @@ mod tests {
     }
 
     #[test]
-    fn historical_sessions_are_grouped_in_one_bulk_read_and_keep_session_order() {
+    fn an_ended_sessions_summary_has_its_own_battles_and_wn8_only() {
         let directory = tempdir().unwrap();
         let database = Database::initialize(directory.path().join("history.db")).unwrap();
         let now = Utc::now().timestamp_millis();
@@ -3234,30 +3305,10 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![&newer.id, &older.id]
         );
-        let session_ids = sessions
-            .iter()
-            .map(|session| session.id.clone())
-            .collect::<Vec<_>>();
-        let all_history_battles = database.battles_for_sessions(&session_ids).unwrap();
-        assert_eq!(all_history_battles.len(), 4);
         let cache = tempdir().unwrap();
         activate_expected(cache.path(), "2026-07-10", now);
         let runtime = ExpectedValuesRuntime::load(cache.path().to_path_buf());
-        let (expected, status) = runtime.snapshot_and_status();
-        let _ = status;
-        let historical_sessions = sessions_wn8(&sessions, all_history_battles, expected.as_ref());
-        assert_eq!(
-            historical_sessions
-                .iter()
-                .map(|session| &session.session_id)
-                .collect::<Vec<_>>(),
-            vec![&newer.id, &older.id]
-        );
-        assert_eq!(historical_sessions[0].wn8.eligible_battles, 1);
-        assert_eq!(historical_sessions[0].wn8.total_battles, 1);
-        assert_eq!(historical_sessions[1].wn8.eligible_battles, 2);
-        assert_eq!(historical_sessions[1].wn8.total_battles, 3);
-        assert_eq!(historical_sessions[1].wn8.coverage_ratio, 2.0 / 3.0);
+        let (expected, _) = runtime.snapshot_and_status();
 
         let older_battles = database.session_battles(&older.id).unwrap();
         let Wn8Calculation::Available(expected_older) =
@@ -3265,7 +3316,6 @@ mod tests {
         else {
             panic!("historical WN8 should be available")
         };
-        assert_eq!(historical_sessions[1].wn8.value, Some(expected_older.value));
         let modal = summary(&database, older.clone(), expected.as_ref()).unwrap();
         assert_eq!(modal.wn8.value, Some(expected_older.value));
         assert_eq!(modal.wn8.eligible_battles, 2);
@@ -3301,7 +3351,7 @@ mod tests {
     }
 
     #[test]
-    fn history_without_snapshot_and_empty_active_session_are_na_not_zero() {
+    fn an_empty_active_session_without_a_snapshot_is_na_not_zero() {
         let directory = tempdir().unwrap();
         let database = Database::initialize(directory.path().join("history-na.db")).unwrap();
         let now = Utc::now().timestamp_millis();
@@ -3312,19 +3362,9 @@ mod tests {
         database.start_session().unwrap();
         let active = database.active_session().unwrap().unwrap();
         let active_battles = database.session_battles(&active.id).unwrap();
-        let sessions = database.recent_sessions(30).unwrap();
-        let history = database
-            .battles_for_sessions(
-                &sessions
-                    .iter()
-                    .map(|session| session.id.clone())
-                    .collect::<Vec<_>>(),
-            )
-            .unwrap();
         let runtime = ExpectedValuesRuntime::load(directory.path().join("empty-cache"));
         let (expected, status) = runtime.snapshot_and_status();
         let presentation = wn8_presentation(Some(&active_battles), &[], expected.as_ref(), status);
-        let historical_sessions = sessions_wn8(&sessions, history, expected.as_ref());
         let active_wn8 = presentation.session.unwrap();
         assert_eq!(active_wn8.total_battles, 0);
         assert_eq!(active_wn8.value, None);
@@ -3332,15 +3372,10 @@ mod tests {
             active_wn8.unavailable_reason,
             Some(Wn8UnavailableReason::ExpectedValuesUnavailable)
         );
-        assert!(
-            historical_sessions
-                .iter()
-                .all(|session| session.wn8.value.is_none())
-        );
     }
 
     #[test]
-    fn snapshot_history_and_summary_reads_preserve_logical_sqlite_content() {
+    fn snapshot_and_summary_reads_preserve_logical_sqlite_content() {
         let directory = tempdir().unwrap();
         let path = directory.path().join("logical-read.db");
         let database = Database::initialize(path.clone()).unwrap();
@@ -3366,22 +3401,13 @@ mod tests {
         for battle in recent_battles.iter().cloned() {
             view(&database, battle).unwrap();
         }
-        let sessions = database.recent_sessions(30).unwrap();
-        let history = database
-            .battles_for_sessions(
-                &sessions
-                    .iter()
-                    .map(|session| session.id.clone())
-                    .collect::<Vec<_>>(),
-            )
-            .unwrap();
+        let _sessions = database.recent_sessions(30).unwrap();
         let _snapshot_presentation = wn8_presentation(
             active_battles.as_deref(),
             &recent_battles,
             expected.as_ref(),
             status,
         );
-        let _sessions_wn8 = sessions_wn8(&sessions, history, expected.as_ref());
         let _modal = summary(&database, ended, expected.as_ref()).unwrap();
 
         assert_eq!(logical_database_digest(&path), before);

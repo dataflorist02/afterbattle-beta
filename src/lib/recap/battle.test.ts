@@ -243,42 +243,50 @@ const ABOUT: Partial<Record<BattleFactValue["key"], RegExp>> = {
 };
 
 const BATTLES = Array.from({ length: 200 }, (_, index) => battle(index + 1));
+/** The exhaustive check below runs for seconds; the default limit of 5 s is too tight. */
+const EXHAUSTIVE_TEST_TIMEOUT = 20_000;
 
 describe("battle summary invariants (spec 30 §7)", () => {
-  it("holds for every variant of every sentence in all three forms", () => {
-    let checked = 0;
-    for (const facts of BATTLES)
-      for (const address of ADDRESSES)
-        for (const plan of battlePlans(facts, context(address))) {
-          const cited = facts.filter((item) => plan.facts.includes(item.id));
-          for (const variant of variantsFor(plan, address)) {
-            if (address === "neutral") checkNeutral(finish(variant, address));
-            const sentence = finish(variant, address);
-            checkSentence(sentence, {
-              allowed: new Set(cited.flatMap((item) => numbers(item.fact))),
-              signs: cited.map((item) => sign(item.fact)).filter((value) => value !== null),
-              names: names(facts),
-            });
-            // 3. No contradiction with the text facts.
-            for (const item of cited) {
-              if (item.fact.key === "przetrwanie")
-                expect(sentence, sentence).toMatch(
-                  item.fact.survived ? /^(?![^]*zniszczony)/u : /^(?![^]*(przeży|przetrwał))/u,
-                );
-              if (item.fact.key === "wynik") {
-                const other: Record<string, RegExp> = {
-                  victory: /przegra|remis/iu,
-                  defeat: /wygra|remis/iu,
-                  draw: /wygra|przegra/iu,
-                };
-                expect(sentence, sentence).not.toMatch(other[item.fact.outcome]);
+  it(
+    "holds for every variant of every sentence in all three forms",
+    () => {
+      let checked = 0;
+      for (const facts of BATTLES)
+        for (const address of ADDRESSES)
+          for (const plan of battlePlans(facts, context(address))) {
+            const cited = facts.filter((item) => plan.facts.includes(item.id));
+            for (const variant of variantsFor(plan, address)) {
+              if (address === "neutral") checkNeutral(finish(variant, address));
+              const sentence = finish(variant, address);
+              checkSentence(sentence, {
+                allowed: new Set(cited.flatMap((item) => numbers(item.fact))),
+                signs: cited.map((item) => sign(item.fact)).filter((value) => value !== null),
+                names: names(facts),
+              });
+              // 3. No contradiction with the text facts.
+              for (const item of cited) {
+                if (item.fact.key === "przetrwanie")
+                  expect(sentence, sentence).toMatch(
+                    item.fact.survived ? /^(?![^]*zniszczony)/u : /^(?![^]*(przeży|przetrwał))/u,
+                  );
+                if (item.fact.key === "wynik") {
+                  const other: Record<string, RegExp> = {
+                    victory: /przegra|remis/iu,
+                    defeat: /wygra|remis/iu,
+                    draw: /wygra|przegra/iu,
+                  };
+                  expect(sentence, sentence).not.toMatch(other[item.fact.outcome]);
+                }
               }
+              checked += 1;
             }
-            checked += 1;
           }
-        }
-    expect(checked).toBeGreaterThan(5_000);
-  });
+      expect(checked).toBeGreaterThan(5_000);
+      // Over 5 000 sentences: 4.3–4.6 s in the full suite, twice over the default 5 s under load
+      // (E13, 2026-11-21); the author's decision: a limit of its own, the checks unchanged.
+    },
+    EXHAUSTIVE_TEST_TIMEOUT,
+  );
 
   it("puts the value first and the reference in brackets (decision 2026-11-16)", () => {
     let checked = 0;

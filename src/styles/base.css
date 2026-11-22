@@ -193,6 +193,20 @@ h3 {
   border-color: var(--accent-border);
   color: var(--accent-soft);
 }
+/* Spec 33 §3: a still ember dot by Session while a session runs. */
+.rail-icon {
+  position: relative;
+}
+.rail-ember {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ember-hot);
+  box-shadow: 0 0 10px var(--ember-glow);
+}
 
 .workspace {
   flex: 1 1 auto;
@@ -450,6 +464,14 @@ h3 {
 .track > div {
   height: 100%;
   background: var(--accent);
+}
+/* Spec 33 §3: a goal's bar runs from steel to ember, warmer the closer the goal is. */
+.ember-track > div {
+  background: linear-gradient(
+    90deg,
+    var(--steel-line),
+    color-mix(in srgb, var(--ember-hot) calc(var(--progress, 0) * 100%), var(--steel-line))
+  );
 }
 
 .split {
@@ -756,7 +778,41 @@ input[type="number"] {
   gap: var(--space-3);
 }
 
-/* Damage chart (mockup Czolgi.dc.html): value axis and the player's average, dashed. */
+/* Damage chart (mockup Czolgi.dc.html): value axis and the player's average, dashed. Author,
+   22.11: the average is named in a legend above the chart (a sample of the dashed line and the
+   text); the chart is read with the pointer or the keyboard in a tip inside the plot. */
+.chart-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.chart-legend {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--size-xs);
+  color: var(--text-2);
+}
+.chart-legend-sample {
+  width: 28px;
+  height: 8px;
+  flex: none;
+}
+.chart-legend-dash,
+.chart-average line {
+  stroke: var(--text-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+}
+.chart-plot {
+  position: relative;
+  border-radius: var(--radius-small);
+}
+.chart-plot:focus-visible {
+  outline: 2px solid var(--accent-link);
+  outline-offset: 4px;
+}
 .chart {
   width: 100%;
   height: auto;
@@ -770,17 +826,43 @@ input[type="number"] {
 .chart-tick line {
   stroke: var(--line);
 }
-.chart-average line {
+.chart-cursor {
   stroke: var(--text-3);
-  stroke-width: 1.5;
-  stroke-dasharray: 5 6;
+  stroke-width: 1;
 }
-.chart-average text {
-  fill: var(--text-2);
-  paint-order: stroke;
+.chart-point {
+  fill: var(--accent-link);
   stroke: var(--bg);
-  stroke-width: 4px;
-  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.chart-tip {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  box-shadow: 0 6px 20px var(--text-shadow);
+  font-size: var(--size-xs);
+  line-height: 1.3;
+  color: var(--text-body);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.chart-tip-head {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+@keyframes chart-tip-in {
+  from {
+    opacity: 0;
+  }
+}
+.chart-tip-in {
+  animation: chart-tip-in var(--motion-fast) var(--ease-out) both;
 }
 .chart-line {
   fill: none;
@@ -788,6 +870,20 @@ input[type="number"] {
   stroke-width: 2.5;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+/* Spec 33 §3: above the own average the line glows ember, below it stays steel. */
+.chart-heat-warm {
+  stop-color: var(--ember-hot);
+}
+.chart-heat-steel {
+  stop-color: var(--steel-line);
+}
+/* Spec 33 §3: the temperature of a tank in the list (last 10 battles against its average). */
+.tank-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 .chart-dot {
   fill: var(--accent-link);
@@ -1032,7 +1128,8 @@ input[type="number"] {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--map-shade);
+  /* Żar (spec 33): the temperature glow of a card of numbers lies over the shade. */
+  background: var(--ember-tint, linear-gradient(transparent, transparent)), var(--map-shade);
   pointer-events: none;
 }
 .map-ph-0 {
@@ -1231,10 +1328,6 @@ input[type="number"] {
   color: var(--text-2);
   font-weight: 500;
 }
-.tile-best {
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 28px var(--accent-glow-strong);
-}
 
 .moments {
   display: grid;
@@ -1406,10 +1499,17 @@ button.moment {
   text-align: right;
 }
 .battle-damage-value {
+  position: relative;
+  isolation: isolate;
   font-size: 132px;
   line-height: 0.85;
   color: var(--text-strong);
   text-shadow: 0 0 40px var(--accent-glow-strong);
+}
+/* Spec 33 §3: the result as the hot spot when it is the best battle of its session. */
+.battle-hero-damage.ember-hot {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-row);
 }
 .stat-grid {
   display: grid;
@@ -1524,42 +1624,43 @@ button.moment {
 .hrow-assist {
   font-size: 22px;
 }
-.session-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--space-4);
-}
-.session-card {
-  width: 100%;
+/* The thermogram of History: one cell per recent session, oldest on the left. */
+.thermogram-wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  font: inherit;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
+  gap: var(--space-1);
 }
-.session-collage {
+.thermogram {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 4px;
-  height: 84px;
-  border-radius: var(--radius-small);
-  overflow: hidden;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.collage-tile {
-  --map-shade: linear-gradient(180deg, transparent, var(--tile-shade-top));
-  height: 100%;
+.thermogram-cell {
+  height: 26px;
+  border-radius: 4px;
 }
-.session-card-text {
+.thermogram-cell:not([data-temp]) {
+  opacity: 0.4;
+}
+.thermogram-ends {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--size-xs);
+  color: var(--text-2);
+}
+/* A history row's temperature against the own average on its tank. */
+.hrow-temp {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-3);
+  bottom: var(--space-3);
+  width: 4px;
+  border-radius: 2px;
 }
 @media (min-width: 1441px) {
   .hrow-head,
@@ -1693,6 +1794,10 @@ button.moment {
   border-color: var(--danger);
 }
 .setting-saved {
+  position: relative;
+  width: fit-content;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-small);
   margin: 0;
   color: var(--accent-link);
   font-size: var(--size-s);
@@ -1700,6 +1805,91 @@ button.moment {
 }
 .setting-saved[data-shown="false"] {
   opacity: 0;
+}
+/* Spec 33 §4: a "?" next to a title or a number leads to its entry of "Jak to działa". */
+.title-with-help {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.help-link {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: var(--space-2);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--control-border);
+  background: none;
+  font: inherit;
+  font-size: var(--size-xs);
+  line-height: 1;
+  color: var(--text-2);
+  vertical-align: middle;
+  cursor: pointer;
+}
+/* A small mark, a full target: the button reaches 44 px around the 20 px circle. */
+.help-link::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+.help-link:hover {
+  color: var(--text);
+  border-color: var(--steel-line);
+}
+.title-with-help .help-link {
+  margin-left: 0;
+}
+/* "Jak to działa" (spec 33 §4): short entries under "O aplikacji", opened by a click. */
+.how {
+  display: flex;
+  flex-direction: column;
+}
+.how-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--size-m);
+  font-weight: 600;
+}
+.how-entry {
+  border-top: 1px solid var(--line);
+  scroll-margin-top: calc(var(--titlebar-height) + var(--space-6));
+}
+.how-heading {
+  margin: 0;
+  font-size: var(--size-m);
+  font-weight: 500;
+}
+.how-toggle {
+  width: 100%;
+  min-height: var(--target-min);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.how-sign {
+  color: var(--text-2);
+}
+.how-body {
+  max-width: 720px;
+  padding: 0 0 var(--space-3);
+  color: var(--text-soft);
+  font-size: var(--size-s);
+}
+.how-body p {
+  margin: 0 0 var(--space-2);
 }
 /* A switch: the accent fill fades in (opacity), the knob slides (transform). */
 .switch {
@@ -1922,6 +2112,35 @@ button.moment {
   margin: 0 0 var(--space-2);
   color: var(--text-body);
 }
+/* Spec 33 §3: the session's best battle at the end of the card, the screen's hot spot. E14
+   polish: a small block, label / damage / map on the left; the body aligns its bottom with the
+   line of the figures' labels. */
+.overview-best {
+  margin: 0 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: var(--radius-row);
+  text-align: left;
+}
+.overview-best-label {
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--text-2);
+}
+.overview-best-value {
+  font-size: 36px;
+  line-height: 1;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.overview-best-map {
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--text-soft);
+}
 
 /* Trends: three columns, each with a small line chart. */
 .overview-trends {
@@ -2066,7 +2285,7 @@ button.moment {
 .tile,
 .map-tile,
 .hrow,
-.session-card,
+.damast-tile,
 button.moment,
 .recap-more,
 .overview-link {
@@ -2080,7 +2299,7 @@ button.moment,
 .tile:active,
 .map-tile:active,
 .hrow:active,
-.session-card:active,
+.damast-tile:active,
 button.moment:active,
 .recap-more:active,
 .overview-link:active {
@@ -2102,7 +2321,7 @@ button.moment:active,
 .tile:focus-visible,
 .map-tile:focus-visible,
 .hrow:focus-visible,
-.session-card:focus-visible,
+.damast-tile:focus-visible,
 button.moment:focus-visible {
   outline: none;
 }
@@ -2113,7 +2332,7 @@ button.moment:focus-visible {
 .tile::before,
 .map-tile::before,
 .hrow::before,
-.session-card::before,
+.damast-tile::before,
 button.moment::before {
   content: "";
   position: absolute;
@@ -2131,7 +2350,7 @@ button.moment::before {
 .tile:focus-visible::before,
 .map-tile:focus-visible::before,
 .hrow:focus-visible::before,
-.session-card:focus-visible::before,
+.damast-tile:focus-visible::before,
 button.moment:focus-visible::before {
   opacity: 1;
   transition: opacity var(--motion-hover) var(--ease-out);
@@ -2287,6 +2506,213 @@ button.moment:focus-visible::before {
   animation: flash-once var(--motion-count) var(--ease-out) var(--motion-enter) 1 both;
 }
 
+/* Żar (spec 33): one temperature scale against the player's own average, at most one hot spot
+   per screen, one sweep over each new thing. Only opacity and transform move, on layers of their
+   own (span elements: the pseudo-elements already hold the focus ring and the map shade). */
+[data-temp="usual"] {
+  --temp-color: var(--steel);
+}
+[data-temp="warmer"] {
+  --temp-color: color-mix(in srgb, var(--ember-hot) calc(55% + 45% * var(--heat, 0)), var(--steel));
+}
+[data-temp="cooler"] {
+  --temp-color: color-mix(in srgb, var(--frost) calc(55% + 45% * var(--heat, 0)), var(--steel));
+}
+/* The ember (or frost) under a card of numbers: a still glow at the bottom, laid over the map
+   shade so the text stays on top. */
+.ember-tinted {
+  --ember-tint: radial-gradient(
+    760px 230px at 22% 110%,
+    color-mix(
+      in srgb,
+      var(--temp-color, transparent) calc(24% + 24% * var(--heat, 0)),
+      transparent
+    ),
+    transparent 70%
+  );
+}
+/* A small mark of a temperature: a bar by a row, a cell of the thermogram, a dot by a tank. */
+.temp-mark {
+  background: var(--temp-color, var(--steel));
+}
+/* The hot spot glows by its content (author, 22.11: no outline, no frame; a frame is only the
+   keyboard focus ring). A tile or a row gets a warm radial gradient from the bottom at a low
+   opacity, still: on a map backdrop it lies over the map shade (--ember-tint), elsewhere it is
+   the background image. Its main number (.ember-figure) is in ember core. */
+.ember-hot {
+  --ember-floor: radial-gradient(
+    120% 90% at 50% 125%,
+    color-mix(in srgb, var(--ember-hot) 22%, transparent),
+    transparent 70%
+  );
+  position: relative;
+  background-image: var(--ember-floor);
+}
+.map-backdrop.ember-hot {
+  --ember-tint: var(--ember-floor);
+}
+.card-hero.ember-hot {
+  background-image:
+    var(--ember-floor), linear-gradient(160deg, var(--accent-hero-bg), var(--card-bg) 55%);
+}
+.ember-figure {
+  position: relative;
+  isolation: isolate;
+  color: var(--ember-core);
+}
+@keyframes ember-breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* The soft glow of the number, of the text's own shape: the same text (data-text) in a layer
+   behind the digits, transparent, with a glow; only the layer's opacity breathes. */
+.ember-breath {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  color: transparent;
+  text-shadow:
+    0 0 10px var(--ember-glow),
+    0 0 26px var(--ember-glow);
+  white-space: nowrap;
+  opacity: 0.3;
+  pointer-events: none;
+  user-select: none;
+  animation: ember-breathe var(--ember-breathe) var(--ease-in-out) infinite;
+}
+.ember-breath::after {
+  content: attr(data-text);
+}
+/* The game in front: the app window is in the background and nothing moves in it. */
+:root[data-window="background"] .ember-breath {
+  animation-play-state: paused;
+}
+/* A new thing: one pass of a bright band (transform) and an edge that cools (opacity). */
+@keyframes ember-sweep {
+  from {
+    opacity: 1;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+@keyframes ember-cool {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.ember-swept {
+  position: relative;
+  overflow: hidden;
+}
+.ember-sweep,
+.ember-edge {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ember-sweep {
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--ember-core) 45%, transparent) 50%,
+    transparent 70%
+  );
+  opacity: 0;
+  animation: ember-sweep var(--ember-sweep) var(--ease-out) both;
+}
+.ember-edge {
+  box-shadow:
+    inset 0 0 0 1px var(--ember-hot),
+    0 0 18px var(--ember-glow);
+  opacity: 0;
+  animation: ember-cool var(--ember-heat) var(--ease-out) both;
+}
+/* A changed number heats up and cools down after its count (behind the digits). */
+.figure-value {
+  isolation: isolate;
+}
+@keyframes ember-heat {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.ember-heat {
+  position: absolute;
+  inset: -20% -12%;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--temp-color, var(--ember-hot)) 55%, transparent),
+    transparent
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: ember-heat var(--ember-heat) var(--ease-out) var(--motion-count) both;
+}
+/* A goal completed while the screen is open flashes once. */
+@keyframes ember-flash {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.ember-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--ember-core) 35%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: ember-flash var(--ember-flash) var(--ease-out) both;
+}
+/* Sparks over a warmer session card: they rise once into place and stay still. */
+@keyframes ember-spark {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.ember-sparks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ember-spark {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--ember-core);
+  box-shadow: 0 0 8px var(--ember-glow);
+  animation: ember-spark var(--ember-heat) var(--ease-out) both;
+  animation-delay: calc(var(--spark-index, 0) * var(--motion-stagger));
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2294,13 +2720,20 @@ button.moment:focus-visible::before {
     animation: none !important;
     transition-property: opacity !important;
   }
+  .ember-sparks {
+    display: none;
+  }
+  /* The hot spot's glow stands still, half lit. */
+  .ember-breath {
+    opacity: 0.6;
+  }
   .button:active,
   .segment:active,
   .tile:active,
   .map-tile:active,
-  .session-card:active,
   button.moment:active,
   .hrow:active,
+  .damast-tile:active,
   .recap-more:active,
   .overview-link:active,
   .rail-link:active .rail-icon,
@@ -2742,4 +3175,287 @@ button.moment:focus-visible::before {
   height: 10px;
   border-radius: 50%;
   background: var(--accent);
+}
+
+/* Damast (spec 34): the plate of an ended session, its battle bar, and the plates of History.
+   The plate is a canvas drawn by WebGL2 or the worker; nothing here animates. */
+/* Session (author, 22.11): the plate on the full width, 360 px tall (its height set by the
+   component), the battle bar under it, then one row: numbers on the left, actions right. */
+.damast-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+}
+.damast-plate,
+.damast-tile-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 940 / 440;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.damast-plate {
+  position: relative;
+  border-radius: var(--radius-card);
+}
+.damast-plate canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.damast-strip {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+}
+.damast-dot {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-small);
+}
+.damast-pip {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--text-soft);
+}
+.damast-win .damast-pip {
+  background: var(--text-soft);
+}
+.damast-tier {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-2);
+}
+/* The spark of the best battle (E14 polish): a 9 px dot in ember with a still soft glow, full
+   for a win and a ring otherwise; the screen's hot spot, without a frame. */
+.damast-best .damast-pip {
+  width: 9px;
+  height: 9px;
+  box-shadow:
+    inset 0 0 0 1.5px var(--ember-hot),
+    0 0 8px var(--ember-glow);
+}
+.damast-best.damast-win .damast-pip {
+  background: var(--ember-hot);
+}
+.damast-best .damast-tier {
+  color: var(--ember-core);
+}
+/* The small dot gets no warm floor. */
+.damast-dot.ember-hot {
+  --ember-floor: none;
+  background-image: none;
+}
+/* The spark breathes like every hot spot (author, after E14 polish): the shared breath layer
+   (opacity only, still with reduced motion) inside the round dot, its glow sized for 9 px. */
+.damast-pip .ember-breath {
+  z-index: 1;
+  box-shadow: 0 0 10px var(--ember-glow);
+}
+/* The heading with its ⓘ "Jak czytać tę płytkę" (author, 22.11): a 32 px button, no border at
+   rest, the focus ring only from the keyboard; the popover opens next to it, not modal. */
+.damast-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.damast-info {
+  position: relative;
+  display: inline-flex;
+}
+.damast-info-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.damast-info-button:hover,
+.damast-info-button[aria-expanded="true"] {
+  color: var(--text);
+}
+.damast-info-button:focus-visible {
+  outline: 2px solid var(--accent-link);
+  outline-offset: 2px;
+}
+.damast-info-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: var(--info-shift, 0px);
+  z-index: 20;
+  width: min(380px, calc(100vw - 32px));
+  padding: var(--space-4);
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  box-shadow: 0 10px 30px var(--text-shadow);
+  font-size: var(--size-s);
+  line-height: 1.4;
+  color: var(--text-body);
+}
+.damast-info-panel[data-side="above"] {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+@keyframes damast-info-in {
+  from {
+    opacity: 0;
+  }
+}
+.damast-info-in {
+  animation: damast-info-in var(--motion-base) var(--ease-out) both;
+}
+.damast-guide {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.damast-guide li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: start;
+}
+.damast-legend-mark {
+  margin-top: 4px;
+  overflow: visible;
+}
+.damast-legend-mark .mark-line {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.damast-legend-mark .mark-warm {
+  fill: var(--ember-hot);
+}
+.damast-legend-mark .mark-cool {
+  fill: var(--frost);
+}
+.damast-legend-mark .mark-spark {
+  fill: var(--ember-hot);
+  filter: drop-shadow(0 0 2px var(--ember-glow));
+}
+.damast-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4) var(--space-6);
+  margin-top: var(--space-5);
+}
+.damast-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.damast-title {
+  margin: 0;
+  font-size: var(--size-s);
+  line-height: 1.2;
+  color: var(--text-2);
+}
+.damast-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-7);
+}
+.damast-headline,
+.damast-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.damast-headline-value {
+  font-size: 56px;
+  line-height: 1;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.damast-headline-label,
+.damast-figure-label {
+  font-size: var(--size-s);
+  color: var(--text-soft);
+}
+.damast-figures {
+  display: flex;
+  gap: var(--space-6);
+}
+.damast-figure-value {
+  font-size: 32px;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.damast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+}
+.damast-saved {
+  font-size: var(--size-s);
+  color: var(--text-2);
+}
+.damast-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+.damast-tile {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.damast-tile-image {
+  border-radius: var(--radius-tile);
+  object-fit: cover;
+}
+.damast-tile .damast-strip {
+  margin: 0;
+}
+.damast-tile-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+}
+.damast-tile-caption .num {
+  font-size: var(--size-l);
 }

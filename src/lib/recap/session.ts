@@ -1,6 +1,6 @@
 /**
  * Session summary in Polish (spec 30 §4.2, §5, §6): the facts from `get_recap` as 3–5 sentences.
- * Order: battles with wins, damage, best battle, WN8, survival, the most played tank; one fact per
+ * Order: battles with wins, damage, the battle with the most damage, WN8, survival, the most played tank; one fact per
  * sentence (2026-11-16). Every number goes through `format.ts`; the variants of one sentence say
  * the same thing.
  */
@@ -97,16 +97,21 @@ function tankVariants(tank: Fact<"czolg">, name: string): string[] {
   ];
 }
 
+/**
+ * The battle with the most damage (the backend's choice, unchanged). Author's decision after
+ * E14: "najlepsza bitwa" in the app is the highest r of the Damast plate, so the summary calls
+ * this one "najwięcej obrażeń", never "najlepsza".
+ */
 function bestVariants(best: Fact<"najlepsza">): string[] {
-  const damage = count(best.damage, DAMAGE);
+  const damage = n(best.damage);
   const where = best.mapName ? ` na mapie ${best.mapName}` : "";
   return [
-    `najlepsza bitwa sesji: ${damage}${where}`,
-    `najwięcej obrażeń w jednej bitwie: ${n(best.damage)}${where}`,
-    `największe obrażenia w jednej bitwie sesji: ${n(best.damage)}${where}`,
+    `najwięcej obrażeń w jednej bitwie sesji: ${damage}${where}`,
+    `najwięcej obrażeń w jednej bitwie: ${damage}${where}`,
+    `najwięcej obrażeń w bitwie tej sesji: ${damage}${where}`,
     best.mapName
-      ? `w najlepszej bitwie, na mapie ${best.mapName}, {~zada} ${damage}`
-      : `w najlepszej bitwie {~zada} ${damage}`,
+      ? `najwięcej obrażeń {~zada} na mapie ${best.mapName}: ${damage}`
+      : `najwięcej obrażeń w jednej bitwie {~zada}: ${damage}`,
   ];
 }
 
@@ -226,7 +231,7 @@ export function sessionFactLabel(fact: SessionFactValue, context: SessionTextCon
     case "obrazenia":
       return `obrażenia na czołgach z tej sesji ${fact.percent > 0 ? "+" : fact.percent < 0 ? "−" : ""}${pct(Math.abs(fact.percent))} wobec Twojej średniej ${n(fact.baseline)}`;
     case "najlepsza":
-      return `najlepsza bitwa ${count(fact.damage, DAMAGE)}${fact.mapName ? `, ${fact.mapName}` : ""}`;
+      return `najwięcej obrażeń w bitwie ${n(fact.damage)}${fact.mapName ? `, ${fact.mapName}` : ""}`;
     case "wn8":
       return `WN8 sesji ${n(fact.value)}`;
     case "przetrwanie_odsetek":

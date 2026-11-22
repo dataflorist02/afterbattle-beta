@@ -1130,6 +1130,94 @@ pub struct VehicleBaselinePresentation {
     pub windows: Vec<BaselineWindowResult>,
 }
 
+/// One dot of the tank list (spec 33 §3): the tank's average damage in its last 10 and last 100
+/// counted battles, the numbers of the tank header; the screen turns them into a temperature.
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct VehicleTemperature {
+    pub vehicle_id: i64,
+    /// Average damage of the last 10 counted battles before the cutoff.
+    pub recent_damage: BaselineMetric,
+    /// Average damage of the last 100 counted battles before the cutoff.
+    pub average_damage: BaselineMetric,
+    /// Counted battles of the last-100 window.
+    pub average_battles: usize,
+}
+
+/// One battle of a Damast plate (spec 34 §2): a counted battle of the session, in the order it
+/// was played. The screen computes the battle's result `r` from these numbers.
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DamastBattle {
+    pub battle_id: String,
+    pub battle_time: i64,
+    /// Tier of the tank (`battles.vehicle_tier` through the tank), `None` when unknown.
+    pub tier: Option<u8>,
+    pub damage: Option<i64>,
+    /// WN8 of this battle alone; `None` without expected values for it.
+    pub wn8: Option<f64>,
+    pub win: bool,
+}
+
+/// Average damage on one tier within the reference window, with the battles behind it.
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DamastTierDamage {
+    pub tier: u8,
+    pub battles: usize,
+    pub average_damage: f64,
+}
+
+/// The player's own averages before a session (spec 34 §2): the last 100 counted battles before
+/// the session's start, the window of the trends, without the session itself.
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DamastReference {
+    pub cutoff: i64,
+    pub wn8: Option<f64>,
+    pub wn8_battles: usize,
+    /// Average damage over all tiers (the same number as the player's last-100 baseline).
+    pub average_damage: Option<f64>,
+    pub damage_battles: usize,
+    /// The battles behind `average_damage`, grouped by tier (tiers known only).
+    pub tiers: Vec<DamastTierDamage>,
+}
+
+/// Everything a Damast plate of one ended session is made of (spec 34). Read only.
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DamastSession {
+    pub session: Session,
+    /// WN8 of the session, the number of the Session screen.
+    pub wn8: Option<f64>,
+    /// Average damage of the session's counted battles, the number of the Session screen.
+    pub average_damage: Option<f64>,
+    pub battles: Vec<DamastBattle>,
+    pub reference: DamastReference,
+}
+
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DamastSessionCursor {
+    pub started_at: i64,
+    pub session_id: String,
+}
+
+/// A page of ended sessions with counted battles, newest first (History → Sessions).
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DamastSessionPage {
+    pub items: Vec<DamastSession>,
+    pub next_cursor: Option<DamastSessionCursor>,
+}
+
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -1778,14 +1866,6 @@ pub struct Wn8Presentation {
 }
 
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalSessionWn8Presentation {
-    pub session_id: String,
-    pub wn8: SessionWn8Presentation,
-}
-
-#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PerformanceTrendRange {
@@ -1832,6 +1912,12 @@ pub struct PerformanceTrendPoint {
     pub sample_size: usize,
     pub coverage: f64,
     pub vehicle_id: Option<i64>,
+    /// The battle at this point, for the chart's reading (E14 polish 2): its own damage, map
+    /// and tank, next to the rolling `value` the line draws.
+    pub damage: Option<i64>,
+    pub map_name: Option<String>,
+    pub vehicle_key: String,
+    pub tank_name: Option<String>,
 }
 
 #[cfg_attr(test, derive(ts_rs::TS), ts(export))]

@@ -17,7 +17,42 @@ import {
   formatTime,
 } from "../lib/format";
 import { BATTLE_TARGETS, battleFactLabel, battleSentences } from "../lib/recap/battle";
-import type { BattleDetailView, TeamComparison, TeamTotals } from "../types";
+import { heatAgainst, heatProps } from "../lib/ember";
+import { prefersReducedMotion } from "../lib/motion";
+import { EmberHeat, EmberNumber, TemperatureWord } from "../components/Ember";
+import { damastBestBattleId } from "../features/damast/stats";
+import type { Battle, BattleDetailView, TeamComparison, TeamTotals } from "../types";
+
+/**
+ * Spec 33 §3: what the battle is compared with — the player's own average damage on its tank —
+ * and whether it is the best battle of its session (then it is the screen's hot spot).
+ */
+function useBattleContext(battle: Battle): { average: number | null; best: boolean } {
+  const version = useDataVersion();
+  const context = useAsync(
+    async () => {
+      const [tanks, plate] = await Promise.all([
+        api.vehicleHistoryOverview().catch(() => null),
+        battle.sessionId
+          ? Promise.resolve()
+              .then(() => api.damastSession(battle.sessionId!))
+              .catch(() => null)
+          : null,
+      ]);
+      const tank =
+        tanks?.vehicles.find((item) => item.vehicleId === battle.wgTankId) ??
+        tanks?.vehicles.find((item) => item.vehicleKey === battle.vehicleKey);
+      return {
+        average: tank?.averageDamage ?? null,
+        // The best battle of the session is its highest r (author's decision after E14).
+        best: damastBestBattleId(plate) === battle.arenaId,
+      };
+    },
+    [battle.arenaId],
+    { refreshKey: version },
+  );
+  return context.state.status === "ready" ? context.state.data : { average: null, best: false };
+}
 
 /** "Podsumowanie bitwy" (spec 30 §2): Polish only, only for a counted battle with 3 sentences. */
 function BattleRecap({ battleId }: { battleId: string }) {
@@ -167,6 +202,12 @@ function BattleBody({
     detail.teams?.own.damage && battle.damage !== null
       ? Math.round((battle.damage / detail.teams.own.damage) * 100)
       : null;
+  // Spec 33 §3: once, on opening, the result heats up or cools down against the own average.
+  const context = useBattleContext(battle);
+  const average = counted ? context.average : null;
+  const heat = heatAgainst(battle.damage, average);
+  const temperature = heatProps(heat);
+  const hot = counted && context.best;
   const stats: [string, string, string][] = [
     [
       battle.shots === null
@@ -194,8 +235,12 @@ function BattleBody({
         as="header"
         mapKey={battle.mapKey}
         width={1400}
-        className="flare-hero battle-flare-hero"
+        className={
+          heat ? "flare-hero battle-flare-hero ember-tinted" : "flare-hero battle-flare-hero"
+        }
         label={tr("mapBackground", { map })}
+        data-temp={temperature["data-temp"]}
+        style={temperature.style}
       >
         <div className="battle-hero-top">
           <button type="button" className="link" onClick={onBack}>
@@ -210,6 +255,12 @@ function BattleBody({
                 time: formatTime(battle.battleTime, language),
                 duration: formatDuration(battle.durationSeconds),
               })}
+              {heat && (
+                <>
+                  {" · "}
+                  <TemperatureWord heat={heat} />
+                </>
+              )}
             </p>
             <h1 id="recap-target-headline" className="flare-headline battle-headline">
               {tr("battleTitle", { result: tr(outcomeKey(battle.outcome)), map })}
@@ -219,14 +270,25 @@ function BattleBody({
               <span>{tank}</span>
             </p>
           </div>
-          <div id="recap-target-damage" className="battle-hero-damage">
-            <span className="num battle-damage-value">{formatNumber(battle.damage, language)}</span>
+          <div
+            id="recap-target-damage"
+            className={hot ? "battle-hero-damage ember-hot" : "battle-hero-damage"}
+          >
+            <EmberNumber
+              hot={hot}
+              className="num battle-damage-value"
+              text={formatNumber(battle.damage, language)}
+            >
+              {heat && !prefersReducedMotion() && <EmberHeat />}
+            </EmberNumber>
             <span className="figure-label">
               {teamShare === null
                 ? tr("damageWord")
                 : tr(detail.mostDamageInTeam ? "damageLineTop" : "damageLineShare", {
                     share: teamShare,
                   })}
+              {average !== null &&
+                ` · ${tr("battleUsual", { value: formatNumber(average, language) })}`}
             </span>
           </div>
         </div>

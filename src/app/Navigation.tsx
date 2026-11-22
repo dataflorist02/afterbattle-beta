@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 import { useLanguage } from "../i18n/language";
 import type { UiKey } from "../i18n/ui";
@@ -82,24 +83,40 @@ export function Navigation({
   page,
   onNavigate,
   publicBuild,
+  sessionRunning = false,
 }: {
   page: Page;
   onNavigate: (page: Page) => void;
   publicBuild: boolean;
+  /** Spec 33 §3: a still ember dot by Session while a session runs (not a hot spot). */
+  sessionRunning?: boolean;
 }) {
   const { tr } = useLanguage();
-  const item = (target: Page) => (
-    <button
-      key={target}
-      type="button"
-      className="rail-link"
-      aria-current={page === target ? "page" : undefined}
-      onClick={() => onNavigate(target)}
-    >
-      <span className="rail-icon">{icons[target]}</span>
-      {tr(labels[target])}
-    </button>
-  );
+  const item = (target: Page) => {
+    const running = target === "session" && sessionRunning;
+    return (
+      <Fragment key={target}>
+        <button
+          type="button"
+          className="rail-link"
+          aria-current={page === target ? "page" : undefined}
+          aria-describedby={running ? "rail-session-running" : undefined}
+          onClick={() => onNavigate(target)}
+        >
+          <span className="rail-icon">
+            {icons[target]}
+            {running && <span className="rail-ember" aria-hidden="true" />}
+          </span>
+          {tr(labels[target])}
+        </button>
+        {running && (
+          <span id="rail-session-running" className="visually-hidden">
+            {tr("navSessionRunning")}
+          </span>
+        )}
+      </Fragment>
+    );
+  };
   return (
     <nav className="rail" aria-label={tr("mainNavigation")}>
       <div className="rail-logo" aria-hidden="true">

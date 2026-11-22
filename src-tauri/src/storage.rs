@@ -3155,6 +3155,21 @@ impl Database {
                 .collect::<Result<Vec<_>, _>>()?,
         )
     }
+    /// Ended sessions with at least one counted battle, newest first, after `before` (the
+    /// `started_at` and id of the last session of the previous page). Damast, History → Sessions.
+    pub(crate) fn ended_sessions_page(
+        &self,
+        before: Option<(i64, &str)>,
+        limit: usize,
+    ) -> Result<Vec<Session>, AppError> {
+        let c = self.open_read_only()?;
+        let mut s = c.prepare(&format!("SELECT s.id,s.started_at,s.last_battle_at,s.ended_at,s.status,COUNT(b.arena_id),COUNT(CASE WHEN {STATS_ELIGIBLE_SQL} THEN 1 END) FROM sessions s LEFT JOIN battles b ON b.session_id=s.id WHERE s.status!='active' AND (?1 IS NULL OR s.started_at<?1 OR (s.started_at=?1 AND s.id<?2)) GROUP BY s.id HAVING COUNT(CASE WHEN {STATS_ELIGIBLE_SQL} THEN 1 END)>0 ORDER BY s.started_at DESC,s.id DESC LIMIT ?3"))?;
+        let (started_at, id) = before.map_or((None, ""), |(time, id)| (Some(time), id));
+        Ok(
+            s.query_map(params![started_at, id, limit as i64], Self::session_row)?
+                .collect::<Result<Vec<_>, _>>()?,
+        )
+    }
     pub fn start_session(&self) -> Result<Session, AppError> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().timestamp_millis();
@@ -3324,22 +3339,6 @@ impl Database {
             ),
             &[&map_key],
         )
-    }
-    pub fn battles_for_sessions(&self, session_ids: &[String]) -> Result<Vec<Battle>, AppError> {
-        if session_ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let placeholders = (1..=session_ids.len())
-            .map(|index| format!("?{index}"))
-            .collect::<Vec<_>>()
-            .join(",");
-        let connection = self.open()?;
-        let mut statement = connection.prepare(&format!(
-            "SELECT {BATTLE_COLUMNS} FROM battles WHERE session_id IN ({placeholders}) ORDER BY session_id,battle_time"
-        ))?;
-        Ok(statement
-            .query_map(params_from_iter(session_ids.iter()), Self::battle)?
-            .collect::<Result<Vec<_>, _>>()?)
     }
     pub fn historical_battles_excluding_session(
         &self,

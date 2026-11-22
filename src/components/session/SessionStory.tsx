@@ -13,6 +13,9 @@ import { outcomeKey } from "../BattleTable";
 import { MapBackdrop } from "../MapBackdrop";
 import { useTankLabel } from "../TankName";
 import { prefersReducedMotion, useFlip, type Direction } from "../../lib/motion";
+import { heatProps, type Heat } from "../../lib/ember";
+import { EmberHeat, EmberNumber, EmberSweep, Sparks, TemperatureWord } from "../Ember";
+import { HelpLink } from "../HelpLink";
 
 type Translate = (key: UiKey, params?: Record<string, string | number>) => string;
 
@@ -54,6 +57,7 @@ export function SessionHero({
   notes,
   action,
   notesId,
+  heat = null,
 }: {
   mapKey: string | null;
   mapName: string | null;
@@ -65,20 +69,35 @@ export function SessionHero({
   action: ReactNode;
   /** Lets a summary reference highlight the damage note (spec 30 §8). */
   notesId?: string;
+  /** Spec 33 §3: the session against the own average warms or cools the card, with sparks. */
+  heat?: Heat | null;
 }) {
   const { tr } = useLanguage();
   const parts = headlineParts(headline, fallbackTitle, tr);
+  const temperature = heatProps(heat);
   return (
     <MapBackdrop
       as="section"
       mapKey={mapKey}
       width={1400}
-      className="flare-hero session-flare-hero"
+      className={
+        heat ? "flare-hero session-flare-hero ember-tinted" : "flare-hero session-flare-hero"
+      }
       aria-labelledby="session-headline"
       label={mapKey ? tr("bestMapBackground", { map: mapName ?? mapKey }) : undefined}
+      data-temp={temperature["data-temp"]}
+      style={temperature.style}
     >
+      <Sparks heat={heat} />
       <div className="flare-hero-text">
-        <div className="flare-hero-meta">{meta}</div>
+        <div className="flare-hero-meta">
+          {meta}
+          {heat && (
+            <p>
+              <TemperatureWord heat={heat} />
+            </p>
+          )}
+        </div>
         <h1 id="session-headline" className="flare-headline">
           {parts.before}
           {parts.accent && <span className="flare-accent">{parts.accent}</span>}
@@ -91,8 +110,12 @@ export function SessionHero({
       </div>
       {notes.length > 0 && (
         <div id={notesId} className="flare-hero-notes">
-          {notes.map((note) => (
-            <p key={note}>{note}</p>
+          {notes.map((note, index) => (
+            <p key={note}>
+              {note}
+              {/* Spec 33 §4: how the average is counted lives in "Jak to działa". */}
+              {index === 0 && <HelpLink entry="average" />}
+            </p>
           ))}
         </div>
       )}
@@ -131,6 +154,8 @@ export function Figure({
             {value}
           </span>
         )}
+        {/* Spec 33 §3: after the count the number heats up and cools down. */}
+        {delta && <EmberHeat key={`heat-${delta.key}`} />}
       </span>{" "}
       <span className="figure-label">{label}</span>
     </div>
@@ -145,11 +170,20 @@ export function BattleStrip({
   bestBattleId,
   newBattleIds,
   onOpenBattle,
+  hot = true,
+  referenceBattleId = bestBattleId,
 }: {
   battles: Battle[];
   bestBattleId: string | null;
+  /**
+   * The battle the summary's "najlepsza bitwa" names (spec 30 §8 reference); on an ended
+   * session the marked best battle is the highest r of its plate and may be another one.
+   */
+  referenceBattleId?: string | null;
   newBattleIds: readonly string[];
   onOpenBattle: (battleId: string) => void;
+  /** False when another place is the screen's hot spot (the Damast spark, spec 34 §3). */
+  hot?: boolean;
 }) {
   const { language, tr } = useLanguage();
   const label = useTankLabel();
@@ -177,6 +211,8 @@ export function BattleStrip({
           });
           const tank = label(battle.vehicleKey, battle.tankName);
           const map = battle.mapName ?? "—";
+          const fresh = newBattleIds.includes(battle.arenaId);
+          const sweep = fresh && !prefersReducedMotion();
           return (
             <li
               key={battle.arenaId}
@@ -191,13 +227,16 @@ export function BattleStrip({
                 className={[
                   "tile",
                   loss ? "tile-loss" : "",
+                  // Spec 33 §3: the best battle of the session is the screen's one hot spot.
                   best ? "tile-best" : "",
-                  newBattleIds.includes(battle.arenaId) ? "tile-new" : "",
+                  best && hot ? "ember-hot" : "",
+                  fresh ? "tile-new" : "",
+                  sweep ? "ember-swept" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
                 onClick={() => onOpenBattle(battle.arenaId)}
-                id={best ? "recap-target-best" : undefined}
+                id={battle.arenaId === referenceBattleId ? "recap-target-best" : undefined}
                 aria-label={tr("tileLabel", {
                   result: best ? bestResult : result,
                   damage: formatNumber(battle.damage, language),
@@ -205,12 +244,15 @@ export function BattleStrip({
                   tank: tank.full,
                 })}
               >
-                {newBattleIds.includes(battle.arenaId) && (
-                  <span className="tile-flash" aria-hidden="true" />
-                )}
+                {fresh && <span className="tile-flash" aria-hidden="true" />}
+                {sweep && <EmberSweep />}
                 <span className="tile-result">{best ? bestResult : result}</span>
                 <span className="tile-body">
-                  <span className="num tile-damage">{formatNumber(battle.damage, language)}</span>
+                  <EmberNumber
+                    hot={best && hot}
+                    className="num tile-damage"
+                    text={formatNumber(battle.damage, language)}
+                  />
                   <span className="tile-line truncate">{map}</span>
                   <span className="tile-line tile-tank truncate" title={tank.full}>
                     {tank.short}

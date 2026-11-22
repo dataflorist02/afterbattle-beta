@@ -236,6 +236,21 @@
   --ease-in-out: ease-in-out;
   --ease-linear: linear;
 
+  /* Żar (spec 33 §2): one temperature scale for the whole app, always against the player's own
+     average. Ember for warmer, steel for as usual, frost for cooler; the shades in between are
+     mixed from these by the intensity, never written as literals. */
+  --ember-hot: var(--accent);
+  --ember-core: #ffb774;
+  --ember-glow: rgba(255, 150, 70, 0.45);
+  --steel: #3a4558;
+  --frost: var(--down);
+  /* Heating and cooling of a changed number, one sweep over a new thing, the breath of the one
+     hot spot, the flash of a completed goal. */
+  --ember-heat: 1600ms;
+  --ember-sweep: 520ms;
+  --ember-breathe: 4200ms;
+  --ember-flash: 1400ms;
+
   --radius-card: 20px;
   --radius-row: 14px;
   --radius-tile: 16px;

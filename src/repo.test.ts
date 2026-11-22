@@ -33,11 +33,16 @@ describe("E5 checkpoint checks (spec 20 E5 step 4, spec 25 §8)", () => {
     for (const path of images) {
       // docs/design/brand/: the original Afterbattle mark (spec 29 §4), no game motifs.
       // docs/design/rc/: the accepted 1.0 RC mockups, with placeholders for game pictures.
+      // docs/design/zar/, docs/design/damast/: spec 33 and 34 mockups, synthetic data (D19).
+      // src/features/damast/reference/: spec 34 §5 reference plates drawn from synthetic data.
       const allowed =
         path.startsWith("src-tauri/icons/") ||
         path.startsWith("docs/status/screens/") ||
         path.startsWith("docs/design/brand/") ||
         path.startsWith("docs/design/rc/") ||
+        path.startsWith("docs/design/zar/") ||
+        path.startsWith("docs/design/damast/") ||
+        /^src\/features\/damast\/reference\/(hot|flat|cool)\.png$/.test(path) ||
         path === "public/favicon.svg";
       expect(allowed, path).toBe(true);
       expect(statSync(path).size, path).toBeLessThan(2_000_000);

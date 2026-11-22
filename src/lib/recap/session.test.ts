@@ -4,7 +4,7 @@ import type { Address } from "./address";
 import { ADDRESSES, fitsAddress } from "./address";
 import { finish, fnv1a } from "./compose";
 import { plural } from "./plural";
-import { sessionPlans, sessionSentences } from "./session";
+import { sessionFactLabel, sessionPlans, sessionSentences } from "./session";
 
 const tank = (_key: string, name: string | null) => name ?? "—";
 
@@ -126,6 +126,31 @@ describe("session summary (spec 30 §4.2, §5, §6)", () => {
       expect(said(address, "survival")).toContain(
         "Czołg przetrwał do końca 3 z 9 bitew, czyli 33%, o 12 pkt proc. mniej niż w ostatnich 100 bitwach (45%).",
       );
+  });
+
+  it("names the battle with the most damage 'najwięcej obrażeń', never 'najlepsza' (E14)", () => {
+    // Author's decision after E14: "najlepsza bitwa" in the app is the highest r of the plate;
+    // the summary still picks its battle by damage, so it says what it is.
+    for (const mapName of ["Test Valley", null])
+      for (const address of ADDRESSES) {
+        const facts = full().map((item) =>
+          item.fact.key === "najlepsza" ? { ...item, fact: { ...item.fact, mapName } } : item,
+        );
+        const said = sessionPlans(facts, { address, tank })
+          .find((plan) => plan.facts.includes("F4"))!
+          .variants.filter((variant) => fitsAddress(variant, address))
+          .map((variant) => finish(variant, address));
+        expect(said.length).toBeGreaterThan(0);
+        for (const sentence of said) {
+          expect(sentence, sentence).toMatch(/najwięcej obrażeń/iu);
+          expect(sentence, sentence).not.toMatch(/najlepsz/iu);
+          expect(sentence, sentence).toMatch(/4\s480/u);
+          if (mapName) expect(sentence, sentence).toContain("Test Valley");
+        }
+      }
+    const best = full().find((item) => item.fact.key === "najlepsza")!.fact;
+    const label = sessionFactLabel(best, { address: "neutral", tank });
+    expect(label.replace(/\s/gu, " ")).toBe("najwięcej obrażeń w bitwie 4 480, Test Valley");
   });
 
   it("gives the same text for the same session every time", () => {

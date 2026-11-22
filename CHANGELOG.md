@@ -1,6 +1,128 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-rc.3
+
+22.11.2026. Trzecia wersja kandydata na 1.0 („Afterbattle 1.0 RC 3”). **Żar:** jedna skala temperatury wyników w całej aplikacji, zawsze wobec Twojej własnej średniej. **Damast:** każda zakończona sesja dostaje płytkę stali wykutą z jej bitew, z kartą 1200×630 do zapisania. **Odczyt wykresów:** wykres „Obrażenia w czasie” odczytasz myszą, klawiaturą i czytnikiem ekranu, a ⓘ przy płytce mówi, jak ją czytać. **Mniej tekstu na ekranach:** zostają nazwy, liczby i jednostki, wyjaśnienia są w „Jak to działa”. Instalator bez podpisu Authenticode (pre-release). / 2026-11-22. Third build of the 1.0 release candidate ("Afterbattle 1.0 RC 3"). **Żar (ember):** one temperature scale for results across the app, always against your own average. **Damast:** every ended session gets a steel plate forged from its battles, with a 1200×630 card to save. **Reading charts:** the "Damage over time" chart can be read with the pointer, the keyboard and a screen reader, and an ⓘ by the plate explains how to read it. **Less text on screens:** names, numbers and units stay; the explanations live in "How it works". Installer without an Authenticode signature (pre-release).
+
+### Internal (rc.3)
+
+- Mutation testing before the release, decision logic of Żar and Damast: 119 mutants, 111 caught, 2 survived (a size constant and one equivalent mutant), 6 unviable — 98.2%. Tests added for the 11 other survivors (tank id 0, a page of exactly the last sessions, damaged or misplaced tile files, the card's size limit and signature, a non-date card name), each run red against its mutant first; the app's behaviour is unchanged.
+
+### Po polsku — „Jak czytać tę płytkę” (22.11)
+
+- **Sesja, Damast:** przy nagłówku sekcji mały przycisk ⓘ „Jak czytać tę płytkę”. Otwiera dymek o tej sesji, liczony z tych samych danych co płytka: ile bitew i w jakiej kolejności, przy których bitwach nalot jest najcieplejszy i najchłodniejszy (i wobec czego), ile oczek (wygranych), średni tier, fale, przy której bitwie stoi iskra (numer i mapa). Gdy brak Twojej średniej albo WN8, dymek mówi to wprost. Na dole odnośnik do hasła „Damast” w „Jak to działa”. Zamyka się klawiszem Esc, kliknięciem obok albo ponownym kliknięciem ⓘ. Karta PNG i Historia bez zmian.
+
+### In English — "How to read this plate" (22.11)
+
+- **Session, Damast:** a small ⓘ by the section's heading opens a popover about this session's plate, from the same numbers the plate is drawn from: the battles from left to right, where the tint is warmest and coolest (and against what), the eyes (wins), the average tier, the waves and the spark's battle with its map; a missing average or WN8 is said plainly. A link leads to "How it works" → Damast. Esc, a click outside or a second click close it. The card PNG and History are unchanged.
+
+### Internal (E14 info)
+
+- `src/features/damast/guide.ts` (`plateGuide`, `extremeRun`) builds the rows from `damastStats`; `DamastInfo.tsx` is the button and the non-modal popover (`role="dialog"`, `aria-modal="false"`, `fitPopover` keeps it inside the window). `SessionDamast` takes `mapOf` from the Session screen's battles.
+
+### Po polsku — poprawki po drugim teście ręcznym E14 (22.11)
+
+- **Gorący punkt bez ramki w całej aplikacji:** najważniejsze miejsce ekranu świeci treścią — jego główna liczba jest w kolorze żaru, z miękką poświatą w kształcie cyfr, która spokojnie oddycha (przy ograniczonym ruchu stoi); kafel albo wiersz dostaje najwyżej ciepłą poświatę od dołu. Dotyczy najlepszej bitwy w Przeglądzie i na Sesji, rekordu w Historii (wiersz i płytka rekordowej sesji), najlepszej mapy na Czołgach, wyniku na ekranie Bitwa i celu najbliżej ukończenia. Ramka zostaje tylko jako obwódka fokusu klawiatury.
+- **Sesja, sekcja Damast:** płytka na całą szerokość, 360 px wysokości (niższy wycinek tego samego wzoru, nic nie jest rozciągnięte), pod nią pasek bitew, a pod nim jeden rząd: po lewej „Sesja DD.MM · N bitew”, WN8 sesji i trzy liczby, po prawej „Zapisz kartę” i „Do historii”; „Zapisano kartę.” pojawia się obok przycisków.
+- **Karta 1200×630:** liczby (WN8 i trzy liczby) stoją w połowie wysokości między tytułem a logo.
+- **Wykres „Obrażenia w czasie”:** „Twoja średnia N” jest w legendzie nad wykresem (z próbką kreskowanej linii), linia średniej na wykresie bez napisu. Wykres można odczytać: po najechaniu myszą pionowa linia, punkt i dymek z numerem bitwy, datą, obrażeniami, średnią kroczącą, mapą i czołgiem; klawiaturą — Tab na wykres, strzałki, Home/End, Esc chowa; czytnik ekranu ogłasza odczyt.
+
+### In English — fixes after the second E14 manual test (22.11)
+
+- The hot spot has no frame anywhere: its main number glows in ember with a soft breathing glow of its own shape (still with reduced motion); a tile or row gets at most a warm glow from the bottom. The only frame left is the keyboard focus ring.
+- The Session's Damast section: the plate spans the section, 360 px tall (a lower cut of the same pattern, not stretched), the battle bar under it, then one row — the title, session WN8 and three figures on the left, "Save card" and "To history" on the right.
+- The 1200×630 card: the numbers stand halfway between the title and the logo.
+- The "Damage over time" chart names "Your average N" in a legend above it; the chart can be read with the pointer (a vertical line, a point and a tip with the battle's number, date, damage, rolling average, map and tank) or the keyboard (Tab, arrows, Home/End, Esc), and a screen reader announces the reading.
+
+### Internal (E14 polish 2)
+
+- `EmberNumber` / `EmberBreath text`: the hot spot's number in `--ember-core` with the same text in a transparent layer with a text shadow behind it; only the layer's opacity breathes (0.6 and still with reduced motion). `.ember-hot` has no border or ring shadow, only `--ember-floor` (a radial gradient from the bottom; over the map shade via `--ember-tint` on map backdrops); `.tile-best` lost its own frame. A style test checks that no hot-spot rule outside `:focus-visible` draws a border, an outline or a ring shadow.
+- `DamastPlate` takes a CSS `height`: the field is cut at the width's scale (`fieldHeight = height × 940 / width`) on WebGL2 (new `uFieldHeight` uniform) and in the worker; `pattern.ts` computes one row under a lower image, so a lower field is the plate's top band pixel for pixel. Without a height nothing changes; `DAMAST_VERSION`, History's tiles and the reference images are unchanged.
+- `PerformanceTrendPoint` carries its battle's `damage`, `mapName`, `vehicleKey` and `tankName` (no ids) for the chart's reading; `placeTip` keeps the tip beside its point and inside the plot.
+
+### Po polsku — poprawki po teście ręcznym E14
+
+- **Karta 1200×630:** prawdziwe logo aplikacji (ten sam znak co w nawigacji) z nazwą zamiast tymczasowego trójkąta; nowy układ: płytka z paskiem bitew po lewej, po prawej kolumna liczb dokładnie tej samej wysokości — u góry „Sesja DD.MM · N bitew” równo z płytką, WN8 sesji duże, pod nim obrażenia, wygrane i średni tier w trzech kolumnach, na dole logo równo z paskiem bitew; marginesy 48 px dookoła, bez pustych pasów: płytka z paskiem wypełnia całą wysokość karty jako dłuższy wycinek tego samego wzoru (nie rozciągnięty obraz).
+- **Sesja, sekcja Damast:** ten sam układ — kolumna liczb (ok. 300 px) obok płytki, na dole „Zapisz kartę” i „Do historii” równo z paskiem bitew; „Zapisano kartę.” pojawia się obok przycisków na 4 s.
+- **Iskra najlepszej bitwy** pod płytką: bez prostokątnej ramki — kropka w kolorze żaru z miękką poświatą, która spokojnie oddycha jak każdy gorący punkt (przy ograniczonym ruchu stoi), tier pod nią w jaśniejszym żarze.
+- **Przegląd:** „najlepsza bitwa” na końcu karty ostatniej sesji jako mały blok — etykieta, pod nią obrażenia, pod nimi mapa — równo z dolną linią etykiet liczb karty.
+
+### In English — fixes after the E14 manual test
+
+- The 1200×630 card shows the app's real logo (the navigation's mark) and its name, in a new layout: the plate with its battle bar on the left, a column of numbers as tall as both on the right (title on the plate's top, session WN8, three figures, the logo on the bar's bottom line), 48 px margins.
+- The Session's Damast section uses the same layout with "Save card" and "To history" at the bottom; "Card saved." shows next to them for 4 s.
+- The best battle's spark has no frame: an ember dot whose soft glow breathes like every hot spot (still with reduced motion); Overview's best battle is a small block (label, damage, map).
+- The card has no empty bands: the plate with its bar fills the card's inner height, a longer cut of the same pattern.
+
+### Internal (E14 polish)
+
+- `src/features/damast/logo.tsx`: the card's monogram is `BrandMark` (the rail's icon) rendered to SVG with `createRoot` + `flushSync` (no copy of the SVG, no `react-dom/server`), colour tokens resolved for the image; the name is `APP_NAME` in the brand's type.
+- `CARD_PLATE`, `CARD_STRIP`, `CARD_COLUMN`, `CARD_MARGIN` describe the card's layout; tests check the title on the plate's top and the logo on the bar's bottom within 2 px.
+- The reduced-motion style test reads only its own `@media` block.
+- `pattern.ts` `fieldHeight` (default 440): a taller field is a longer cut of the same pattern (X and the zones unchanged, Y to `fieldHeight`); below 440 the tint's gradient and the heat's glow stop at their bottom value, and the edge smoothing turns upwards at the plate's bottom line (Y 440) wherever it lies, so the default plate is bit for bit as before and a taller field's top band equals it. `DAMAST_VERSION` unchanged; the card asks the worker for `CARD_FIELD_HEIGHT`; the shader keeps the default field.
+
+### Po polsku — co się zmienia dla gracza (spec 34 „Damast”)
+
+- **Płytka damastu po każdej sesji.** Zakończona sesja dostaje własną płytkę stali damasceńskiej, wykutą z jej bitew: bitwy od lewej, nalot strefy według wyniku bitwy wobec Twojej średniej (ciepły wyżej, błękitny niżej), oczko za wygraną, drobniejszy wzór na wyższym tierze, wyższa fala przy większych obrażeniach. Płytka nie ocenia: każda stal jest ładna, różni się barwą nalotu.
+- **Wynik bitwy:** 60% WN8 wobec Twojej średniej WN8 i 40% obrażeń wobec Twojej średniej na tym samym tierze, z ostatnich 100 bitew przed sesją (przy mniej niż 10 bitwach na tierze: średnia ze wszystkich tierów). Sam tier nie podnosi wyniku.
+- **Jedna temperatura sesji w całej aplikacji:** średni wynik bitew wobec Twojej średniej, z granicą ±5% — ta sama na karcie Sesji, w Przeglądzie, w termogramie Historii i na płytce. Temperatura pojedynczej bitwy (ekran Bitwa, wiersze Historii) bez zmian; „zwykle N” na Sesji zostaje jako odniesienie obrażeń.
+- **Najlepsza bitwa sesji to wszędzie ta z najwyższym wynikiem:** iskra pod płytką, znacznik „najlepsza” na kaflu, mapa w tle karty liczb, moment „Najlepsza bitwa”, koniec karty ostatniej sesji w Przeglądzie i obwódka wyniku na ekranie Bitwa wskazują tę samą bitwę i jej obrażenia (od 2 bitew i tylko wobec Twojej średniej).
+- **Podsumowanie sesji** dalej wybiera bitwę po obrażeniach, ale nazywa ją „najwięcej obrażeń”, nie „najlepsza bitwa”.
+- **Historia → Sesje:** płytki reagują na kliknięcie i pokazują pierścień fokusu przy klawiaturze, jak dawne karty sesji.
+- **Sesja:** po zamknięciu sesji płytka wykuwa się raz, ok. 4 s (bitwy wlewają się jak rozżarzony metal, wykuwa się wzór, stal stygnie), nigdy w trakcie sesji i tylko z oknem aplikacji na pierwszym planie; potem stoi gotowa. Pod nią pasek bitew (pełna kropka to wygrana, tier, iskra przy najlepszej bitwie), WN8 sesji, obrażenia, wygrane, średni tier oraz „Zapisz kartę” i „Do historii”.
+- **Historia → Sesje:** siatka płytek zakończonych sesji (także sprzed aktualizacji), z paskiem bitew, datą, liczbą bitew, temperaturą i WN8; żarzy się tylko rekordowa sesja. „Pokaż kolejne” wczytuje starsze sesje.
+- **Karta 1200×630:** „Zapisz kartę” zapisuje PNG tam, gdzie wskażesz w oknie zapisu. Na karcie tylko liczby i etykiety, bez nicku i ID konta; nic nie jest wysyłane.
+- **Ograniczony ruch:** płytka od razu gotowa, bez wykuwania. Na słabszym komputerze (bez sprzętowego WebGL2) płytka pojawia się gotowa, bez animacji.
+- **„Jak to działa”:** nowe hasło „Damast”.
+
+### In English — what changes for the player (spec 34 "Damast")
+
+- One session temperature across the app: the average result of its battles against your own average (±5% as usual), the same on the Session card, in Overview, in the History thermogram and on the plate. The best battle of a session is its highest result everywhere (spark, tile, the card's map, the moment, Overview, the Battle screen); the session summary names the battle it picks by damage "najwięcej obrażeń" (summaries are Polish only).
+- Every ended session gets its own Damascus steel plate forged from its battles: battles from the left, the zone's tint from the battle's result against your own average, one eye per win, finer layers on higher tiers, a higher wave with more damage. A direction, not a judgement.
+- A battle's result: 60% WN8 against your own average WN8 and 40% damage against your own average on the same tier, from the last 100 battles before the session (all tiers below 10 battles on a tier); the tier alone never raises it.
+- Session: the plate is forged once after the session ends (about 4 s, never during a session, only with the window in front), with the battle bar, session WN8, damage, wins, average tier, "Save card" and "To history". History → Sessions shows the plates of all ended sessions; only the record one glows.
+- "Save card" writes a 1200×630 PNG where you choose; no nickname or account ID, nothing is sent. Reduced motion or no hardware WebGL2: the plate appears finished.
+
+### Internal (E14)
+
+- Backend, read only: `get_damast_session`, `get_damast_sessions` (pages of ended sessions): per battle tier, damage, the battle's own WN8 and the result; the player's WN8 and damage from the last 100 battles before the session (the trends' window) and the same battles' damage per tier with their count. No statistic changes.
+- Plates of History are cached as JPEG in the app's data folder (`damast/<DAMAST_VERSION>/<key>.jpg`), keyed by the algorithm version and the session's data; a new version removes the old folder, "delete all data" removes the cache. `get_damast_tile` / `put_damast_tile` check the key, the version, the format and the size.
+- The card is saved by `export_damast_card`: the backend opens the save dialog, so the window gets no new permission (capabilities unchanged); it writes only a whole 1200×630 PNG, stripped to its image chunks.
+- `src/features/damast/`: `stats.ts`, `pattern.ts` (the mockup's reference algorithm, identical pixel for pixel without the edge smoothing, low-resolution reference images in the repository), `shader.glsl` (WebGL2, full resolution × devicePixelRatio, fwidth-smoothed layer edges), `worker.ts` (the same algorithm in a Web Worker: the fallback when WebGL2 is missing or runs in software, the History tiles and the card's plate).
+- The Session screen also opens sessions older than the 30 recent ones (from their plates in History).
+- Session temperature: `damastHeat` (`src/features/damast/stats.ts`) replaces `sessionHeat` from the damage comparison on Session, Overview and the thermogram (author's decision after the E14 checkpoint); the thresholds stay in `src/lib/ember.ts`. Spec 34 approved.
+- Removed the commands no screen calls since History shows Damast plates: `get_recent_sessions_wn8` and `get_session_maps` (with their helpers, the `HistoricalSessionWn8Presentation` and `SessionMaps` types and bindings, the storage read `battles_for_sessions`, the `api.ts` functions, mocks and tests).
+- Line endings: `.gitattributes` has `* text=auto eol=lf`; every text file is LF in the working tree too.
+- `damastBestBattleId` (`stats.ts`): the session's best battle is the highest r, from 2 battles and only against an own average (as the backend's `MIN_BEST_BATTLES`); the backend's choice (`session_story::best_battle`, most damage) is unchanged and feeds only the summary's fact.
+- Removed the old History session list styles (`.session-cards`, `.session-card`, `.session-temp`, `.session-collage`, `.collage-tile`, `.session-card-text`); the Damast plate cards joined the shared press, focus ring and reduced-motion rules instead.
+
+### Po polsku — co się zmienia dla gracza (spec 33 „Żar”)
+
+- **Temperatura wyników.** Jedna skala na całą aplikację, zawsze wobec Twojej własnej średniej, nigdy wobec innych graczy: żar — cieplej, stal — jak zwykle, błękit — chłodniej. „Jak zwykle” to mniej niż ±5%, kolor nasyca się do ±30%. Kierunek, nie ocena: bez czerwieni i bez słów oceniających.
+- **Sesja:** karta liczb żarzy się albo chłodnieje według temperatury sesji (od E14: średni wynik bitew, jak na płytce Damastu), z dopiskiem „cieplej niż zwykle” / „jak zwykle” / „chłodniej niż zwykle”; przy „cieplej” 3–18 iskier. Nowa bitwa wjeżdża z jedną smugą, a liczby po doliczeniu rozgrzewają się i stygną.
+- **Przegląd:** karta ostatniej sesji w tej samej temperaturze, na jej końcu najlepsza bitwa sesji.
+- **Historia:** termogram ostatnich 30 sesji nad listą (oś od „30 sesji temu” do „ostatnia sesja”, ta sama temperatura sesji co na Sesji), pasek temperatury przy każdej bitwie (obrażenia wobec Twojej średniej na tym czołgu); nowy wiersz z jedną smugą.
+- **Czołgi:** kropka temperatury przy czołgu (ostatnie 10 bitew wobec średniej ze 100), linia „Obrażenia w czasie” żarzy się nad linią Twojej średniej.
+- **Bitwa:** wynik raz rozgrzewa się albo schładza wobec Twojej średniej na tym czołgu; obok „zwykle N”.
+- **Cele:** paski od stali do żaru według postępu; cel ukończony na Twoich oczach rozbłyska.
+- **Jeden gorący punkt na ekranie:** spokojnie oddycha tylko najważniejsze miejsce (najlepsza bitwa sesji, rekord w Historii, najlepsza mapa czołgu, cel najbliżej ukończenia). W nawigacji kropka żaru przy „Sesja”, gdy sesja trwa. Ustawienia celowo chłodne, „Zapisano.” z krótkim rozbłyskiem.
+- **Mniej tekstu na ekranach, „Jak to działa” w Ustawieniach:** na ekranach zostają nazwy, liczby i jednostki; wyjaśnienia (które bitwy się liczą, Twoja średnia, WN8 i XVM, na tle graczy, podsumowania, temperatura, prywatność i aktualizacje) są w Ustawienia → O aplikacji → „Jak to działa”. Znak „?” przy liczbie otwiera właściwe hasło.
+- **Nic w trakcie bitwy i ograniczony ruch:** ruch wynika tylko z nowych bitew (po bitwie); gdy okno jest w tle, nic się nie rusza. Przy ograniczonym ruchu w systemie bez animacji i iskier, zostają same kolory i stała obwódka.
+
+### In English — what changes for the player (spec 33 "Żar")
+
+- **Temperature of results:** one scale across the app, always against your own average, never against other players: ember warmer, steel as usual, blue cooler ("as usual" within ±5%, full at ±30%); a direction, not a judgement.
+- Session card warms or cools by the session's damage against your average on the same tanks, with 3–18 sparks when warmer; Overview's last session card in the same temperature; History gets a thermogram of the last 30 sessions (axis from "30 sessions ago" to "latest session") and a temperature bar by every session and battle; Tanks a temperature dot per tank and a chart line that glows above your average; Battle heats or cools its result once against your average on that tank; goal bars run from steel to ember.
+- One hot spot per screen breathes calmly; a new battle, row or completed goal gets one sweep; Settings stay cool.
+- Less text on the screens: explanations moved to Settings → About → "How it works"; a "?" by a number opens its entry.
+- Nothing moves during a battle or with reduced motion (colors and a still outline stay).
+
+### Internal
+
+- Tokens `--ember-hot`, `--ember-core`, `--ember-glow`, `--steel`, `--frost` and times `--ember-heat`, `--ember-sweep`, `--ember-breathe`, `--ember-flash`, only in `tokens.css`; the temperature function and thresholds in `src/lib/ember.ts`; only `opacity` and `transform` move, on layers of their own; the one loop besides the loading pulse is the breath of the hot spot.
+- No number changes: the temperature reads comparisons the app already makes.
+- New read-only command `get_vehicle_temperatures`: the tank list's temperature dots in one call (every tank with at least 10 battles, the last 10 and last 100 average damage from the same `vehicle_baseline` as the tank header) instead of one baseline request per tank.
+- The exhaustive check of every battle summary variant has its own 20 s time limit (it ran 4.3-4.6 s in the full suite and twice went over the default 5 s under load).
 
 ## 1.0.0-rc.2
 

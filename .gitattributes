@@ -1,2 +1,6 @@
+# Every text file is LF in the repository and in the working tree, whatever core.autocrlf says;
+# binary files are detected and left alone.
+* text=auto eol=lf
+
 # Tauri regenerates these on every build with LF endings; keep the checkout identical so builds do not dirty the tree.
 src-tauri/gen/schemas/*.json text eol=lf

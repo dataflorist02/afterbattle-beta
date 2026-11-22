@@ -96,15 +96,18 @@ const handlers: Record<string, Handler> = {
       : state === "noxvm"
         ? fx.weeklyReport({ wn8: null })
         : fx.weeklyReport(),
-  get_session_maps: (args) =>
-    ((args.sessionIds as string[]) ?? []).map((sessionId) => ({
-      sessionId,
-      mapKeys: ["90_synthetic_hills", "91_test_valley"],
-    })),
   get_session_baseline_comparison: () => (state === "few" ? fx.comparison(12) : fx.comparison()),
   get_battle_view: () => (state === "few" ? fx.battleDetail({ teams: null }) : fx.battleDetail()),
   get_vehicle_history_overview: () => (state === "empty" ? fx.overview(0) : fx.overview()),
   get_vehicle_baseline: () => (state === "few" ? fx.vehicleBaseline(1) : fx.vehicleBaseline()),
+  get_vehicle_temperatures: () =>
+    state === "few"
+      ? []
+      : [
+          fx.vehicleTemperature(101, 2940),
+          fx.vehicleTemperature(102, 2702),
+          fx.vehicleTemperature(103, 2000),
+        ],
   get_vehicle_history_report: () => fx.vehicleReport(),
   // Overview asks for the last 100 battles of all tanks (spec 32 §4.2).
   get_performance_trends: (args) =>
@@ -117,7 +120,18 @@ const handlers: Record<string, Handler> = {
     state === "empty"
       ? { items: [], nextCursor: null }
       : fx.historyPage(state === "many" ? 200 : 12),
-  get_recent_sessions_wn8: () => [],
+  // Spec 34: Damast plates of ended sessions; the cache is empty, so the window draws them.
+  get_damast_session: (args) => fx.damastSession(args.sessionId as string),
+  get_damast_sessions: (args) => {
+    const all = state === "empty" ? [] : fx.damastSessions(state === "many" ? 200 : 6);
+    const cursor = args.cursor as { sessionId: string } | null;
+    const from = cursor ? all.findIndex((item) => item.session.id === cursor.sessionId) + 1 : 0;
+    const limit = args.limit as number;
+    return fx.damastPage(all.slice(from, from + limit), from + limit < all.length);
+  },
+  get_damast_tile: () => new ArrayBuffer(0),
+  put_damast_tile: () => undefined,
+  export_damast_card: () => false,
   get_challenge_suggestions: () => ({ suggestions: [], unavailableReason: null }),
   get_challenge_history: () => ({ items: [], nextOffset: null }),
   get_vehicle_class_catalog_status: () => ({ vehicleCount: 1270, sourceVersion: "synthetic" }),

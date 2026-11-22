@@ -38,6 +38,9 @@ describe("IPC contract (generate_handler ↔ api.ts)", () => {
       "refresh_xvm",
       "configure_profile",
       "store_api_key",
+      // E14 (author's decision): the old History session list's commands, no screen calls them.
+      "get_recent_sessions_wn8",
+      "get_session_maps",
     ])
       expect(registered).not.toContain(name);
   });
